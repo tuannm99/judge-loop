@@ -1,0 +1,178 @@
+==================================================
+STATE SNAPSHOT — Milestone 1 Complete
+Date: 2026-03-29
+==================================================
+
+==================================================
+COMPLETED
+==================================================
+
+Milestone 1: Bootstrap — DONE
+
+All tasks finished:
+- Directory structure created
+- Documentation written (7 files)
+- Domain models implemented
+- DB schema + seed data written
+- Docker Compose + Dockerfiles created
+- Go workspace + all module stubs scaffolded
+- Go version set to 1.25.1 across all files
+
+==================================================
+REPO STRUCTURE (current)
+==================================================
+
+judge-loop/
+  README.md
+  go.work                          ← Go 1.25.1 workspace, references all 13 modules
+
+  apps/
+    api-server/
+      go.mod                       ← stub, deps: domain, storage, queue, problemset, personalization, recommendation, gin
+      main.go                      ← stub only, prints "not yet implemented (Milestone 2)"
+    judge-worker/
+      go.mod                       ← stub, deps: domain, storage, queue, judge, sandbox
+      main.go                      ← stub only, prints "not yet implemented (Milestone 6)"
+    local-agent/
+      go.mod                       ← stub, deps: domain, timer, events, registry, gin, sqlite3
+      main.go                      ← stub only, prints "not yet implemented (Milestone 3)"
+
+  packages/
+    domain/                        ← IMPLEMENTED — all domain structs, compiles, go.sum present
+      go.mod                       ← only external dep: github.com/google/uuid v1.6.0
+      user.go                      ← User, DifficultyMix, UserTrainingProfile, TrainingContract
+      problem.go                   ← Problem, TestCase, ProblemPerformance, ProblemBankItem, Difficulty, Provider
+      submission.go                ← Submission, Language, SubmissionStatus, Verdict
+      session.go                   ← DailySession, TimerSession, ActivityEvent, ActivityEventType
+      mission.go                   ← DailyMission, MissionTask, ReviewSchedule
+      registry.go                  ← ProblemManifest, ManifestRef, RegistryVersion, Track, TrackProblem, RoadmapPlan, RoadmapStage
+      performance.go               ← PerformanceSnapshot
+    storage/
+      go.mod                       ← deps: domain, pgx/v5 v5.5.5, uuid
+      storage.go                   ← package stub only
+      migrations/
+        001_init.sql               ← FULL SCHEMA: 15 tables, all FK constraints, GIN indexes on tags
+    queue/
+      go.mod                       ← deps: domain, asynq v0.24.1, uuid
+      queue.go                     ← package stub only
+    judge/
+      go.mod                       ← deps: domain, uuid
+      judge.go                     ← package stub only
+    sandbox/
+      go.mod                       ← deps: domain, docker/docker v26.1.3, uuid
+      sandbox.go                   ← package stub only
+    timer/
+      go.mod                       ← deps: domain, uuid
+      timer.go                     ← package stub only
+    events/
+      go.mod                       ← deps: domain, uuid
+      events.go                    ← package stub only
+    problemset/
+      go.mod                       ← deps: domain, uuid
+      problemset.go                ← package stub only
+    registry/
+      go.mod                       ← deps: domain, uuid
+      registry.go                  ← package stub only
+    personalization/
+      go.mod                       ← deps: domain, uuid
+      personalization.go           ← package stub only
+    recommendation/
+      go.mod                       ← deps: domain, uuid
+      recommendation.go            ← package stub only
+
+  plugins/
+    nvim-judge-loop/
+      plugin/judge-loop.lua        ← stub only, Milestone 4 placeholder
+    vscode-judge-loop/             ← empty dir, future milestone
+
+  deploy/
+    compose/
+      docker-compose.yml           ← postgres:16-alpine, redis:7-alpine, api-server, judge-worker
+    docker/
+      Dockerfile.api-server        ← golang:1.25.1-alpine builder + alpine:3.19 runtime
+      Dockerfile.judge-worker      ← golang:1.25.1-alpine builder + alpine:3.19 + docker-cli runtime
+      Dockerfile.local-agent       ← golang:1.25.1-alpine + gcc (CGO for sqlite3) + alpine:3.19 runtime
+
+  docs/
+    architecture.md                ← system diagram, service roles, data flow, assumptions
+    roadmap.md                     ← milestones 1–8 with scope
+    api.md                         ← full API reference: server (:8080) + local agent (:7070)
+    local-agent.md                 ← behavior, config, local state, timer/submit/sync flows
+    nvim-plugin.md                 ← commands, startup behavior, statusline, config, file structure
+    registry.md                    ← index.json format, ProblemManifest, Track, Roadmap, sync flow
+    personalization.md             ← all models, daily mission algorithm, review scheduling, weak pattern detection
+
+  scripts/
+    seed_problems.sql              ← 25 problems (LeetCode), 3 test case sets, patterns: arrays, two-pointer,
+                                     sliding-window, stack, binary-search, linked-list, trees, dp, graphs
+
+==================================================
+DB SCHEMA TABLES (001_init.sql)
+==================================================
+
+users
+problems                          ← difficulty/provider enums, GIN indexes on tags[]
+test_cases
+submissions                       ← submission_status enum, language enum
+timer_sessions
+daily_sessions                    ← unique(user_id, date)
+activity_events                   ← JSONB payload
+review_schedules                  ← spaced repetition, unique(user_id, problem_id)
+user_training_profiles            ← unique per user
+training_contracts
+daily_missions                    ← JSONB for task arrays, unique(user_id, date)
+problem_performances              ← unique(user_id, problem_id)
+problem_bank_items                ← unique(user_id, problem_id)
+performance_snapshots             ← unique(user_id, snapshot_date)
+registry_versions
+
+==================================================
+DOMAIN MODELS (packages/domain)
+==================================================
+
+All 17 types from the spec are implemented:
+
+Core:        User, Problem, TestCase, Submission
+Session:     DailySession, TimerSession, ActivityEvent, ReviewSchedule
+Training:    UserTrainingProfile, TrainingContract, DailyMission, MissionTask
+Performance: PerformanceSnapshot, ProblemPerformance, ProblemBankItem
+Registry:    ProblemManifest, RegistryVersion, Track, RoadmapPlan
+
+Enums:       Difficulty, Provider, Language, SubmissionStatus, Verdict, ActivityEventType
+
+==================================================
+KEY DECISIONS & ASSUMPTIONS
+==================================================
+
+- Go 1.25.1 across all go.mod files, go.work, and Dockerfiles
+- Module path base: judge-loop/apps/<name> and judge-loop/packages/<name>
+- replace directives in each go.mod for local packages; go.work handles workspace-level resolution
+- Single-user MVP: no authentication in v1
+- Problem statements are NOT stored — metadata only (ProblemManifest)
+- local-agent: localhost:7070 only, proxies to api-server:8080
+- local-agent uses SQLite (go-sqlite3, CGO) for offline timer state
+- judge-worker mounts /var/run/docker.sock to spawn sandbox containers
+- Complexity tracking is self-reported (manual input by user), not automated
+- Spaced repetition intervals: 1 → 3 → 7 → 14 days
+- Pattern score = accepted / attempted; weak if < 0.5 with ≥ 3 attempts
+
+==================================================
+NEXT: Milestone 2 — api-server MVP
+==================================================
+
+To implement in apps/api-server/:
+
+  GET  /api/problems              ← list with difficulty/tag/pattern/provider filters
+  GET  /api/problems/:id          ← by UUID or slug
+  GET  /api/problems/suggest      ← single suggestion based on profile
+  POST /api/submissions           ← accept code, write pending row, enqueue job
+  GET  /api/submissions/:id       ← poll verdict
+  GET  /api/submissions/history   ← paginated history
+  GET  /api/progress/today        ← daily summary (solved, time spent, streak)
+  GET  /api/streak                ← current + longest streak
+
+Dependencies to implement first:
+  packages/storage   ← pgx connection pool, problem queries, submission queries
+  packages/queue     ← asynq client, job type definitions
+
+Verdict in Milestone 2 can be mock (no real Docker execution yet — that is Milestone 6).

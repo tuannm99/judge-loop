@@ -1,0 +1,245 @@
+==================================================
+MILESTONE 3 — local-agent MVP
+==================================================
+
+Context: Milestones 1 and 2 are complete.
+Module: github.com/tuannm99/judge-loop (single go.mod, Go 1.25.1)
+Layout: cmd/ for executables, internal/ for packages.
+
+Current state of local-agent:
+  cmd/local-agent/main.go   — stub only
+  internal/timer/timer.go   — empty package
+  internal/events/events.go — empty package
+  internal/registry/        — empty package (Milestone 7)
+
+==================================================
+GOAL
+==================================================
+
+Implement a working local HTTP daemon (port 7070, localhost only) that:
+  1. Serves as the single endpoint for the Neovim plugin
+  2. Keeps an in-memory timer (works even when api-server is unreachable)
+  3. Proxies submissions and progress queries to api-server
+  4. Reports today's practice status (server + local fallback)
+  5. Provides a sync stub (real sync is Milestone 7)
+
+==================================================
+CONSTRAINTS
+==================================================
+
+- Bind to 127.0.0.1:7070 only — never 0.0.0.0
+- No CGO, no SQLite in Milestone 3
+  Timer state is in-memory. Lost on restart — acceptable for MVP.
+  SQLite persistence is a Milestone 7 concern.
+- Best-effort server sync: timer start/stop attempts to notify api-server
+  but never fails the local response if the server is unreachable.
+- Submit requires api-server reachability (can't judge offline).
+- Config is YAML file; env vars override. Both are optional (all have defaults).
+- No new direct Go dependencies beyond what is already in go.mod
+  (gin, uuid, pgx already present; yaml.v3 is already an indirect dep of gin).
+
+==================================================
+INTERNAL/TIMER DESIGN
+==================================================
+
+File: internal/timer/timer.go
+
+In-memory timer for the active practice session.
+Thread-safe via sync.Mutex.
+
+Types:
+  Entry{ID uuid.UUID, ProblemID *uuid.UUID, StartedAt time.Time}
+  LocalTimer{mu sync.Mutex, active *Entry}
+
+Methods:
+  func NewLocalTimer() *LocalTimer
+  func (t *LocalTimer) Start(problemID *uuid.UUID) Entry
+    — stops any existing active entry before starting a new one
+  func (t *LocalTimer) Stop() (Entry, bool)
+    — returns the stopped entry and whether there was an active timer
+  func (t *LocalTimer) Active() *Entry
+    — returns nil if no active timer
+  func (t *LocalTimer) ElapsedSecs() int
+    — returns seconds since StartedAt, 0 if no active timer
+
+==================================================
+CMD/LOCAL-AGENT DESIGN
+==================================================
+
+Files:
+  cmd/local-agent/
+    main.go         — LoadConfig → NewServer → Run
+    config.go       — Config struct, LoadConfig() (YAML + env override)
+    server.go       — Gin on 127.0.0.1:port, route registration
+    apiclient.go    — thin HTTP client wrapping api-server calls
+    handler/
+      handler.go    — Handler{client *APIClient, timer *timer.LocalTimer, cfg Config}
+      status.go     — StatusToday
+      timer.go      — StartTimer, StopTimer, CurrentTimer
+      submit.go     — Submit
+      sync.go       — Sync (stub)
+
+==================================================
+CONFIG
+==================================================
+
+File: cmd/local-agent/config.go
+
+Config struct:
+  ServerURL string  // api-server base URL
+  Port      int     // local listen port
+  UserID    string  // hardcoded dev user UUID (no auth in v1)
+  DataDir   string  // reserved for future SQLite / registry cache
+
+Config file: ~/.config/judge-loop/agent.yaml
+  server_url: http://localhost:8080
+  port: 7070
+  user_id: 00000000-0000-0000-0000-000000000001
+  data_dir: ~/.local/share/judge-loop
+
+Env overrides (take precedence over YAML):
+  JUDGE_SERVER_URL
+  JUDGE_PORT
+  JUDGE_USER_ID
+
+LoadConfig():
+  1. set defaults
+  2. try to read ~/.config/judge-loop/agent.yaml; log warning if missing, don't error
+  3. apply env overrides
+  4. return Config
+
+==================================================
+APICLIENT DESIGN
+==================================================
+
+File: cmd/local-agent/apiclient.go
+
+Wraps all api-server calls. Returns typed responses or errors.
+Uses net/http with 3s timeout for status/timer calls, 10s for submit.
+
+type APIClient struct {
+    baseURL string
+    userID  string
+    http    *http.Client
+}
+
+Methods:
+  NewAPIClient(serverURL, userID string) *APIClient
+
+  ProgressToday(ctx) (*ProgressResponse, error)
+    → GET {serverURL}/api/progress/today
+
+  StartTimer(ctx, problemID string) error
+    → POST {serverURL}/api/timers/start  body: {problem_id}
+
+  StopTimer(ctx) error
+    → POST {serverURL}/api/timers/stop   body: {}
+
+  CurrentTimer(ctx) (*TimerResponse, error)
+    → GET {serverURL}/api/timers/current
+
+  Submit(ctx, req SubmitRequest) (*SubmitResponse, error)
+    → POST {serverURL}/api/submissions
+
+Response types (defined in apiclient.go):
+  ProgressResponse{Date, Solved, Attempted, TimeSpentMinutes, Streak int}
+  TimerResponse{Active bool, StartedAt *time.Time, ElapsedSeconds int, ProblemID *string}
+  SubmitRequest{ProblemID, Language, Code, SessionID string}
+  SubmitResponse{SubmissionID, Status string}
+
+==================================================
+ENDPOINTS
+==================================================
+
+GET /local/status/today
+  Logic:
+    → try ProgressToday (2s timeout)
+    → if success: practiced = (Solved > 0 || local timer active)
+    → if server unreachable: practiced = (local timer active)
+    → return {practiced bool, solved_count int, active_timer bool, message string}
+
+  Response:
+    { "practiced": false, "solved_count": 0, "active_timer": false,
+      "message": "No practice yet today. Start a session!" }
+    { "practiced": true,  "solved_count": 1, "active_timer": false,
+      "message": "Good work! 1 problem solved today." }
+
+GET /local/timer/current
+  Logic:
+    → if local timer active: return local state (elapsed computed live)
+    → else: try CurrentTimer from api-server; return result
+  Response: { "active": bool, "elapsed_seconds": int, "started_at": time?, "problem_id": string? }
+
+POST /local/timer/start
+  Body: { "problem_id": "uuid or empty string" }
+  Logic:
+    → timer.Start(problemID)
+    → goroutine: try client.StartTimer (best-effort, log error only)
+  Response: { "id": uuid, "started_at": time }
+
+POST /local/timer/stop
+  Body: {}
+  Logic:
+    → entry, ok := timer.Stop()
+    → if !ok: return { "active": false, "elapsed_seconds": 0 }
+    → goroutine: try client.StopTimer (best-effort)
+  Response: { "elapsed_seconds": int }
+
+POST /local/submit
+  Body: { "problem_id", "language", "code" }
+  Logic:
+    → build SubmitRequest
+    → if local timer active: attach session context via X-Session-ID header
+      (api-server will look this up — future; for now just pass session_id field)
+    → client.Submit(ctx, req) — returns error if server unreachable
+  Response: { "submission_id": uuid, "status": "pending" } or 502 on server error
+
+POST /local/sync
+  Body: {}
+  Response: { "synced": false, "message": "registry sync not yet implemented (Milestone 7)" }
+
+==================================================
+SERVER SETUP
+==================================================
+
+File: cmd/local-agent/server.go
+
+- gin.New() with Logger + Recovery middleware
+- Listen on 127.0.0.1:{port} — NOT 0.0.0.0
+- GET  /local/status/today
+- GET  /local/timer/current
+- POST /local/timer/start
+- POST /local/timer/stop
+- POST /local/submit
+- POST /local/sync
+- GET  /health → { "status": "ok" }
+
+==================================================
+INTERNAL/TIMER IMPLEMENTATION NOTES
+==================================================
+
+- Start() assigns a new uuid.New() to the entry
+- Start() auto-stops any existing active timer (same as api-server behaviour)
+- ElapsedSecs() uses time.Since(entry.StartedAt)
+- All methods acquire the mutex; callers do not need to lock
+
+==================================================
+GO.MOD NOTES
+==================================================
+
+No new direct dependencies.
+yaml.v3 is already present as an indirect dep (via gin).
+Add it as a direct dep in go.mod when it is first imported:
+  gopkg.in/yaml.v3 v3.0.1
+
+go mod tidy will handle version resolution.
+
+==================================================
+WHAT IS OUT OF SCOPE FOR MILESTONE 3
+==================================================
+
+- SQLite persistence (Milestone 7)
+- Real registry sync (Milestone 7)
+- Session ID forwarding to api-server (Milestone 5 vertical slice)
+- Auto-start agent from Neovim (Milestone 4)
+- Offline submission queue (post-MVP)

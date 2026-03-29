@@ -1,0 +1,139 @@
+==================================================
+STATE SNAPSHOT — Milestone 4 Complete (local-agent MVP)
+Date: 2026-03-29
+==================================================
+
+==================================================
+COMPLETED
+==================================================
+
+Milestone 4: local-agent MVP — DONE
+
+  internal/timer — in-memory LocalTimer implemented
+  cmd/local-agent — full Gin daemon, all 6 endpoints working
+  go.mod — yaml.v3 promoted to direct dependency
+  go build ./... — passes, exit 0
+
+==================================================
+NEW FILES
+==================================================
+
+internal/timer/timer.go
+  Entry{ID, ProblemID, StartedAt}
+  LocalTimer — thread-safe (sync.Mutex)
+  New() *LocalTimer
+  Start(problemID *uuid.UUID) Entry  — auto-stops existing timer
+  Stop() (Entry, bool)
+  Active() *Entry                    — returns nil-safe copy
+  ElapsedSecs() int
+
+cmd/local-agent/
+  main.go          — LoadConfig → NewServer → Run; logs server URL + port
+  config.go        — Config{ServerURL, Port, UserID, DataDir}
+                     LoadConfig(): defaults → YAML merge → env override
+                     Config file: ~/.config/judge-loop/agent.yaml
+                     Env: JUDGE_SERVER_URL, JUDGE_PORT, JUDGE_USER_ID
+  apiclient.go     — APIClient{baseURL, userID, http *http.Client}
+                     Shared do() helper: marshal → request → status check → decode
+                     ProgressToday, StartTimer, StopTimer, CurrentTimer, Submit
+                     Response types: ProgressResponse, TimerResponse, SubmitRequest/Response
+  server.go        — Gin on 127.0.0.1:{port} (never 0.0.0.0)
+                     NewServer: wires APIClient → NewHandler → registerRoutes
+  handler.go       — Handler{client, timer, userID}; NewHandler(client, cfg)
+  handler_status.go  — StatusToday: server-first + local fallback
+  handler_timer.go   — StartTimer, StopTimer, CurrentTimer
+  handler_submit.go  — Submit: attaches active timer session, proxies to api-server
+  handler_sync.go    — Sync: stub returning "not yet implemented (Milestone 7)"
+
+==================================================
+DESIGN DECISIONS
+==================================================
+
+No handler subpackage:
+  All handlers in package main (handler*.go). A sub-package would require
+  importing the main package for APIClient types — circular dependency.
+  Single-command agents don't need handler packages.
+
+In-memory timer only:
+  No SQLite, no CGO. Timer state is lost on restart.
+  Acceptable for MVP; SQLite persistence deferred to Milestone 7.
+
+Best-effort server sync:
+  StartTimer and StopTimer fire-and-forget a goroutine to notify api-server.
+  The local response never waits for or fails on server errors.
+
+Submit requires server:
+  Proxies directly to /api/submissions; returns 502 if server unreachable.
+  Offline submission queuing is post-MVP.
+
+Status fallback:
+  2s timeout on ProgressToday. On error: practiced = (local timer active).
+  Includes server_error field in response so callers can diagnose.
+
+Timer session attachment on submit:
+  If a local timer is active, its UUID is passed as session_id in the
+  submission request body. api-server links it via submissions.session_id FK.
+
+==================================================
+ENDPOINTS (all working)
+==================================================
+
+GET  /health                → { "status": "ok" }
+GET  /local/status/today    → { practiced, solved_count, active_timer, streak?, message }
+GET  /local/timer/current   → local first, server fallback; { active, elapsed_seconds, ... }
+POST /local/timer/start     → starts local timer + goroutine sync; { id, started_at }
+POST /local/timer/stop      → stops local timer + goroutine sync; { elapsed_seconds }
+POST /local/submit          → attaches session, proxies to api-server; { submission_id, status }
+POST /local/sync            → stub; { synced: false, message: "..." }
+
+==================================================
+RUNNING THE LOCAL AGENT
+==================================================
+
+# defaults work with docker-compose infra running
+go run ./cmd/local-agent
+
+# with custom server URL
+JUDGE_SERVER_URL=http://myserver:8080 go run ./cmd/local-agent
+
+# test
+curl http://localhost:7070/health
+curl http://localhost:7070/local/status/today
+curl -X POST http://localhost:7070/local/timer/start \
+  -H 'Content-Type: application/json' -d '{}'
+curl http://localhost:7070/local/timer/current
+curl -X POST http://localhost:7070/local/timer/stop -d '{}'
+
+==================================================
+WHAT'S NOT DONE (intentional)
+==================================================
+
+- SQLite offline timer persistence (Milestone 7)
+- Real registry sync (Milestone 7)
+- Auto-start agent from Neovim plugin (Milestone 5)
+- Offline submission queuing (post-MVP)
+
+==================================================
+NEXT: Milestone 5 — Neovim plugin MVP
+==================================================
+
+Implement plugins/nvim-judge-loop/:
+  lua/
+    judge-loop/
+      init.lua       — setup(), auto-start agent check
+      agent.lua      — HTTP client (curl/plenary) calling local-agent
+      commands.lua   — :JudgeStatus, :JudgeStart, :JudgeStop, :JudgeSubmit, :JudgeSync
+      statusline.lua — timer_statusline() for lualine/statusline integration
+      ui.lua         — vim.notify wrappers, verdict display
+  plugin/
+    judge-loop.lua   — entry point, guarded load, call setup()
+
+VimEnter autocmd:
+  → GET /local/status/today
+  → if practiced=false: vim.notify reminder (WARN level)
+
+:JudgeSubmit flow:
+  → read buffer filetype → language
+  → read b:judge_problem_id (set by :JudgeStart)
+  → POST /local/submit
+  → show verdict via vim.notify

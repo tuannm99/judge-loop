@@ -1,0 +1,126 @@
+==================================================
+CHANGE — Go module restructure + docs update
+Date: 2026-03-29
+==================================================
+
+==================================================
+PROBLEM WITH PREVIOUS LAYOUT
+==================================================
+
+The original layout used apps/ and packages/ directories with one go.mod
+per package, connected via go.work. This pattern is copied from JS/Java/Rust
+monorepo conventions and is not idiomatic Go.
+
+Problems:
+  - go.work is for coordinating independently released modules, not
+    co-developed intra-app packages
+  - Every package needed its own go.mod, go.sum, and replace directives
+  - go mod tidy had to be run per module
+  - No enforced encapsulation boundary
+
+==================================================
+CHANGES MADE
+==================================================
+
+1. DIRECTORY RESTRUCTURE
+
+  Before → After
+  apps/api-server/    → cmd/api-server/
+  apps/judge-worker/  → cmd/judge-worker/
+  apps/local-agent/   → cmd/local-agent/
+  packages/domain/    → internal/domain/
+  packages/storage/   → internal/storage/
+  packages/queue/     → internal/queue/
+  packages/judge/     → internal/judge/
+  packages/sandbox/   → internal/sandbox/
+  packages/timer/     → internal/timer/
+  packages/events/    → internal/events/
+  packages/problemset/      → internal/problemset/
+  packages/registry/        → internal/registry/
+  packages/personalization/ → internal/personalization/
+  packages/recommendation/  → internal/recommendation/
+
+2. MODULE CONSOLIDATION
+
+  Before:
+    go.work                   (workspace file)
+    apps/api-server/go.mod    (module: judge-loop/apps/api-server)
+    apps/judge-worker/go.mod
+    apps/local-agent/go.mod
+    packages/domain/go.mod    (module: judge-loop/packages/domain)
+    packages/storage/go.mod
+    ... 14 go.mod files total
+
+  After:
+    go.mod                    (single file, module: github.com/tuannm99/judge-loop)
+    go.sum                    (single file)
+
+3. MODULE PATH
+
+  Before: judge-loop/packages/... and judge-loop/apps/...
+  After:  github.com/tuannm99/judge-loop/internal/... and .../cmd/...
+
+  All import paths updated across all .go files via sed.
+
+4. DOCKERFILE SIMPLIFICATION
+
+  Before: each Dockerfile copied per-module go.mod/go.sum files separately
+          and ran go work sync
+  After:  each Dockerfile copies go.mod + go.sum once, then copies cmd/ and
+          internal/ source, builds from ./cmd/<name>
+
+  deploy/docker/Dockerfile.api-server     updated
+  deploy/docker/Dockerfile.judge-worker   updated
+  deploy/docker/Dockerfile.local-agent    updated
+
+5. DOCKER-COMPOSE PATH FIX
+
+  deploy/compose/docker-compose.yml:
+    packages/storage/migrations → internal/storage/migrations
+
+==================================================
+WHY CMD/ AND INTERNAL/
+==================================================
+
+cmd/
+  Contains only main packages (entry points). No business logic.
+  Thin wiring: parse config → connect deps → start server.
+  Named after the Go community convention: https://go.dev/doc/modules/layout
+
+internal/
+  All business logic lives here.
+  The Go compiler enforces that no code outside this module can import
+  internal/ packages. Provides encapsulation without needing separate modules.
+
+pkg/ is NOT used — it is for code intended to be imported by external
+consumers. This project has none.
+
+==================================================
+DOCS UPDATED
+==================================================
+
+README.md
+  - Structure tree: apps/ + packages/ → cmd/ + internal/
+  - Module path note added (github.com/tuannm99/judge-loop, single go.mod)
+  - Quickstart: updated paths and go run commands
+  - Milestone 2 marked ✅ done
+
+docs/architecture.md
+  - "Packages" section renamed to "Module layout"
+  - internal/ table with compiler enforcement note
+  - Schema path: packages/storage/migrations → internal/storage/migrations
+
+docs/roadmap.md
+  - Milestone 1: "Go workspace (go.work)" → "Single Go module"
+  - Milestone 2: marked ✅ done, full endpoint list filled in
+
+docs/nvim-plugin.md
+  - lazy.nvim snippet: "judge-loop/nvim-judge-loop" → "tuannm99/nvim-judge-loop"
+
+==================================================
+RESULT
+==================================================
+
+  go build ./...   — passes, exit 0
+  Single go.mod at root with all transitive deps resolved
+  No go.work, no per-package go.mod, no replace directives

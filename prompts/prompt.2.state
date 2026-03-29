@@ -1,0 +1,157 @@
+==================================================
+STATE SNAPSHOT — Milestone 2 Complete
+Date: 2026-03-29
+==================================================
+
+==================================================
+COMPLETED
+==================================================
+
+Milestone 2: api-server MVP — DONE
+
+All endpoints implemented and compiling:
+- packages/storage: db, problems, submissions, sessions, streak, reviews
+- packages/queue: job type definitions
+- apps/api-server: config, server, all handlers
+
+Both packages/storage and apps/api-server have been `go mod tidy`-ed
+and compile clean with GOWORK=off.
+
+==================================================
+NEW FILES (Milestone 2)
+==================================================
+
+packages/storage/
+  db.go              — DB struct, Connect(ctx, dsn) *DB, Close()
+  problems.go        — ProblemStore: List, GetByID, GetBySlug, Suggest
+                       ProblemFilter{Difficulty*, Tag, Pattern, Provider*, Limit, Offset}
+                       rowScanner interface (shared by Row + Rows scan helpers)
+                       scanProblem helper casts difficulty/provider enums to domain types
+  submissions.go     — SubmissionStore: Create, GetByID, UpdateVerdict, ListByUser
+  sessions.go        — SessionStore: GetOrCreateToday, RecordSubmission, StartTimer, StopTimer,
+                       ActiveTimer, ElapsedNow(ts)
+  streak.go          — SessionStore.GetStreak → StreakInfo{Current, Longest, LastPracticed}
+                       computeStreak: Go-side calculation from DESC-sorted date list
+  reviews.go         — ReviewStore: GetDue → []DueReview{ProblemID, Slug, Title, LastSolved, DaysOverdue}
+  storage.go         — package comment only (unchanged)
+
+packages/queue/
+  jobs.go            — TypeEvaluateSubmission constant, EvaluatePayload{SubmissionID, UserID}
+  queue.go           — package comment only (unchanged)
+
+apps/api-server/
+  main.go            — LoadConfig → Connect DB → NewServer → Run
+  config.go          — Config{DatabaseURL, Port, UserID}, LoadConfig() reads env with defaults
+  server.go          — Server struct, NewServer(cfg, db), Run(), registerRoutes(h)
+  handler/
+    handler.go       — Handler{Problems, Submissions, Sessions, Reviews, UserID}, New(db, uid)
+    problems.go      — ListProblems, GetProblem (UUID or slug), SuggestProblem
+    submissions.go   — CreateSubmission, GetSubmission, ListSubmissions, evaluateMock (goroutine)
+    progress.go      — GetProgressToday, GetStreak
+    timers.go        — StartTimer, StopTimer, CurrentTimer
+    reviews.go       — GetReviewsToday
+
+==================================================
+KEY IMPLEMENTATION DETAILS
+==================================================
+
+Storage layer:
+- All enum columns (difficulty, provider, status, language) cast to ::text in SELECT
+  and compared as text in WHERE to avoid pgx type registration
+- Tags (TEXT[]) scanned directly into []string — pgx v5 handles this natively
+- rowScanner interface (Scan(...any) error) satisfied by both pgx.Row and pgx.Rows
+- ErrNoRows → return nil, nil (not found, not error)
+- RecordSubmission: upserts daily_sessions, increments attempted always,
+  solved only when accepted=true
+- StartTimer: auto-stops any existing active timer before creating a new one
+- StopTimer: adds elapsed_secs to daily_sessions.time_spent_secs
+- computeStreak: streak is current if last practice was today or yesterday
+
+API server:
+- No authentication; single USER_ID from env (default 00000000-0000-0000-0000-000000000001)
+- Mock evaluator: goroutine sleeps 500ms, accepts non-empty code, WA on empty code
+- /api/problems/suggest registered before /api/problems/:id (gin static > param priority)
+- /api/submissions/history registered before /api/submissions/:id
+- GetProblem: tries uuid.Parse first, falls back to slug lookup
+
+go.mod (api-server, after go mod tidy):
+- Direct: gin v1.10.0, uuid v1.6.0, domain v0.0.0, storage v0.0.0
+- Indirect: full gin + pgx transitive dep tree in go.sum
+
+==================================================
+API ENDPOINTS (all implemented)
+==================================================
+
+GET  /health                     → { "status": "ok" }
+
+GET  /api/problems               → { problems: [...], total: N }
+GET  /api/problems/suggest       → problem object or 404
+GET  /api/problems/:id           → problem object (UUID or slug) or 404
+
+POST /api/submissions            → { submission_id, status: "pending" }
+GET  /api/submissions/:id        → full submission object
+GET  /api/submissions/history    → { submissions: [...] }
+
+GET  /api/progress/today         → { date, solved, attempted, time_spent_minutes, streak }
+GET  /api/streak                 → { current, longest, last_practiced }
+
+POST /api/timers/start           → { id, started_at, problem_id }
+POST /api/timers/stop            → { elapsed_seconds }
+GET  /api/timers/current         → { active, id?, started_at?, elapsed_seconds?, problem_id? }
+
+GET  /api/reviews/today          → { reviews: [...] }
+
+==================================================
+RUNNING THE API SERVER
+==================================================
+
+# 1. Start infrastructure
+docker compose -f deploy/compose/docker-compose.yml up -d postgres redis
+
+# 2. Run migrations + seed
+psql $DATABASE_URL < packages/storage/migrations/001_init.sql
+psql $DATABASE_URL < scripts/seed_problems.sql
+
+# 3. Start server
+cd apps/api-server
+go mod tidy      # only needed once
+go run .
+
+# 4. Test
+curl http://localhost:8080/health
+curl http://localhost:8080/api/problems
+curl http://localhost:8080/api/problems/suggest
+curl -X POST http://localhost:8080/api/submissions \
+  -H 'Content-Type: application/json' \
+  -d '{"problem_id":"<uuid>","language":"python","code":"def solution(): pass"}'
+
+==================================================
+WHAT'S NOT DONE (intentional)
+==================================================
+
+- No real verdict: mock always accepts non-empty code
+- No asynq / Redis usage in api-server (queue package defined, not wired)
+- No auth: single hardcoded user
+- SuggestProblem: no weak-pattern weighting (training profile not consulted)
+- ReviewSchedule rows are not created automatically on solve (manual insert required)
+- No pagination cursor; offset-based only
+
+==================================================
+NEXT: Milestone 3 — local-agent MVP
+==================================================
+
+Implement apps/local-agent/:
+  GET  /local/status/today   ← calls GET /api/progress/today + check
+  GET  /local/timer/current  ← calls GET /api/timers/current
+  POST /local/timer/start    ← calls POST /api/timers/start
+  POST /local/timer/stop     ← calls POST /api/timers/stop
+  POST /local/submit         ← proxies to POST /api/submissions
+  POST /local/sync           ← syncs registry (stub for Milestone 7)
+
+Dependencies to implement:
+  packages/timer   — local timer state (SQLite, for offline support)
+  packages/events  — ActivityEvent logging
+  packages/registry — registry manifest types (stub until Milestone 7)
+
+Config: ~/.config/judge-loop/agent.yaml (server_url, port, user_id, data_dir)
+Local state: SQLite at ~/.local/share/judge-loop/agent.db

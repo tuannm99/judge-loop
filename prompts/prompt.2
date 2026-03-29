@@ -1,0 +1,171 @@
+==================================================
+MILESTONE 2 — api-server MVP
+==================================================
+
+Context: Milestone 1 is complete. Repo is bootstrapped with full
+directory structure, domain models, DB schema, seed data, Docker
+Compose, and Go workspace at go 1.25.1.
+
+==================================================
+GOAL
+==================================================
+
+Implement a working api-server with:
+
+1. packages/storage  — pgx v5 query layer (problems, submissions,
+                        sessions, streak, reviews)
+2. packages/queue    — asynq job type definitions (no real worker yet)
+3. apps/api-server   — Gin HTTP server with all Milestone 2 endpoints
+
+Submissions use a mock evaluator (goroutine, 500ms delay) — real
+Docker execution is Milestone 6.
+
+==================================================
+CONSTRAINTS
+==================================================
+
+- No authentication in v1. All requests use a single hardcoded USER_ID
+  read from env (default: 00000000-0000-0000-0000-000000000001).
+- No real judge worker. Submissions are evaluated by an in-process
+  goroutine that returns "Accepted" for non-empty code.
+- Redis / asynq is NOT required for Milestone 2. queue package defines
+  types only; api-server uses goroutines for mock evaluation.
+- Tags / pattern_tags in PostgreSQL are TEXT[] columns. pgx v5 scans
+  them directly into []string.
+- Enum columns (difficulty, provider, submission_status, language) are
+  cast to TEXT in SELECT and compared as TEXT in WHERE to avoid pgx
+  enum type registration.
+
+==================================================
+PACKAGES/STORAGE DESIGN
+==================================================
+
+Files:
+  db.go          — DB struct, Connect(ctx, dsn) (*DB, error), Close()
+  problems.go    — ProblemStore, ProblemFilter, List, GetByID, GetBySlug, Suggest
+  submissions.go — SubmissionStore, Create, GetByID, UpdateVerdict, ListByUser
+  sessions.go    — SessionStore, StartTimer, StopTimer, ActiveTimer,
+                   RecordSubmission, GetOrCreateToday
+  streak.go      — SessionStore.GetStreak → StreakInfo{Current, Longest, LastPracticed}
+  reviews.go     — ReviewStore, GetDue
+
+Key decisions:
+- All stores hold a *DB (pgxpool wrapper).
+- Constructors: NewProblemStore(db), NewSubmissionStore(db), etc.
+- Shared rowScanner interface for single-row and multi-row scan helpers.
+- scanProblem, scanSubmission, scanTimerSession as package-level helpers.
+- ErrNoRows from pgx.ErrNoRows → return nil, nil (not found, not error).
+- ProblemFilter.Difficulty and .Provider are pointers — nil means "no filter".
+- Suggest query: NOT IN accepted submissions + prefer pattern overlap via
+  ORDER BY CASE WHEN $2::text[] && pattern_tags THEN 0 ELSE 1 END, RANDOM()
+- RecordSubmission(ctx, userID, accepted bool) — upserts daily_sessions,
+  increments attempted_count always, solved_count only when accepted.
+- StopTimer also adds elapsed_secs to daily_sessions.time_spent_secs.
+- GetStreak fetches all practice dates sorted DESC, computes current and
+  longest streak in Go by checking consecutive days.
+- StreakInfo is defined in storage package (not domain) as a query result.
+
+==================================================
+PACKAGES/QUEUE DESIGN
+==================================================
+
+Files:
+  jobs.go — TypeEvaluateSubmission constant + EvaluatePayload struct
+
+Not wired into api-server for Milestone 2. Defined now so Milestone 6
+(judge-worker) can import without changes.
+
+==================================================
+APPS/API-SERVER DESIGN
+==================================================
+
+Files:
+  main.go           — parse config, connect DB, start server
+  config.go         — Config struct, LoadConfig() from env
+  server.go         — Server struct, New, Run, registerRoutes
+  handler/
+    handler.go      — Handler struct with all stores + UserID
+    problems.go     — ListProblems, GetProblem, SuggestProblem
+    submissions.go  — CreateSubmission, GetSubmission, ListSubmissions
+    progress.go     — GetProgressToday, GetStreak
+    timers.go       — StartTimer, StopTimer, CurrentTimer
+    reviews.go      — GetReviewsToday
+
+Config env vars (all have defaults for local dev):
+  DATABASE_URL  default: postgres://judgeloop:judgeloop@localhost:5432/judgeloop?sslmode=disable
+  PORT          default: 8080
+  USER_ID       default: 00000000-0000-0000-0000-000000000001
+
+Mock evaluator (in submissions.go):
+  - Launched as goroutine on CreateSubmission
+  - Sleeps 500ms
+  - Accepts if code is non-empty, WrongAnswer otherwise
+  - Calls UpdateVerdict + RecordSubmission on DB
+
+==================================================
+API ENDPOINTS (Milestone 2)
+==================================================
+
+GET  /api/problems
+  Query: difficulty, tag, pattern, provider, limit (default 20), offset (default 0)
+  Response: { "problems": [...], "total": N }
+
+GET  /api/problems/suggest
+  Response: single problem object (or 404 if none available)
+
+GET  /api/problems/:id
+  Tries UUID parse first, falls back to slug lookup
+  Response: problem object or 404
+
+POST /api/submissions
+  Body: { "problem_id", "language", "code", "session_id"? }
+  Response: { "submission_id", "status": "pending" }
+  Side effect: spawns mock evaluator goroutine
+
+GET  /api/submissions/:id
+  Response: submission object with verdict fields
+
+GET  /api/submissions/history
+  Query: problem_id?, limit (default 20)
+  Response: { "submissions": [...], "total": N }
+
+GET  /api/progress/today
+  Response: { "date", "solved", "attempted", "time_spent_minutes", "streak" }
+
+GET  /api/streak
+  Response: { "current", "longest", "last_practiced" }
+
+POST /api/timers/start
+  Body: { "problem_id"? }
+  Response: { "id", "started_at" }
+
+POST /api/timers/stop
+  Body: {}
+  Response: { "elapsed_seconds" }
+
+GET  /api/timers/current
+  Response: { "active": bool, "started_at"?, "elapsed_seconds"?, "problem_id"? }
+
+GET  /api/reviews/today
+  Response: { "reviews": [{ "problem_id", "slug", "title", "last_solved", "days_overdue" }] }
+
+==================================================
+UPDATED go.mod: apps/api-server
+==================================================
+
+Only Milestone 2 deps:
+  judge-loop/packages/domain v0.0.0
+  judge-loop/packages/storage v0.0.0
+  github.com/gin-gonic/gin v1.10.0
+  github.com/google/uuid v1.6.0
+
+==================================================
+ASSUMPTIONS
+==================================================
+
+- User must run `go mod tidy` in each module after cloning (deps
+  downloaded on first build).
+- Docker Compose must be running for PostgreSQL to be reachable.
+- seed_problems.sql must be run before testing suggest/list endpoints.
+- In-process mock evaluator is intentionally not concurrent-safe across
+  multiple simultaneous submissions (single-user MVP assumption).
