@@ -1,0 +1,20 @@
+filename: "{{.Mock}}{{.InterfaceName}}.go"
+force-file-write: true
+formatter: goimports
+generate: true
+include-auto-generated: false
+log-level: info
+structname: "{{.Mock}}{{.InterfaceName}}"
+recursive: false
+template: testify
+packages:
+  github.com/tuannm99/judge-loop/internal/port/in:
+    config:
+      all: true
+      dir: internal/port/in/mocks
+      pkgname: mocks
+  github.com/tuannm99/judge-loop/internal/port/out:
+    config:
+      all: true
+      dir: internal/port/out/mocks
+      pkgname: mocks

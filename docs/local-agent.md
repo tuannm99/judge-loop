@@ -17,7 +17,7 @@ No file watching outside configured workspace. No keylogging. No network traffic
 1. **Session gating** — On startup check, determine if the user practiced today
 2. **Timer management** — Start/stop/query timed practice sessions (local state + synced to server)
 3. **Submit proxy** — Attach session context to submissions before forwarding to api-server
-4. **Registry sync** — Download and cache the problem registry locally
+4. **Registry sync** — Load local registry manifests and push them to the api-server
 5. **Offline support** — Timer works even when server is unreachable
 
 ## Configuration
@@ -26,30 +26,31 @@ Config file: `~/.config/judge-loop/agent.yaml`
 
 ```yaml
 server_url: http://localhost:8080
-listen_port: 7070
-workspace: ~/code/practice # only this directory is "watched"
-user_id: uuid # set on first init
+port: 7070
+user_id: uuid
 data_dir: ~/.local/share/judge-loop
+registry_path: ./registry
 ```
 
 ## Local state
 
-The agent keeps minimal local state in `~/.local/share/judge-loop/`:
+The current agent keeps only in-memory timer state plus configured access to a local registry directory:
 
 ```
-agent.db         # SQLite (timer sessions, offline queue)
-registry/        # cached registry manifests
+registry/        # local manifest source used by POST /local/sync
   index.json
   providers/
     leetcode.json
     neetcode.json
 ```
 
+Timer state is in memory in the current MVP and is lost on agent restart.
+
 ## Startup behavior
 
 When the Neovim plugin calls `GET /local/status/today`:
 
-1. Agent checks local DB for today's sessions
+1. Agent checks its in-memory local timer state
 2. If server is reachable, also checks `GET /api/progress/today`
 3. Returns `practiced: false` if no solved submission today
 4. Plugin displays a reminder notification
@@ -58,12 +59,12 @@ When the Neovim plugin calls `GET /local/status/today`:
 
 ```
 POST /local/timer/start
-  → write TimerSession to local SQLite (started_at, problem_id)
+  → create in-memory TimerSession (started_at, problem_id)
   → attempt to POST /api/timers/start (best-effort, non-blocking)
   → return { ok: true }
 
 POST /local/timer/stop
-  → update local TimerSession (ended_at, elapsed)
+  → stop in-memory TimerSession and compute elapsed locally
   → attempt to POST /api/timers/stop
   → return elapsed_seconds
 ```
@@ -84,10 +85,9 @@ POST /local/submit
 
 ```
 POST /local/sync
-  → GET /api/registry/index.json from server
-  → compare version with local cache
-  → download changed manifests
-  → import new problems into local bank
+  → read local registry/index.json
+  → load provider manifests from local registry_path
+  → POST loaded manifests to /api/registry/sync
   → return sync summary
 ```
 
@@ -105,3 +105,13 @@ judge-agent status
 ```
 
 The agent is designed to be started by Neovim on first use (via the plugin) or by the user's shell profile.
+
+## Architecture note
+
+In the current code layout:
+
+- HTTP handlers live under `internal/adapter/http/localagent`
+- local timer implementation lives under `internal/infrastructure/localtimer`
+- registry manifest loading lives under `internal/infrastructure/registry`
+
+`cmd/local-agent` is only the entrypoint and wiring layer.

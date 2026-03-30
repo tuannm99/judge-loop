@@ -2,8 +2,9 @@ package main
 
 import (
 	"github.com/hibiken/asynq"
-	"github.com/tuannm99/judge-loop/internal/queue"
-	"github.com/tuannm99/judge-loop/internal/storage"
+	queueadapter "github.com/tuannm99/judge-loop/internal/adapter/queue"
+	postgres "github.com/tuannm99/judge-loop/internal/infrastructure/postgres"
+	"github.com/tuannm99/judge-loop/internal/infrastructure/queue"
 )
 
 // Worker wraps the asynq server and task router.
@@ -13,11 +14,11 @@ type Worker struct {
 }
 
 // NewWorker creates a Worker and registers all task handlers.
-func NewWorker(cfg Config, db *storage.DB) *Worker {
+func NewWorker(cfg Config, db *postgres.DB) *Worker {
 	srv := queue.NewServer(cfg.RedisURL, cfg.Concurrency)
 	mux := asynq.NewServeMux()
 
-	ev := NewEvaluator(cfg, db)
+	ev := queueadapter.NewEvaluator(cfg.TimeLimitSecs, db)
 	mux.HandleFunc(queue.TypeEvaluateSubmission, ev.ProcessTask)
 
 	return &Worker{server: srv, mux: mux}

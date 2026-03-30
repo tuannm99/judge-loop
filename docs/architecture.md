@@ -2,126 +2,126 @@
 
 ## Overview
 
-`judge-loop` is a monorepo containing three services, multiple shared packages, and a Neovim plugin. The system is designed for a single user running the local agent on their development machine, connected to a (potentially self-hosted) server.
+`judge-loop` now uses a clear ports-and-adapters structure inside a single Go module.
+
+The main runtime pieces are:
+
+- `api-server` for HTTP reads/writes and queue submission
+- `judge-worker` for async evaluation
+- `local-agent` for editor-facing local workflows
+- PostgreSQL for persistent state
+- Redis/asynq for background jobs
+- Docker sandbox for code execution
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ Developer Machine                                           │
-│                                                             │
-│  ┌──────────────┐     ┌───────────────────────────────┐     │
-│  │ Neovim       │────▶│ local-agent (:7070)           │     │
-│  │ (Lua plugin) │◀────│  - session status             │     │
-│  └──────────────┘     │  - timer start/stop           │     │
-│                       │  - submit proxy               │     │
-│                       │  - registry sync              │     │
-│                       └────────────┬──────────────────┘     │
-└────────────────────────────────────│────────────────────────┘
-                                     │ HTTP
-                        ┌────────────▼──────────────────┐
-                        │ api-server (:8080)             │
-                        │  - problems CRUD              │
-                        │  - submission intake          │
-                        │  - progress / streak          │
-                        │  - timer persistence          │
-                        │  - daily mission              │
-                        └────────────┬──────────────────┘
-                                     │
-                    ┌────────────────┼────────────────────┐
-                    │                │                    │
-             ┌──────▼──────┐  ┌──────▼──────┐   ┌────────▼──────┐
-             │ PostgreSQL  │  │ Redis       │   │ judge-worker  │
-             │ (state)     │  │ (queue/TTL) │   │ (async eval)  │
-             └─────────────┘  └─────────────┘   └───────┬───────┘
-                                                        │
-                                                 ┌──────▼──────┐
-                                                 │ Docker      │
-                                                 │ sandbox     │
-                                                 └─────────────┘
+Neovim plugin
+  -> local-agent
+  -> api-server
+  -> Redis/asynq
+  -> judge-worker
+  -> Docker sandbox
+  -> PostgreSQL
 ```
 
-## Services
+## Dependency Rule
 
-### api-server
+The package graph is organized so dependencies point inward:
 
-- Gin HTTP server on port 8080
-- Handles all persistent state reads/writes
-- Enqueues submissions to Redis via asynq
-- Returns submission status via polling
+- `cmd/*` wires dependencies and starts processes
+- `adapter/*` translates external inputs/outputs
+- `application/*` contains use-case orchestration
+- `domain/*` contains core domain types and pure logic
+- `port/in` exposes application capabilities to adapters
+- `port/out` defines infrastructure dependencies required by the application
+- `infrastructure/*` provides concrete implementations of outbound ports
 
-### judge-worker
+Adapters and infrastructure should not own business rules. Entry points should not contain use-case logic.
 
-- Consumes submission jobs from Redis queue
-- Spawns Docker containers for isolated execution
-- Writes verdict back to PostgreSQL
-- Notifies api-server (or client polls)
-
-### local-agent
-
-- Lightweight HTTP daemon on port 7070 (localhost only)
-- Proxies submissions to api-server
-- Maintains local timer state
-- Syncs problem registry from server
-- Checks daily practice status on startup
-
-## Module layout
+## Package Layout
 
 Single Go module: `github.com/tuannm99/judge-loop`
 
+| Package | Responsibility |
+| --- | --- |
+| `cmd/api-server` | process entrypoint and dependency wiring for the HTTP API |
+| `cmd/judge-worker` | process entrypoint and dependency wiring for async evaluation |
+| `cmd/local-agent` | process entrypoint and dependency wiring for the local daemon |
+| `internal/domain` | domain entities and value types |
+| `internal/domain/judge` | pure verdict evaluation logic |
+| `internal/application` | application services / use cases |
+| `internal/application/personalization` | daily mission and weak-pattern generation |
+| `internal/port/in` | inbound ports implemented by application services |
+| `internal/port/out` | outbound ports implemented by adapters/infrastructure |
+| `internal/adapter/http` | Gin handlers for `api-server` and `local-agent` |
+| `internal/adapter/queue` | asynq-facing adapters for publish/consume flow |
+| `internal/adapter/sandbox` | code runner adapter used by application services |
+| `internal/adapter/storage` | repository adapters over postgres stores |
+| `internal/infrastructure/postgres` | GORM repositories and embedded goose migrations |
+| `internal/infrastructure/queue` | asynq task definitions and queue setup |
+| `internal/infrastructure/sandbox` | Docker-based code execution |
+| `internal/infrastructure/registry` | local registry manifest loading from disk |
+| `internal/infrastructure/localtimer` | in-memory timer for the local-agent |
+
+## Service Roles
+
+### `api-server`
+
+- exposes the HTTP API on port `8080`
+- uses application services behind `port/in`
+- persists state through postgres-backed repository adapters
+- publishes evaluation jobs through the queue adapter
+
+### `judge-worker`
+
+- consumes evaluation jobs from Redis/asynq
+- calls the evaluation application service
+- runs code through the sandbox adapter
+- writes final verdicts back through repositories
+
+### `local-agent`
+
+- exposes local HTTP endpoints on port `7070`
+- keeps an in-memory local timer
+- proxies submissions to `api-server`
+- loads registry manifests from local disk and pushes them to the server
+
+## Submission Flow
+
 ```
-cmd/           ← main packages (entry points only, no business logic)
-internal/      ← all business logic (Go compiler prevents external import)
+Neovim
+  -> POST /local/submit
+  -> local-agent forwards to POST /api/submissions
+  -> api-server creates submission row
+  -> api-server enqueues evaluation job
+  -> judge-worker consumes job
+  -> evaluation service loads submission + test cases
+  -> sandbox runs code
+  -> domain judge logic computes verdict
+  -> submission row updated in PostgreSQL
 ```
 
-| Package (`internal/...`) | Responsibility                                 |
-| ------------------------ | ---------------------------------------------- |
-| `domain`                 | Shared Go structs — no logic, no DB            |
-| `storage`                | PostgreSQL queries via pgx, migrations         |
-| `queue`                  | asynq job type definitions                     |
-| `judge`                  | Verdict scoring logic (language-agnostic)      |
-| `sandbox`                | Docker container lifecycle for code execution  |
-| `timer`                  | Timer session tracking and persistence         |
-| `events`                 | ActivityEvent definitions and publishing       |
-| `problemset`             | Problem bank queries and filtering             |
-| `registry`               | Registry index sync and manifest parsing       |
-| `personalization`        | Daily mission generation, performance analysis |
-| `recommendation`         | Problem suggestion based on profile            |
+## Persistence and Migrations
 
-## Data flow: submission
+PostgreSQL is the source of truth for submissions, sessions, reviews, and registry versions.
 
-```
-User (Neovim)
-  → POST /local/submit (local-agent)
-    → validate + attach session context
-    → POST /api/submissions (api-server)
-      → write submission row (status=pending)
-      → enqueue job to Redis (asynq)
-      → return submission_id
-  → poll GET /api/submissions/:id
-    judge-worker picks up job
-      → pull language image
-      → run code in Docker (timeout, no network)
-      → compare output vs test cases
-      → write verdict
-  → poll returns verdict
-```
+- ORM: GORM
+- migrations: goose
+- migration path: `internal/infrastructure/postgres/migrations`
+- migrations run automatically on service startup
 
-## Database
+## Testing
 
-PostgreSQL is the source of truth for all user data, submissions, and progress.
-See `internal/storage/migrations/001_init.sql` for the full schema.
+Application-layer tests are built around split ports and generated mocks:
 
-## Queue
-
-Redis + asynq for async submission evaluation.
-
-- Queue: `submissions`
-- Retry: 3 times with exponential backoff
-- Dead letter: stored in Redis for inspection
+- mock generator: `mockery v3`
+- assertion library: `testify`
+- mock packages:
+  - `internal/port/in/mocks`
+  - `internal/port/out/mocks`
 
 ## Assumptions
 
-- Single-user MVP: no multi-tenancy, no auth in v1
-- Local agent runs on developer's machine (localhost only)
-- Judge worker and api-server can run locally or on a remote server
-- Problem statements are NOT stored — only metadata (manifest)
-- Docker must be available on the judge-worker host
+- single-user MVP, no auth boundary yet
+- local-agent runs on the developer machine
+- problem metadata is stored, not full problem statements
+- Docker must be available where `judge-worker` runs

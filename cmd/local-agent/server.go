@@ -5,19 +5,20 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	localagent "github.com/tuannm99/judge-loop/internal/adapter/http/localagent"
 )
 
 // Server wires together the Gin router and all dependencies.
 type Server struct {
 	cfg     Config
 	router  *gin.Engine
-	handler *Handler
+	handler *localagent.Handler
 }
 
 // NewServer initialises the server and registers all routes.
 func NewServer(cfg Config) *Server {
-	client := NewAPIClient(cfg.ServerURL, cfg.UserID)
-	h := NewHandler(client, cfg)
+	client := localagent.NewAPIClient(cfg.ServerURL, cfg.UserID)
+	h := localagent.NewHandler(client, cfg.UserID, cfg.RegistryPath)
 
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())

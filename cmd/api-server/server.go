@@ -6,23 +6,23 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/hibiken/asynq"
-	"github.com/tuannm99/judge-loop/cmd/api-server/handler"
-	"github.com/tuannm99/judge-loop/internal/storage"
+	apiserver "github.com/tuannm99/judge-loop/internal/adapter/http/apiserver"
+	postgres "github.com/tuannm99/judge-loop/internal/infrastructure/postgres"
 )
 
 // Server wires together the Gin router and all dependencies.
 type Server struct {
 	cfg    Config
-	db     *storage.DB
+	db     *postgres.DB
 	router *gin.Engine
 }
 
 // NewServer initialises the server with a database connection and registers all routes.
-func NewServer(cfg Config, db *storage.DB, queueClient *asynq.Client) *Server {
+func NewServer(cfg Config, db *postgres.DB, queueClient *asynq.Client) *Server {
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
 
-	h := handler.New(db, cfg.UserID, queueClient)
+	h := apiserver.New(db, cfg.UserID, queueClient)
 
 	s := &Server{cfg: cfg, db: db, router: router}
 	s.registerRoutes(h)
@@ -35,7 +35,7 @@ func (s *Server) Run() error {
 	return s.router.Run(addr)
 }
 
-func (s *Server) registerRoutes(h *handler.Handler) {
+func (s *Server) registerRoutes(h *apiserver.Handler) {
 	s.router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})

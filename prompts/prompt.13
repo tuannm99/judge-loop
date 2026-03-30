@@ -1,0 +1,44 @@
+==================================================
+CHANGE — Goose baseline for pre-existing schema
+Date: 2026-03-30
+==================================================
+
+==================================================
+GOAL
+==================================================
+
+Make service startup migrations work against databases that already contain the
+legacy schema but do not yet have goose migration history.
+
+==================================================
+WHAT CHANGED
+==================================================
+
+Updated:
+  internal/infrastructure/postgres/migrate.go
+
+Startup migration flow now:
+
+1. ensures the goose version table exists
+2. checks the current DB version
+3. if goose reports version 0 but the legacy `users` table already exists,
+   inserts baseline version 1 into `goose_db_version`
+4. runs normal `goose up`
+
+This treats an existing pre-goose schema as having already applied
+`001_init.sql`, while still allowing later migrations such as `002_seed_dev_user.sql`
+to run normally.
+
+==================================================
+CURRENT STATE
+==================================================
+
+- fresh databases still run the full goose migration chain from scratch
+- pre-existing databases no longer fail on `relation "users" already exists`
+- migration boot is now compatible with the earlier manual-schema / raw-SQL setup
+
+==================================================
+VERIFICATION
+==================================================
+
+- go build ./...  -> passes

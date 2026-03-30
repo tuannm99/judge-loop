@@ -56,13 +56,13 @@ type ProblemPerformance struct {
 	ID              uuid.UUID
 	UserID          uuid.UUID
 	ProblemID       uuid.UUID
-	FirstSolveTime  *float64  // minutes, nil if not yet solved
-	BestSolveTime   *float64  // personal best
-	LatestSolveTime *float64  // most recent solve
-	Attempts        int       // total attempts
-	Accepted        bool      // ever accepted
-	Complexity      string    // self-reported: O(n), O(n log n), etc.
-	Confidence      int       // self-reported: 1 (shaky) to 5 (solid)
+	FirstSolveTime  *float64 // minutes, nil if not yet solved
+	BestSolveTime   *float64 // personal best
+	LatestSolveTime *float64 // most recent solve
+	Attempts        int      // total attempts
+	Accepted        bool     // ever accepted
+	Complexity      string   // self-reported: O(n), O(n log n), etc.
+	Confidence      int      // self-reported: 1 (shaky) to 5 (solid)
 	LastAttemptAt   time.Time
 	UpdatedAt       time.Time
 }
@@ -70,11 +70,11 @@ type ProblemPerformance struct {
 // ProblemBankItem links a problem to the user's local problem bank.
 // It tracks whether the problem has been downloaded/imported.
 type ProblemBankItem struct {
-	ID          uuid.UUID
-	UserID      uuid.UUID
-	ProblemID   uuid.UUID
-	Imported    bool      // manifest pulled locally
-	InProgress  bool      // user is actively working on it
-	Pinned      bool      // user pinned it for later
-	AddedAt     time.Time
+	ID         uuid.UUID
+	UserID     uuid.UUID
+	ProblemID  uuid.UUID
+	Imported   bool // manifest pulled locally
+	InProgress bool // user is actively working on it
+	Pinned     bool // user pinned it for later
+	AddedAt    time.Time
 }

@@ -1,0 +1,69 @@
+==================================================
+CHANGE — GORM + goose storage migration
+Date: 2026-03-30
+==================================================
+
+==================================================
+GOAL
+==================================================
+
+Replace the pgx/raw-SQL-first storage stack with:
+
+1. GORM for the application persistence layer
+2. goose for migration management and startup migration execution
+
+The intent is to move faster on schema and query changes while keeping the
+current HTTP/API surface stable during the refactor.
+
+==================================================
+WHAT CHANGED
+==================================================
+
+1. STORAGE LAYER
+
+  Before:
+    internal/storage/db.go            → pgxpool connection wrapper
+    internal/storage/*.go             → pgx queries and manual scans
+
+  After:
+    internal/storage/db.go            → GORM + sql.DB wrapper
+    internal/storage/models.go        → GORM table models + domain mapping
+    internal/storage/*.go             → GORM-backed store methods
+
+2. MIGRATIONS
+
+  Before:
+    SQL files existed but were run manually via psql
+
+  After:
+    goose manages migrations from internal/storage/migrations
+    storage.Connect() runs goose Up on startup
+    migrations are embedded in the binary
+
+3. DEPENDENCIES
+
+  Added:
+    gorm.io/gorm
+    gorm.io/driver/postgres
+    github.com/pressly/goose/v3
+    github.com/lib/pq
+
+==================================================
+CURRENT STATE
+==================================================
+
+- API server and judge worker still use the same handler/store method shapes
+- Startup DB boot now applies goose migrations automatically
+- Problem, submission, timer, review, registry, testcase, and mission storage
+  paths are being moved behind GORM-backed stores
+- Existing SQL seed scripts remain for problem/testcase development data
+- The project still uses PostgreSQL and Redis; only the persistence access layer
+  and migration runner changed
+
+==================================================
+FOLLOW-UP
+==================================================
+
+1. align docs/README with GORM + goose startup
+2. add repository tests around storage behavior
+3. fix the local timer/session ID mismatch in the submit vertical slice

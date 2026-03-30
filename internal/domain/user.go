@@ -25,14 +25,14 @@ type DifficultyMix struct {
 
 // UserTrainingProfile stores a user's training goals and known weaknesses.
 type UserTrainingProfile struct {
-	ID             uuid.UUID
-	UserID         uuid.UUID
-	Goals          []string      // e.g. ["faang-interview", "competitive"]
-	MinutesPerDay  int           // target daily practice time
-	DifficultyMix  DifficultyMix // target difficulty distribution
-	WeakPatterns   []string      // patterns the user struggles with
-	FocusPatterns  []string      // patterns to prioritize right now
-	UpdatedAt      time.Time
+	ID            uuid.UUID
+	UserID        uuid.UUID
+	Goals         []string      // e.g. ["faang-interview", "competitive"]
+	MinutesPerDay int           // target daily practice time
+	DifficultyMix DifficultyMix // target difficulty distribution
+	WeakPatterns  []string      // patterns the user struggles with
+	FocusPatterns []string      // patterns to prioritize right now
+	UpdatedAt     time.Time
 }
 
 // TrainingContract defines the user's daily and weekly commitments.

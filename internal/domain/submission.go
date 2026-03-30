@@ -18,13 +18,13 @@ const (
 type SubmissionStatus string
 
 const (
-	StatusPending            SubmissionStatus = "pending"
-	StatusRunning            SubmissionStatus = "running"
-	StatusAccepted           SubmissionStatus = "accepted"
-	StatusWrongAnswer        SubmissionStatus = "wrong_answer"
-	StatusCompileError       SubmissionStatus = "compile_error"
-	StatusRuntimeError       SubmissionStatus = "runtime_error"
-	StatusTimeLimitExceeded  SubmissionStatus = "time_limit_exceeded"
+	StatusPending           SubmissionStatus = "pending"
+	StatusRunning           SubmissionStatus = "running"
+	StatusAccepted          SubmissionStatus = "accepted"
+	StatusWrongAnswer       SubmissionStatus = "wrong_answer"
+	StatusCompileError      SubmissionStatus = "compile_error"
+	StatusRuntimeError      SubmissionStatus = "runtime_error"
+	StatusTimeLimitExceeded SubmissionStatus = "time_limit_exceeded"
 )
 
 // Verdict is the human-readable verdict label.

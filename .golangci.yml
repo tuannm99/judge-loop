@@ -1,0 +1,29 @@
+version: '2'
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - govet
+    - staticcheck
+    - ineffassign
+    - unused
+    - lll
+    - copyloopvar
+    - errname
+    - wastedassign
+    - whitespace
+    - testifylint
+    - tparallel
+    - unconvert
+    - unparam
+    - nilerr
+    - asciicheck
+  disable:
+    - errcheck
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

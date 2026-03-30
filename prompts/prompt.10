@@ -1,0 +1,99 @@
+==================================================
+CHANGE — Hexagonal architecture setup
+Date: 2026-03-30
+==================================================
+
+==================================================
+GOAL
+==================================================
+
+Introduce a first-pass hexagonal architecture without changing the external API.
+
+This setup is intended to:
+
+1. move HTTP and worker wiring off direct storage access
+2. define explicit outbound ports for repositories, queue publishing, and code execution
+3. keep the domain/application logic testable without Gin, GORM, Redis, or Docker
+
+==================================================
+WHAT CHANGED
+==================================================
+
+1. PORTS
+
+  Added:
+    internal/port/
+
+  Defines outbound interfaces for:
+    - problems
+    - submissions
+    - sessions
+    - reviews
+    - registry
+    - test cases
+    - evaluation publisher
+    - code runner
+
+2. ADAPTERS
+
+  Added:
+    internal/adapter/storage/
+    internal/adapter/queue/
+    internal/adapter/sandbox/
+
+  Current adapters:
+    - storage adapters wrap internal/storage GORM stores
+    - queue adapter wraps asynq publishing
+    - sandbox adapter wraps sandbox.Run
+
+3. APPLICATION LAYER
+
+  Added:
+    internal/application/api.go
+    internal/application/evaluation.go
+
+  Current app services:
+    - APIService
+      handles problem lookup/list/suggest, submissions, progress, timers,
+      reviews, and registry sync/version reads
+    - EvaluationService
+      handles judge-worker evaluation flow through ports
+
+4. WIRING
+
+  Updated:
+    cmd/api-server/handler/*
+    cmd/judge-worker/evaluator.go
+
+  Result:
+    - handlers now call application services
+    - worker now calls EvaluationService
+    - direct handler-to-storage coupling was removed from the main API path
+
+5. TESTS
+
+  Added:
+    internal/application/api_test.go
+
+  Current unit coverage:
+    - submission creation publishes evaluation job
+    - publisher errors bubble up
+    - problem lookup falls back to slug path
+
+==================================================
+CURRENT STATE
+==================================================
+
+- storage remains a GORM + goose adapter layer
+- api-server now depends on application services + ports
+- judge-worker now depends on EvaluationService + ports
+- local-agent has not been hexagonalized yet
+- domain package remains the center and is still infra-free
+
+==================================================
+NEXT RECOMMENDED STEP
+==================================================
+
+1. move local-agent logic behind ports/use-cases too
+2. add more unit tests for timer/progress/evaluation application services
+3. document the new package dependency rules in docs/architecture.md

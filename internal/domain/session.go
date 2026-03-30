@@ -13,7 +13,7 @@ type DailySession struct {
 	Date           time.Time // date only (UTC), truncated to day
 	SolvedCount    int       // accepted submissions that day
 	AttemptedCount int
-	TimeSpentSecs  int       // total seconds in timer sessions
+	TimeSpentSecs  int // total seconds in timer sessions
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }

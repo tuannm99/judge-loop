@@ -1,0 +1,63 @@
+==================================================
+CHANGE — Mockery v3 + testify test setup
+Date: 2026-03-30
+==================================================
+
+==================================================
+GOAL
+==================================================
+
+Every interface in `internal/port` should have generated mocks, and the
+application-layer tests should use generated mocks plus testify assertions.
+
+==================================================
+WHAT CHANGED
+==================================================
+
+1. MOCK GENERATION
+
+  Added:
+    .mockery.yml
+    tools/tools.go
+
+  Uses:
+    - mockery v3
+    - testify template output
+
+  Generated mocks for all current ports under:
+    internal/port/mocks/
+
+2. TEST STACK
+
+  Added/testify usage in:
+    internal/application/api_test.go
+
+  Replaced hand-written fakes with generated mockery mocks for:
+    - ProblemRepository
+    - SubmissionRepository
+    - SessionRepository
+    - ReviewRepository
+    - RegistryRepository
+    - EvaluationPublisher
+
+3. DEPENDENCIES
+
+  Added:
+    github.com/stretchr/testify
+    github.com/vektra/mockery/v3
+
+==================================================
+CURRENT STATE
+==================================================
+
+- app-layer tests now use generated mocks, not manual fakes
+- all interfaces in internal/port have generated mocks
+- mock generation is standardized through mockery v3 config
+- hexagonal ports now have a repeatable testing story
+
+==================================================
+VERIFICATION
+==================================================
+
+- go test ./internal/application/...  → passes
+- go build ./...              → passes

@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/tuannm99/judge-loop/internal/storage"
+	postgres "github.com/tuannm99/judge-loop/internal/infrastructure/postgres"
 )
 
 func main() {
@@ -16,7 +16,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	db, err := storage.Connect(ctx, cfg.DatabaseURL)
+	db, err := postgres.Connect(ctx, cfg.DatabaseURL)
 	if err != nil {
 		log.Fatalf("db connect: %v", err)
 	}

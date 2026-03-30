@@ -1,0 +1,98 @@
+==================================================
+CHANGE — Final hexagonal package cleanup + docs refresh
+Date: 2026-03-30
+==================================================
+
+==================================================
+GOAL
+==================================================
+
+Finish the transitional architecture cleanup so the repository reads like a
+real ports-and-adapters system on first sight, then update the docs and prompt
+history to match the final structure.
+
+==================================================
+WHAT CHANGED
+==================================================
+
+1. PACKAGE CLEANUP
+
+  Moved:
+    internal/judge/                 -> internal/domain/judge/
+    internal/timer/                 -> internal/infrastructure/localtimer/
+    internal/registry/              -> internal/infrastructure/registry/
+    internal/personalization/       -> internal/application/personalization/
+
+  Removed empty transitional packages:
+    internal/events/
+    internal/problemset/
+    internal/recommendation/
+
+2. FINAL INTERNAL SHAPE
+
+  internal/
+    adapter/
+    application/
+      personalization/
+    domain/
+      judge/
+    infrastructure/
+      localtimer/
+      postgres/
+      queue/
+      registry/
+      sandbox/
+    port/
+      in/
+      out/
+
+3. IMPORT / WIRING CLEANUP
+
+  Updated:
+    - application evaluation service to use internal/domain/judge
+    - local-agent adapter to use infrastructure/localtimer
+    - local-agent sync flow to use infrastructure/registry
+
+  Result:
+    - no leftover imports to the old mixed top-level packages
+    - top-level internal folders now represent layers, not random concerns
+
+4. MOCKS
+
+  Mockery v3 output now lives with the split ports:
+    internal/port/in/mocks/
+    internal/port/out/mocks/
+
+  Generic leftover mock package output was removed.
+
+5. DOCS
+
+  Updated:
+    README.md
+    docs/architecture.md
+    docs/local-agent.md
+
+  Docs now describe:
+    - GORM + goose under infrastructure/postgres
+    - split inbound/outbound ports
+    - adapter vs infrastructure responsibilities
+    - final local-agent package placement
+
+==================================================
+CURRENT STATE
+==================================================
+
+- cmd packages are entrypoints and wiring only
+- application contains use cases
+- domain contains entities and pure judge logic
+- outbound dependencies are explicit through port/out
+- inbound application API is explicit through port/in
+- infrastructure naming reflects actual technologies
+- docs and prompt history now match the code layout
+
+==================================================
+VERIFICATION
+==================================================
+
+- go test ./internal/application/...  -> passes
+- go build ./...                      -> passes

@@ -26,7 +26,8 @@ A discipline-driven coding practice system for algorithm and interview training.
 | Layer | Tech |
 |-------|------|
 | Backend | Go, Gin |
-| Database | PostgreSQL (pgx) |
+| Database | PostgreSQL (GORM) |
+| Migrations | goose |
 | Queue | Redis + asynq |
 | Sandbox | Docker |
 | Plugin | Lua (Neovim) |
@@ -40,18 +41,25 @@ judge-loop/                        # module: github.com/tuannm99/judge-loop
     api-server/                    # REST API server
     judge-worker/                  # Async submission evaluator
     local-agent/                   # Local HTTP daemon (runs on dev machine)
-  internal/                        # private packages — enforced by Go compiler
-    domain/                        # shared domain structs (no logic, no DB)
-    storage/                       # PostgreSQL query layer (pgx)
-    queue/                         # asynq job type definitions
-    judge/                         # verdict evaluation logic
-    sandbox/                       # Docker container lifecycle
-    timer/                         # timer session management
-    events/                        # activity event types
-    problemset/                    # problem bank queries
-    registry/                      # problem registry sync
-    personalization/               # daily mission + performance
-    recommendation/                # suggestion engine
+  internal/                        # private application code
+    domain/                        # core domain types and pure domain logic
+      judge/                       # verdict evaluation logic
+    application/                   # use cases and orchestration
+      personalization/             # daily mission generation / weak-pattern logic
+    port/
+      in/                          # inbound ports exposed to adapters
+      out/                         # outbound ports required by application
+    adapter/                       # delivery and integration adapters
+      http/                        # Gin handlers for api-server and local-agent
+      queue/                       # asynq-facing adapters
+      sandbox/                     # code runner adapter
+      storage/                     # repository adapters over postgres stores
+    infrastructure/                # concrete technical implementations
+      postgres/                    # PostgreSQL persistence via GORM + goose
+      queue/                       # asynq jobs and queue wiring
+      sandbox/                     # Docker sandbox execution
+      registry/                    # local registry manifest loading
+      localtimer/                  # in-memory local-agent timer
   plugins/
     nvim-judge-loop/               # Neovim Lua plugin
     vscode-judge-loop/             # VS Code extension (future)
@@ -68,16 +76,33 @@ judge-loop/                        # module: github.com/tuannm99/judge-loop
 # Start infrastructure
 docker compose -f deploy/compose/docker-compose.yml up -d
 
-# Run migrations + seed
-psql $DATABASE_URL < internal/storage/migrations/001_init.sql
-psql $DATABASE_URL < scripts/seed_problems.sql
-
-# Start api-server
+# Start api-server (runs goose migrations on boot)
 go run ./cmd/api-server
+
+# Start judge-worker (also runs goose migrations on boot)
+go run ./cmd/judge-worker
 
 # Start local-agent
 go run ./cmd/local-agent
+
+# Optional: seed development problems + test cases
+psql $DATABASE_URL < scripts/seed_problems.sql
 ```
+
+`internal/infrastructure/postgres/migrations/` is managed by goose and embedded into the Go binaries. You do not need to run the schema SQL manually for normal local startup.
+
+## Architecture
+
+The codebase now follows a ports-and-adapters style:
+
+- `domain` contains core business types and pure logic
+- `application` contains use cases
+- `port/in` defines what adapters can call
+- `port/out` defines what the application needs from infrastructure
+- `adapter` contains HTTP, queue, sandbox, and repository adapters
+- `infrastructure` contains concrete PostgreSQL, queue, sandbox, registry, and local timer implementations
+
+The dependency rule is simple: outer layers depend inward. `cmd/*` wires the graph; business logic stays out of entrypoints.
 
 ## Milestones
 
