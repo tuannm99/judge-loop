@@ -5,6 +5,7 @@
 The local agent is a lightweight HTTP daemon running on the developer's machine. It acts as a bridge between the Neovim plugin and the remote api-server.
 
 It does NOT spy on the user. It only tracks what the user explicitly configures:
+
 - Timer sessions (started by the user)
 - Submission events (triggered by the user)
 - Daily session state (did I practice today?)
@@ -26,8 +27,8 @@ Config file: `~/.config/judge-loop/agent.yaml`
 ```yaml
 server_url: http://localhost:8080
 listen_port: 7070
-workspace: ~/code/practice      # only this directory is "watched"
-user_id: uuid                    # set on first init
+workspace: ~/code/practice # only this directory is "watched"
+user_id: uuid # set on first init
 data_dir: ~/.local/share/judge-loop
 ```
 

@@ -8,14 +8,14 @@
 ┌─────────────────────────────────────────────────────────────┐
 │ Developer Machine                                           │
 │                                                             │
-│  ┌──────────────┐     ┌───────────────────────────────┐    │
-│  │ Neovim       │────▶│ local-agent (:7070)           │    │
-│  │ (Lua plugin) │◀────│  - session status             │    │
-│  └──────────────┘     │  - timer start/stop           │    │
-│                       │  - submit proxy                │    │
-│                       │  - registry sync               │    │
-│                       └────────────┬──────────────────┘    │
-└────────────────────────────────────│─────────────────────── ┘
+│  ┌──────────────┐     ┌───────────────────────────────┐     │
+│  │ Neovim       │────▶│ local-agent (:7070)           │     │
+│  │ (Lua plugin) │◀────│  - session status             │     │
+│  └──────────────┘     │  - timer start/stop           │     │
+│                       │  - submit proxy               │     │
+│                       │  - registry sync              │     │
+│                       └────────────┬──────────────────┘     │
+└────────────────────────────────────│────────────────────────┘
                                      │ HTTP
                         ┌────────────▼──────────────────┐
                         │ api-server (:8080)             │
@@ -42,18 +42,21 @@
 ## Services
 
 ### api-server
+
 - Gin HTTP server on port 8080
 - Handles all persistent state reads/writes
 - Enqueues submissions to Redis via asynq
 - Returns submission status via polling
 
 ### judge-worker
+
 - Consumes submission jobs from Redis queue
 - Spawns Docker containers for isolated execution
 - Writes verdict back to PostgreSQL
 - Notifies api-server (or client polls)
 
 ### local-agent
+
 - Lightweight HTTP daemon on port 7070 (localhost only)
 - Proxies submissions to api-server
 - Maintains local timer state
@@ -69,19 +72,19 @@ cmd/           ← main packages (entry points only, no business logic)
 internal/      ← all business logic (Go compiler prevents external import)
 ```
 
-| Package (`internal/...`) | Responsibility |
-|--------------------------|---------------|
-| `domain` | Shared Go structs — no logic, no DB |
-| `storage` | PostgreSQL queries via pgx, migrations |
-| `queue` | asynq job type definitions |
-| `judge` | Verdict scoring logic (language-agnostic) |
-| `sandbox` | Docker container lifecycle for code execution |
-| `timer` | Timer session tracking and persistence |
-| `events` | ActivityEvent definitions and publishing |
-| `problemset` | Problem bank queries and filtering |
-| `registry` | Registry index sync and manifest parsing |
-| `personalization` | Daily mission generation, performance analysis |
-| `recommendation` | Problem suggestion based on profile |
+| Package (`internal/...`) | Responsibility                                 |
+| ------------------------ | ---------------------------------------------- |
+| `domain`                 | Shared Go structs — no logic, no DB            |
+| `storage`                | PostgreSQL queries via pgx, migrations         |
+| `queue`                  | asynq job type definitions                     |
+| `judge`                  | Verdict scoring logic (language-agnostic)      |
+| `sandbox`                | Docker container lifecycle for code execution  |
+| `timer`                  | Timer session tracking and persistence         |
+| `events`                 | ActivityEvent definitions and publishing       |
+| `problemset`             | Problem bank queries and filtering             |
+| `registry`               | Registry index sync and manifest parsing       |
+| `personalization`        | Daily mission generation, performance analysis |
+| `recommendation`         | Problem suggestion based on profile            |
 
 ## Data flow: submission
 
@@ -110,6 +113,7 @@ See `internal/storage/migrations/001_init.sql` for the full schema.
 ## Queue
 
 Redis + asynq for async submission evaluation.
+
 - Queue: `submissions`
 - Retry: 3 times with exponential backoff
 - Dead letter: stored in Redis for inspection

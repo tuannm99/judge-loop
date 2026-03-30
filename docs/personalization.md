@@ -3,6 +3,7 @@
 ## Purpose
 
 The personalization engine answers:
+
 - What should the user do today?
 - What is overdue?
 - What is their weakest pattern?
@@ -104,6 +105,7 @@ Note: `Complexity` is manually entered by the user. The system does not analyze 
 ## Daily mission generation
 
 Algorithm (MVP):
+
 1. Load user's `TrainingContract` and `UserTrainingProfile`
 2. Find problems not yet solved (from problem bank)
 3. Find overdue review problems (spaced repetition schedule)
@@ -118,6 +120,7 @@ Algorithm (MVP):
 ## Review scheduling
 
 Spaced repetition intervals (MVP, simple):
+
 - After first solve: review in 1 day
 - After second solve: review in 3 days
 - After third solve: review in 7 days
@@ -128,6 +131,7 @@ Spaced repetition intervals (MVP, simple):
 ## Performance tracking
 
 After each accepted submission:
+
 1. Update `ProblemPerformance` (solve time, attempt count)
 2. If solve time improved → update `BestSolveTime`
 3. Recalculate pattern score for affected patterns
@@ -142,6 +146,7 @@ A pattern is "weak" if score < 0.5 and the user has at least 3 attempts in it.
 ## Self-comparison
 
 Compare latest `PerformanceSnapshot` vs one from 4 weeks ago:
+
 - If avg solve time decreased → "Improving"
 - If accepted rate increased → "Improving"
 - Surface this in `GET /api/progress/today`

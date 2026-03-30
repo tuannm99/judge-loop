@@ -10,6 +10,7 @@ import (
 // Config holds all runtime configuration for the api-server.
 type Config struct {
 	DatabaseURL string
+	RedisURL    string
 	Port        string
 	// UserID is the single hardcoded user for the no-auth MVP.
 	UserID uuid.UUID
@@ -19,6 +20,7 @@ type Config struct {
 // for local development.
 func LoadConfig() (Config, error) {
 	dsn := env("DATABASE_URL", "postgres://judgeloop:judgeloop@localhost:5432/judgeloop?sslmode=disable")
+	redisURL := env("REDIS_URL", "localhost:6379")
 	port := env("PORT", "8080")
 	rawUID := env("USER_ID", "00000000-0000-0000-0000-000000000001")
 
@@ -29,6 +31,7 @@ func LoadConfig() (Config, error) {
 
 	return Config{
 		DatabaseURL: dsn,
+		RedisURL:    redisURL,
 		Port:        port,
 		UserID:      uid,
 	}, nil

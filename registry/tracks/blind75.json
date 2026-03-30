@@ -1,0 +1,132 @@
+{
+  "name": "blind75",
+  "title": "Blind 75",
+  "description": "75 essential interview problems. This subset covers the 25 currently seeded problems.",
+  "problems": [
+    {
+      "provider": "leetcode",
+      "slug": "two-sum",
+      "order": 1
+    },
+    {
+      "provider": "leetcode",
+      "slug": "best-time-to-buy-and-sell-stock",
+      "order": 2
+    },
+    {
+      "provider": "leetcode",
+      "slug": "contains-duplicate",
+      "order": 3
+    },
+    {
+      "provider": "leetcode",
+      "slug": "product-of-array-except-self",
+      "order": 4
+    },
+    {
+      "provider": "leetcode",
+      "slug": "maximum-subarray",
+      "order": 5
+    },
+    {
+      "provider": "leetcode",
+      "slug": "valid-palindrome",
+      "order": 6
+    },
+    {
+      "provider": "leetcode",
+      "slug": "three-sum",
+      "order": 7
+    },
+    {
+      "provider": "leetcode",
+      "slug": "container-with-most-water",
+      "order": 8
+    },
+    {
+      "provider": "leetcode",
+      "slug": "longest-substring-without-repeating-characters",
+      "order": 9
+    },
+    {
+      "provider": "leetcode",
+      "slug": "minimum-window-substring",
+      "order": 10
+    },
+    {
+      "provider": "leetcode",
+      "slug": "valid-parentheses",
+      "order": 11
+    },
+    {
+      "provider": "leetcode",
+      "slug": "min-stack",
+      "order": 12
+    },
+    {
+      "provider": "leetcode",
+      "slug": "binary-search",
+      "order": 13
+    },
+    {
+      "provider": "leetcode",
+      "slug": "find-minimum-in-rotated-sorted-array",
+      "order": 14
+    },
+    {
+      "provider": "leetcode",
+      "slug": "reverse-linked-list",
+      "order": 15
+    },
+    {
+      "provider": "leetcode",
+      "slug": "merge-two-sorted-lists",
+      "order": 16
+    },
+    {
+      "provider": "leetcode",
+      "slug": "linked-list-cycle",
+      "order": 17
+    },
+    {
+      "provider": "leetcode",
+      "slug": "maximum-depth-of-binary-tree",
+      "order": 18
+    },
+    {
+      "provider": "leetcode",
+      "slug": "invert-binary-tree",
+      "order": 19
+    },
+    {
+      "provider": "leetcode",
+      "slug": "lowest-common-ancestor-of-a-binary-search-tree",
+      "order": 20
+    },
+    {
+      "provider": "leetcode",
+      "slug": "climbing-stairs",
+      "order": 21
+    },
+    {
+      "provider": "leetcode",
+      "slug": "coin-change",
+      "order": 22
+    },
+    {
+      "provider": "leetcode",
+      "slug": "longest-common-subsequence",
+      "order": 23
+    },
+    {
+      "provider": "leetcode",
+      "slug": "number-of-islands",
+      "order": 24
+    },
+    {
+      "provider": "leetcode",
+      "slug": "clone-graph",
+      "order": 25
+    }
+  ]
+}

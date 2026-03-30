@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/hibiken/asynq"
 	"github.com/tuannm99/judge-loop/cmd/api-server/handler"
 	"github.com/tuannm99/judge-loop/internal/storage"
 )
@@ -17,11 +18,11 @@ type Server struct {
 }
 
 // NewServer initialises the server with a database connection and registers all routes.
-func NewServer(cfg Config, db *storage.DB) *Server {
+func NewServer(cfg Config, db *storage.DB, queueClient *asynq.Client) *Server {
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
 
-	h := handler.New(db, cfg.UserID)
+	h := handler.New(db, cfg.UserID, queueClient)
 
 	s := &Server{cfg: cfg, db: db, router: router}
 	s.registerRoutes(h)
@@ -65,5 +66,9 @@ func (s *Server) registerRoutes(h *handler.Handler) {
 
 		// reviews
 		api.GET("/reviews/today", h.GetReviewsToday)
+
+		// registry
+		api.POST("/registry/sync", h.SyncRegistry)
+		api.GET("/registry/version", h.GetRegistryVersion)
 	}
 }

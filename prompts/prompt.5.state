@@ -1,0 +1,126 @@
+==================================================
+STATE SNAPSHOT — Milestone 5 Complete (Neovim plugin MVP)
+Date: 2026-03-30
+==================================================
+
+==================================================
+COMPLETED
+==================================================
+
+Milestone 5: Neovim plugin MVP — DONE
+
+  plugins/nvim-judge-loop/lua/judge-loop/ — 5 modules implemented
+  plugins/nvim-judge-loop/plugin/judge-loop.lua — entry point updated (stub removed)
+
+==================================================
+NEW FILES
+==================================================
+
+plugins/nvim-judge-loop/lua/judge-loop/init.lua
+  M.config = { agent_url, auto_notify }
+  M.setup(opts)  — merges config, registers commands, registers VimEnter autocmd
+  VimEnter: deferred 1s, calls status_today; if not practiced → WARN notify
+
+plugins/nvim-judge-loop/lua/judge-loop/agent.lua
+  curl_async(method, path, body, callback)
+    — vim.fn.jobstart, stdout_buffered, --max-time 5
+    — decodes JSON via vim.fn.json_decode in callback
+  M.status_today(cb)   → GET /local/status/today
+  M.timer_current(cb)  → GET /local/timer/current
+  M.timer_start(problem_id, cb)  → POST /local/timer/start
+  M.timer_stop(cb)     → POST /local/timer/stop
+  M.submit(problem_id, language, code, cb) → POST /local/submit
+  M.sync(cb)           → POST /local/sync
+
+plugins/nvim-judge-loop/lua/judge-loop/commands.lua
+  M.register() — creates all user commands:
+  :JudgeStatus  — GET status_today, notify message
+  :JudgeStart [problem_id] — timer_start, sets vim.b.judge_problem_id
+  :JudgeStop    — timer_stop, notifies elapsed time
+  :JudgeSubmit  — reads vim.b.judge_problem_id + vim.bo.filetype + buffer lines,
+                  calls agent.submit, shows verdict via ui.verdict
+  :JudgeSync    — calls agent.sync, notifies message
+
+plugins/nvim-judge-loop/lua/judge-loop/statusline.lua
+  M.timer_statusline() → " M:SS" string or "" when no active timer
+  TTL cache (5s), pending flag prevents curl stampede on redraws
+  Usage: lualine section or vim.opt.statusline luaeval
+
+plugins/nvim-judge-loop/lua/judge-loop/ui.lua
+  M.info(msg), M.warn(msg), M.error(msg) — vim.schedule wrapped vim.notify
+  M.verdict(status, submission_id) — maps status → label, INFO for accepted else WARN
+
+plugins/nvim-judge-loop/plugin/judge-loop.lua  (updated)
+  Guard: vim.g.loaded_judge_loop
+  Calls require("judge-loop").setup()
+
+==================================================
+DESIGN DECISIONS
+==================================================
+
+No external Lua dependencies:
+  agent.lua uses curl via vim.fn.jobstart. No plenary required.
+  The plugin works with a bare Neovim install that has curl in PATH.
+
+Async throughout:
+  All HTTP calls are jobstart-based (non-blocking).
+  ui.lua wraps all notifies in vim.schedule (safe from async context).
+
+VimEnter deferred 1000ms:
+  Gives other plugins time to initialise (e.g. noice.nvim for notify UI).
+
+vim.b.judge_problem_id:
+  Set by :JudgeStart <problem_id>, consumed by :JudgeSubmit.
+  Buffer-local — supports multiple buffers with different problems.
+
+Statusline TTL cache:
+  Prevents a curl job per redraw cycle (which can be 10+ times/second).
+  5-second TTL + pending flag is enough for a live timer feel.
+
+==================================================
+INSTALLATION (lazy.nvim)
+==================================================
+
+{
+  dir = "~/dev/local/judge-loop/plugins/nvim-judge-loop",
+  config = function()
+    require("judge-loop").setup({
+      agent_url   = "http://127.0.0.1:7070",
+      auto_notify = true,
+    })
+  end,
+}
+
+==================================================
+WORKFLOW
+==================================================
+
+1. Start infra:          docker compose -f deploy/compose/docker-compose.yml up -d
+2. Start api-server:     go run ./cmd/api-server
+3. Start local-agent:    go run ./cmd/local-agent
+4. Open Neovim — VimEnter fires, status check runs
+5. :JudgeStart <uuid>   — start timer, set problem context
+6. <write solution>
+7. :JudgeSubmit          — submit buffer, see verdict
+8. :JudgeStop            — stop timer (optional, auto-stopped on next start)
+9. :JudgeStatus          — see today's summary
+
+==================================================
+WHAT'S NOT DONE (intentional)
+==================================================
+
+- Auto-start local-agent from Neovim (requires shell jobstart management)
+- Telescope/fzf problem picker (future Milestone)
+- SQLite offline persistence (Milestone 7)
+- Real registry sync (Milestone 7)
+- Session ID round-trip from timer to submission (api-server already has FK)
+
+==================================================
+NEXT: Milestone 6 — judge-worker (code execution sandbox)
+==================================================
+
+Implement cmd/judge-worker/:
+  Asynq consumer for "judge:run" jobs
+  Run submitted code in a sandbox (internal/sandbox/)
+  Update submission status in PostgreSQL
+  Return verdict: accepted / wrong_answer / time_limit_exceeded / runtime_error

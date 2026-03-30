@@ -9,9 +9,11 @@ Base URL: `http://localhost:8080`
 ### Problems
 
 #### `GET /api/problems`
+
 List problems with optional filters.
 
 Query params:
+
 - `difficulty` — easy | medium | hard
 - `tag` — algorithm tag (e.g. `array`, `dp`)
 - `pattern` — pattern tag (e.g. `sliding-window`)
@@ -20,6 +22,7 @@ Query params:
 - `offset` — default 0
 
 Response:
+
 ```json
 {
   "problems": [
@@ -40,9 +43,11 @@ Response:
 ```
 
 #### `GET /api/problems/:id`
+
 Get a single problem by UUID or slug.
 
 #### `GET /api/problems/suggest`
+
 Get a suggested problem based on user profile.
 
 Response: single problem object.
@@ -52,9 +57,11 @@ Response: single problem object.
 ### Submissions
 
 #### `POST /api/submissions`
+
 Submit code for evaluation.
 
 Body:
+
 ```json
 {
   "problem_id": "uuid",
@@ -65,6 +72,7 @@ Body:
 ```
 
 Response:
+
 ```json
 {
   "submission_id": "uuid",
@@ -73,9 +81,11 @@ Response:
 ```
 
 #### `GET /api/submissions/:id`
+
 Poll submission status.
 
 Response:
+
 ```json
 {
   "id": "uuid",
@@ -92,9 +102,11 @@ Response:
 Status values: `pending` | `running` | `accepted` | `wrong_answer` | `compile_error` | `runtime_error` | `time_limit_exceeded`
 
 #### `GET /api/submissions/history`
+
 Get submission history.
 
 Query params:
+
 - `problem_id` — filter by problem
 - `limit` — default 20
 
@@ -103,9 +115,11 @@ Query params:
 ### Progress
 
 #### `GET /api/progress/today`
+
 Get today's practice summary.
 
 Response:
+
 ```json
 {
   "date": "2026-01-01",
@@ -117,9 +131,11 @@ Response:
 ```
 
 #### `GET /api/streak`
+
 Get current streak info.
 
 Response:
+
 ```json
 {
   "current": 7,
@@ -133,9 +149,11 @@ Response:
 ### Timers
 
 #### `POST /api/timers/start`
+
 Start a timer session.
 
 Body:
+
 ```json
 {
   "problem_id": "uuid (optional)"
@@ -143,12 +161,15 @@ Body:
 ```
 
 #### `POST /api/timers/stop`
+
 Stop current timer. Body: `{}`.
 
 #### `GET /api/timers/current`
+
 Get active timer.
 
 Response:
+
 ```json
 {
   "active": true,
@@ -163,9 +184,11 @@ Response:
 ### Reviews
 
 #### `GET /api/reviews/today`
+
 Get problems due for spaced repetition review today.
 
 Response:
+
 ```json
 {
   "reviews": [
@@ -190,9 +213,11 @@ All endpoints are localhost-only.
 ---
 
 #### `GET /local/status/today`
+
 Check if user has practiced today.
 
 Response:
+
 ```json
 {
   "practiced": false,
@@ -203,15 +228,19 @@ Response:
 ```
 
 #### `GET /local/timer/current`
+
 Get current timer state.
 
 #### `POST /local/timer/start`
+
 Start a timer. Body: `{ "problem_id": "uuid or empty" }`.
 
 #### `POST /local/timer/stop`
+
 Stop active timer. Body: `{}`.
 
 #### `POST /local/submit`
+
 Proxy submission to api-server.
 
 Same body as `POST /api/submissions`.
@@ -219,9 +248,11 @@ Same body as `POST /api/submissions`.
 Returns same response as api-server.
 
 #### `POST /local/sync`
+
 Trigger registry sync from server.
 
 Response:
+
 ```json
 {
   "synced": true,

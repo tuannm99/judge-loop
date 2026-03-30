@@ -12,10 +12,11 @@ import (
 
 // Config holds all runtime configuration for the local-agent.
 type Config struct {
-	ServerURL string `yaml:"server_url"`
-	Port      int    `yaml:"port"`
-	UserID    string `yaml:"user_id"`
-	DataDir   string `yaml:"data_dir"`
+	ServerURL    string `yaml:"server_url"`
+	Port         int    `yaml:"port"`
+	UserID       string `yaml:"user_id"`
+	DataDir      string `yaml:"data_dir"`
+	RegistryPath string `yaml:"registry_path"`
 }
 
 // LoadConfig builds a Config by:
@@ -24,10 +25,11 @@ type Config struct {
 //  3. Applying env var overrides (JUDGE_SERVER_URL, JUDGE_PORT, JUDGE_USER_ID).
 func LoadConfig() Config {
 	cfg := Config{
-		ServerURL: "http://localhost:8080",
-		Port:      7070,
-		UserID:    "00000000-0000-0000-0000-000000000001",
-		DataDir:   defaultDataDir(),
+		ServerURL:    "http://localhost:8080",
+		Port:         7070,
+		UserID:       "00000000-0000-0000-0000-000000000001",
+		DataDir:      defaultDataDir(),
+		RegistryPath: "./registry",
 	}
 
 	if path := configFilePath(); path != "" {
@@ -64,6 +66,9 @@ func applyEnv(cfg *Config) {
 	}
 	if v := os.Getenv("JUDGE_USER_ID"); v != "" {
 		cfg.UserID = v
+	}
+	if v := os.Getenv("JUDGE_REGISTRY_PATH"); v != "" {
+		cfg.RegistryPath = v
 	}
 }
 

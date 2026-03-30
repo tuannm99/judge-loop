@@ -32,9 +32,17 @@ registry/
   "version": "1.0.3",
   "updated_at": "2026-01-01T00:00:00Z",
   "manifests": [
-    { "name": "leetcode", "path": "providers/leetcode.json", "checksum": "sha256:..." },
-    { "name": "neetcode", "path": "providers/neetcode.json", "checksum": "sha256:..." },
-    { "name": "blind75",  "path": "tracks/blind75.json",     "checksum": "sha256:..." }
+    {
+      "name": "leetcode",
+      "path": "providers/leetcode.json",
+      "checksum": "sha256:..."
+    },
+    {
+      "name": "neetcode",
+      "path": "providers/neetcode.json",
+      "checksum": "sha256:..."
+    },
+    {"name": "blind75", "path": "tracks/blind75.json", "checksum": "sha256:..."}
   ]
 }
 ```
@@ -59,6 +67,7 @@ Each entry in a provider manifest:
 ```
 
 Fields:
+
 - `provider` — source platform
 - `external_id` — provider's own problem ID
 - `slug` — URL-safe identifier, unique within provider
@@ -78,8 +87,12 @@ Fields:
   "title": "Blind 75",
   "description": "75 essential interview problems",
   "problems": [
-    { "provider": "leetcode", "slug": "two-sum", "order": 1 },
-    { "provider": "leetcode", "slug": "best-time-to-buy-and-sell-stock", "order": 2 }
+    {"provider": "leetcode", "slug": "two-sum", "order": 1},
+    {
+      "provider": "leetcode",
+      "slug": "best-time-to-buy-and-sell-stock",
+      "order": 2
+    }
   ]
 }
 ```

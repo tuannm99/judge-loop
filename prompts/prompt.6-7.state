@@ -1,0 +1,173 @@
+==================================================
+STATE SNAPSHOT — Milestones 6 + 7 Complete
+Date: 2026-03-30
+==================================================
+
+==================================================
+COMPLETED
+==================================================
+
+Milestone 6: Vertical Slice — DONE
+  End-to-end flow: Neovim → local-agent → api-server → Redis → judge-worker → PostgreSQL → plugin verdict
+  Verdict polling: plugin polls /local/submissions/:id every 1.5 s (30 s budget)
+
+Milestone 7: Judge Worker — DONE
+  cmd/judge-worker — asynq consumer, Docker sandbox execution, verdict evaluation
+  internal/sandbox — Docker execution (python:3.12-slim, golang:1.22-alpine)
+  internal/judge   — test case verdict evaluation
+  go build ./... — passes, exit 0
+
+==================================================
+NEW / CHANGED FILES
+==================================================
+
+New dependency:
+  github.com/hibiken/asynq v0.26.0 (+ redis/go-redis/v9, robfig/cron, spf13/cast)
+
+internal/queue/queue.go  (was empty)
+  NewClient(redisURL) *asynq.Client
+  NewServer(redisURL, concurrency) *asynq.Server
+  NewEvaluateTask(payload) (*asynq.Task, error)
+  parseRedisAddr — strips "redis://" prefix for asynq
+
+internal/storage/testcases.go  (NEW)
+  TestCaseStore.GetByProblem(ctx, problemID) []domain.TestCase
+  Returns non-hidden cases ordered by order_idx
+
+internal/sandbox/sandbox.go  (was empty)
+  RunRequest{Language, Code, Input}
+  RunResult{Output, Stderr, ExitCode, TimedOut, RuntimeMS}
+  Run(ctx, req) — writes code to temp dir, docker run --rm -i --network none
+  Python: python:3.12-slim, 64m RAM, 0.5 CPU
+  Go:     golang:1.22-alpine, 256m RAM, 0.5 CPU, sh -c "go run main.go"
+
+internal/judge/judge.go  (was empty)
+  Evaluate(cases, runFn) → (status, verdict, passed, total, runtimeMS, errMsg)
+  0 test cases → Accepted (no test data yet; registry comes in M8)
+  TLE / non-zero exit / output mismatch → appropriate verdict
+  isCompileError() heuristic for Python SyntaxError / Go build errors
+
+internal/domain/submission.go  (modified)
+  Added json tags to all Submission fields → API now returns snake_case JSON
+
+cmd/api-server/config.go  (modified)
+  Added RedisURL (env: REDIS_URL, default: "localhost:6379")
+
+cmd/api-server/main.go  (modified)
+  Creates queue.NewClient(cfg.RedisURL), passes to NewServer
+
+cmd/api-server/server.go  (modified)
+  NewServer signature: (cfg, db, *asynq.Client)
+  Passes queue client to handler.New
+
+cmd/api-server/handler/handler.go  (modified)
+  Added Queue *asynq.Client field
+  New(db, userID, queueClient) signature
+
+cmd/api-server/handler/submissions.go  (modified)
+  Removed evaluateMock goroutine
+  After Create: enqueues queue.TypeEvaluateSubmission task
+  Enqueue failure is logged but does not block the HTTP response
+
+cmd/local-agent/apiclient.go  (modified)
+  Added SubmissionStatusResponse{ID, Status, Verdict, PassedCases, TotalCases, RuntimeMS, ErrorMessage}
+  Added GetSubmission(ctx, id) *SubmissionStatusResponse
+
+cmd/local-agent/server.go  (modified)
+  Added route: GET /local/submissions/:id → h.GetSubmissionStatus
+
+cmd/local-agent/handler_submission.go  (NEW)
+  GetSubmissionStatus — 5 s timeout, proxies to GET /api/submissions/:id
+
+cmd/judge-worker/config.go  (NEW)
+  Config{DatabaseURL, RedisURL, Concurrency=2, TimeLimitSecs=10}
+
+cmd/judge-worker/main.go  (replaced stub)
+  Connect DB → NewWorker → w.Run()
+
+cmd/judge-worker/worker.go  (NEW)
+  NewWorker — creates asynq server + mux, registers Evaluator.ProcessTask
+
+cmd/judge-worker/evaluator.go  (NEW)
+  Evaluator{submissions, testCases, sessions, cfg}
+  ProcessTask:
+    1. Parse EvaluatePayload
+    2. Fetch submission from DB
+    3. Mark status = running
+    4. Fetch test cases (non-hidden)
+    5. Call judge.Evaluate with sandbox.Run per test case
+    6. UpdateVerdict with final result
+    7. RecordSubmission (increments daily_sessions.solved_count on accept)
+
+plugins/nvim-judge-loop/lua/judge-loop/agent.lua  (modified)
+  Added M.submission_get(id, callback) → GET /local/submissions/:id
+
+plugins/nvim-judge-loop/lua/judge-loop/commands.lua  (modified)
+  Added TERMINAL_STATUSES table
+  Added poll_verdict(submission_id, remaining) — deferred 1.5 s loop, 20 attempts
+  :JudgeSubmit now polls for verdict after queuing instead of showing "pending"
+
+deploy/compose/docker-compose.yml  (modified)
+  judge-worker service uncommented and enabled
+  Mounts /var/run/docker.sock for Docker-in-Docker sandbox execution
+  REDIS_URL uses "redis:6379" (service name, no scheme — asynq format)
+
+==================================================
+FULL FLOW (END TO END)
+==================================================
+
+1. docker compose up -d               # postgres + redis + judge-worker
+2. go run ./cmd/api-server            # api-server on :8080
+3. go run ./cmd/local-agent           # local-agent on 127.0.0.1:7070
+4. Neovim: :JudgeStart <problem-uuid>
+5. Write solution in buffer
+6. Neovim: :JudgeSubmit
+   → POST /local/submit → POST /api/submissions → enqueue submission:evaluate
+   → plugin shows "Queued — waiting for verdict…"
+   → judge-worker picks up job, marks running
+   → docker run python:3.12-slim / golang:1.22-alpine with test cases
+   → UpdateVerdict in DB, RecordSubmission
+   → plugin polls /local/submissions/:id → terminal status
+   → vim.notify: "✓ Accepted  (id: ...)" or verdict label
+
+==================================================
+DESIGN NOTES
+==================================================
+
+No test cases in seed data:
+  The 25 seeded LeetCode problems have no test_cases rows.
+  judge.Evaluate returns Accepted when len(cases)==0.
+  Real test cases come from registry sync in Milestone 8.
+
+Docker images pulled on first run:
+  python:3.12-slim and golang:1.22-alpine are pulled lazily.
+  Pre-pull with: docker pull python:3.12-slim && docker pull golang:1.22-alpine
+
+Redis URL format:
+  asynq uses bare "host:port" (no "redis://" scheme).
+  parseRedisAddr() strips the scheme if present — env var can be either format.
+
+Streak flow:
+  RecordSubmission in evaluator.go updates daily_sessions.solved_count.
+  GetStreak query in SessionStore computes streak from days with solved_count > 0.
+  Streak is incremented naturally on first accepted submission of the day.
+
+==================================================
+WHAT'S NOT DONE (intentional)
+==================================================
+
+- Real test cases for seeded problems (Milestone 8 — registry)
+- Resource cgroup enforcement (Docker handles this via --memory/--cpus)
+- Offline submission queuing in local-agent (post-MVP)
+- Multiple language support beyond Python + Go (future)
+
+==================================================
+NEXT: Milestone 8 — Registry
+==================================================
+
+Problem registry (Mason-style):
+  index.json with versioned manifest
+  Provider manifests: leetcode, neetcode, hackerrank
+  Track manifests: blind75, neetcode150
+  Local agent sync: /local/sync actually downloads manifests
+  Problem import: stores test cases in DB for judge-worker

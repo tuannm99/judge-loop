@@ -1,0 +1,464 @@
+{
+  "problems": [
+    {
+      "provider": "leetcode",
+      "external_id": "1",
+      "slug": "two-sum",
+      "title": "Two Sum",
+      "difficulty": "easy",
+      "tags": [
+        "array",
+        "hash-table"
+      ],
+      "pattern_tags": [
+        "lookup",
+        "hash-map"
+      ],
+      "source_url": "https://leetcode.com/problems/two-sum/",
+      "estimated_time": 15,
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "121",
+      "slug": "best-time-to-buy-and-sell-stock",
+      "title": "Best Time to Buy and Sell Stock",
+      "difficulty": "easy",
+      "tags": [
+        "array",
+        "dynamic-programming"
+      ],
+      "pattern_tags": [
+        "sliding-window",
+        "greedy"
+      ],
+      "source_url": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock/",
+      "estimated_time": 15,
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "217",
+      "slug": "contains-duplicate",
+      "title": "Contains Duplicate",
+      "difficulty": "easy",
+      "tags": [
+        "array",
+        "hash-table",
+        "sorting"
+      ],
+      "pattern_tags": [
+        "hash-map"
+      ],
+      "source_url": "https://leetcode.com/problems/contains-duplicate/",
+      "estimated_time": 10,
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "238",
+      "slug": "product-of-array-except-self",
+      "title": "Product of Array Except Self",
+      "difficulty": "medium",
+      "tags": [
+        "array",
+        "prefix-sum"
+      ],
+      "pattern_tags": [
+        "prefix-sum"
+      ],
+      "source_url": "https://leetcode.com/problems/product-of-array-except-self/",
+      "estimated_time": 25,
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "53",
+      "slug": "maximum-subarray",
+      "title": "Maximum Subarray",
+      "difficulty": "medium",
+      "tags": [
+        "array",
+        "dynamic-programming",
+        "divide-and-conquer"
+      ],
+      "pattern_tags": [
+        "kadane",
+        "dynamic-programming"
+      ],
+      "source_url": "https://leetcode.com/problems/maximum-subarray/",
+      "estimated_time": 20,
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "125",
+      "slug": "valid-palindrome",
+      "title": "Valid Palindrome",
+      "difficulty": "easy",
+      "tags": [
+        "two-pointers",
+        "string"
+      ],
+      "pattern_tags": [
+        "two-pointer"
+      ],
+      "source_url": "https://leetcode.com/problems/valid-palindrome/",
+      "estimated_time": 15,
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "15",
+      "slug": "three-sum",
+      "title": "3Sum",
+      "difficulty": "medium",
+      "tags": [
+        "array",
+        "two-pointers",
+        "sorting"
+      ],
+      "pattern_tags": [
+        "two-pointer",
+        "sorting"
+      ],
+      "source_url": "https://leetcode.com/problems/3sum/",
+      "estimated_time": 30,
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "11",
+      "slug": "container-with-most-water",
+      "title": "Container With Most Water",
+      "difficulty": "medium",
+      "tags": [
+        "array",
+        "two-pointers",
+        "greedy"
+      ],
+      "pattern_tags": [
+        "two-pointer"
+      ],
+      "source_url": "https://leetcode.com/problems/container-with-most-water/",
+      "estimated_time": 25,
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "3",
+      "slug": "longest-substring-without-repeating-characters",
+      "title": "Longest Substring Without Repeating Characters",
+      "difficulty": "medium",
+      "tags": [
+        "hash-table",
+        "string",
+        "sliding-window"
+      ],
+      "pattern_tags": [
+        "sliding-window"
+      ],
+      "source_url": "https://leetcode.com/problems/longest-substring-without-repeating-characters/",
+      "estimated_time": 25,
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "76",
+      "slug": "minimum-window-substring",
+      "title": "Minimum Window Substring",
+      "difficulty": "hard",
+      "tags": [
+        "hash-table",
+        "string",
+        "sliding-window"
+      ],
+      "pattern_tags": [
+        "sliding-window"
+      ],
+      "source_url": "https://leetcode.com/problems/minimum-window-substring/",
+      "estimated_time": 45,
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "20",
+      "slug": "valid-parentheses",
+      "title": "Valid Parentheses",
+      "difficulty": "easy",
+      "tags": [
+        "string",
+        "stack"
+      ],
+      "pattern_tags": [
+        "stack"
+      ],
+      "source_url": "https://leetcode.com/problems/valid-parentheses/",
+      "estimated_time": 15,
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "155",
+      "slug": "min-stack",
+      "title": "Min Stack",
+      "difficulty": "medium",
+      "tags": [
+        "stack",
+        "design"
+      ],
+      "pattern_tags": [
+        "stack"
+      ],
+      "source_url": "https://leetcode.com/problems/min-stack/",
+      "estimated_time": 20,
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "704",
+      "slug": "binary-search",
+      "title": "Binary Search",
+      "difficulty": "easy",
+      "tags": [
+        "array",
+        "binary-search"
+      ],
+      "pattern_tags": [
+        "binary-search"
+      ],
+      "source_url": "https://leetcode.com/problems/binary-search/",
+      "estimated_time": 10,
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "153",
+      "slug": "find-minimum-in-rotated-sorted-array",
+      "title": "Find Minimum in Rotated Sorted Array",
+      "difficulty": "medium",
+      "tags": [
+        "array",
+        "binary-search"
+      ],
+      "pattern_tags": [
+        "binary-search"
+      ],
+      "source_url": "https://leetcode.com/problems/find-minimum-in-rotated-sorted-array/",
+      "estimated_time": 25,
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "206",
+      "slug": "reverse-linked-list",
+      "title": "Reverse Linked List",
+      "difficulty": "easy",
+      "tags": [
+        "linked-list",
+        "recursion"
+      ],
+      "pattern_tags": [
+        "linked-list",
+        "iteration"
+      ],
+      "source_url": "https://leetcode.com/problems/reverse-linked-list/",
+      "estimated_time": 15,
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "21",
+      "slug": "merge-two-sorted-lists",
+      "title": "Merge Two Sorted Lists",
+      "difficulty": "easy",
+      "tags": [
+        "linked-list",
+        "recursion"
+      ],
+      "pattern_tags": [
+        "linked-list",
+        "merge"
+      ],
+      "source_url": "https://leetcode.com/problems/merge-two-sorted-lists/",
+      "estimated_time": 20,
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "141",
+      "slug": "linked-list-cycle",
+      "title": "Linked List Cycle",
+      "difficulty": "easy",
+      "tags": [
+        "hash-table",
+        "linked-list",
+        "two-pointers"
+      ],
+      "pattern_tags": [
+        "fast-slow-pointer"
+      ],
+      "source_url": "https://leetcode.com/problems/linked-list-cycle/",
+      "estimated_time": 15,
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "104",
+      "slug": "maximum-depth-of-binary-tree",
+      "title": "Maximum Depth of Binary Tree",
+      "difficulty": "easy",
+      "tags": [
+        "tree",
+        "dfs",
+        "bfs",
+        "binary-tree"
+      ],
+      "pattern_tags": [
+        "dfs",
+        "recursion"
+      ],
+      "source_url": "https://leetcode.com/problems/maximum-depth-of-binary-tree/",
+      "estimated_time": 15,
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "226",
+      "slug": "invert-binary-tree",
+      "title": "Invert Binary Tree",
+      "difficulty": "easy",
+      "tags": [
+        "tree",
+        "dfs",
+        "bfs",
+        "binary-tree"
+      ],
+      "pattern_tags": [
+        "dfs",
+        "recursion"
+      ],
+      "source_url": "https://leetcode.com/problems/invert-binary-tree/",
+      "estimated_time": 15,
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "235",
+      "slug": "lowest-common-ancestor-of-a-binary-search-tree",
+      "title": "Lowest Common Ancestor of a Binary Search Tree",
+      "difficulty": "medium",
+      "tags": [
+        "tree",
+        "dfs",
+        "binary-search-tree",
+        "binary-tree"
+      ],
+      "pattern_tags": [
+        "bst",
+        "recursion"
+      ],
+      "source_url": "https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-search-tree/",
+      "estimated_time": 20,
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "70",
+      "slug": "climbing-stairs",
+      "title": "Climbing Stairs",
+      "difficulty": "easy",
+      "tags": [
+        "math",
+        "dynamic-programming",
+        "memoization"
+      ],
+      "pattern_tags": [
+        "dynamic-programming",
+        "fibonacci"
+      ],
+      "source_url": "https://leetcode.com/problems/climbing-stairs/",
+      "estimated_time": 15,
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "322",
+      "slug": "coin-change",
+      "title": "Coin Change",
+      "difficulty": "medium",
+      "tags": [
+        "array",
+        "dynamic-programming",
+        "breadth-first-search"
+      ],
+      "pattern_tags": [
+        "dynamic-programming",
+        "unbounded-knapsack"
+      ],
+      "source_url": "https://leetcode.com/problems/coin-change/",
+      "estimated_time": 30,
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "1143",
+      "slug": "longest-common-subsequence",
+      "title": "Longest Common Subsequence",
+      "difficulty": "medium",
+      "tags": [
+        "string",
+        "dynamic-programming"
+      ],
+      "pattern_tags": [
+        "dynamic-programming",
+        "2d-dp"
+      ],
+      "source_url": "https://leetcode.com/problems/longest-common-subsequence/",
+      "estimated_time": 35,
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "200",
+      "slug": "number-of-islands",
+      "title": "Number of Islands",
+      "difficulty": "medium",
+      "tags": [
+        "array",
+        "dfs",
+        "bfs",
+        "union-find",
+        "matrix"
+      ],
+      "pattern_tags": [
+        "dfs",
+        "flood-fill"
+      ],
+      "source_url": "https://leetcode.com/problems/number-of-islands/",
+      "estimated_time": 25,
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "133",
+      "slug": "clone-graph",
+      "title": "Clone Graph",
+      "difficulty": "medium",
+      "tags": [
+        "hash-table",
+        "dfs",
+        "bfs",
+        "graph"
+      ],
+      "pattern_tags": [
+        "dfs",
+        "bfs",
+        "graph"
+      ],
+      "source_url": "https://leetcode.com/problems/clone-graph/",
+      "estimated_time": 30,
+      "version": 1
+    }
+  ]
+}

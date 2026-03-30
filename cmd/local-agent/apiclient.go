@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/tuannm99/judge-loop/internal/domain"
 )
 
 // APIClient wraps calls to the remote api-server.
@@ -58,6 +60,17 @@ type SubmitResponse struct {
 	Status       string `json:"status"`
 }
 
+// SubmissionStatusResponse mirrors GET /api/submissions/:id response.
+type SubmissionStatusResponse struct {
+	ID           string  `json:"id"`
+	Status       string  `json:"status"`
+	Verdict      string  `json:"verdict"`
+	PassedCases  int     `json:"passed_cases"`
+	TotalCases   int     `json:"total_cases"`
+	RuntimeMS    int64   `json:"runtime_ms"`
+	ErrorMessage string  `json:"error_message"`
+}
+
 // ProgressToday fetches today's practice summary from the api-server.
 func (c *APIClient) ProgressToday(ctx context.Context) (*ProgressResponse, error) {
 	var resp ProgressResponse
@@ -91,6 +104,37 @@ func (c *APIClient) CurrentTimer(ctx context.Context) (*TimerResponse, error) {
 func (c *APIClient) Submit(ctx context.Context, req SubmitRequest) (*SubmitResponse, error) {
 	var resp SubmitResponse
 	if err := c.do(ctx, http.MethodPost, "/api/submissions", req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// GetSubmission fetches the current status of a submission by ID.
+func (c *APIClient) GetSubmission(ctx context.Context, id string) (*SubmissionStatusResponse, error) {
+	var resp SubmissionStatusResponse
+	if err := c.do(ctx, http.MethodGet, "/api/submissions/"+id, nil, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// RegistrySyncRequest is the body for POST /api/registry/sync.
+type RegistrySyncRequest struct {
+	Version   string                   `json:"version"`
+	Problems  []domain.ProblemManifest `json:"problems"`
+	Manifests []domain.ManifestRef     `json:"manifests"`
+}
+
+// RegistrySyncResponse is the response from POST /api/registry/sync.
+type RegistrySyncResponse struct {
+	Version string `json:"version"`
+	Synced  int    `json:"synced"`
+}
+
+// RegistrySync sends loaded problem manifests to the api-server for upsert.
+func (c *APIClient) RegistrySync(ctx context.Context, req RegistrySyncRequest) (*RegistrySyncResponse, error) {
+	var resp RegistrySyncResponse
+	if err := c.do(ctx, http.MethodPost, "/api/registry/sync", req, &resp); err != nil {
 		return nil, err
 	}
 	return &resp, nil

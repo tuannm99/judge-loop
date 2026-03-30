@@ -47,4 +47,5 @@ func (s *Server) registerRoutes() {
 	local.POST("/timer/stop", h.StopTimer)
 	local.POST("/submit", h.Submit)
 	local.POST("/sync", h.Sync)
+	local.GET("/submissions/:id", h.GetSubmissionStatus)
 }

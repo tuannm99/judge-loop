@@ -1,14 +1,13 @@
 package handler
 
 import (
-	"context"
+	"log"
 	"net/http"
-	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/tuannm99/judge-loop/internal/domain"
+	"github.com/tuannm99/judge-loop/internal/queue"
 )
 
 // createSubmissionRequest is the POST /api/submissions request body.
@@ -19,7 +18,8 @@ type createSubmissionRequest struct {
 	SessionID string `json:"session_id"` // optional
 }
 
-// CreateSubmission handles POST /api/submissions
+// CreateSubmission handles POST /api/submissions.
+// It persists the submission as pending, then enqueues an evaluation job.
 func (h *Handler) CreateSubmission(c *gin.Context) {
 	var req createSubmissionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -50,12 +50,16 @@ func (h *Handler) CreateSubmission(c *gin.Context) {
 		return
 	}
 
-	// evaluate asynchronously with a mock evaluator (Milestone 6 replaces this)
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		h.evaluateMock(ctx, *sub)
-	}()
+	// Enqueue evaluation job for the judge-worker.
+	task, err := queue.NewEvaluateTask(queue.EvaluatePayload{
+		SubmissionID: sub.ID.String(),
+		UserID:       sub.UserID.String(),
+	})
+	if err != nil {
+		log.Printf("build evaluate task for %s: %v", sub.ID, err)
+	} else if _, err := h.Queue.Enqueue(task); err != nil {
+		log.Printf("enqueue evaluate task for %s: %v", sub.ID, err)
+	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"submission_id": sub.ID,
@@ -100,26 +104,4 @@ func (h *Handler) ListSubmissions(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"submissions": subs})
-}
-
-// evaluateMock simulates verdict evaluation.
-// It accepts any non-empty code submission. This will be replaced in Milestone 6
-// by the real judge-worker running code in a Docker sandbox.
-func (h *Handler) evaluateMock(ctx context.Context, sub domain.Submission) {
-	time.Sleep(500 * time.Millisecond)
-
-	status := string(domain.StatusAccepted)
-	verdict := string(domain.VerdictAccepted)
-	passed := 5
-	total := 5
-
-	if strings.TrimSpace(sub.Code) == "" {
-		status = string(domain.StatusWrongAnswer)
-		verdict = string(domain.VerdictWrongAnswer)
-		passed = 0
-	}
-
-	now := time.Now()
-	_ = h.Submissions.UpdateVerdict(ctx, sub.ID, status, verdict, passed, total, 42, "", &now)
-	_ = h.Sessions.RecordSubmission(ctx, sub.UserID, status == string(domain.StatusAccepted))
 }

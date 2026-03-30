@@ -1,6 +1,5 @@
 // api-server is the main HTTP API server for judge-loop.
-// It handles problems, submissions (mock in Milestone 2), progress,
-// timers, and daily reviews.
+// It handles problems, submissions, progress, timers, and daily reviews.
 package main
 
 import (
@@ -8,6 +7,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/tuannm99/judge-loop/internal/queue"
 	"github.com/tuannm99/judge-loop/internal/storage"
 )
 
@@ -26,8 +26,11 @@ func main() {
 	}
 	defer db.Close()
 
-	srv := NewServer(cfg, db)
-	log.Printf("api-server listening on :%s", cfg.Port)
+	queueClient := queue.NewClient(cfg.RedisURL)
+	defer queueClient.Close()
+
+	srv := NewServer(cfg, db, queueClient)
+	log.Printf("api-server listening on :%s (redis: %s)", cfg.Port, cfg.RedisURL)
 	if err := srv.Run(); err != nil {
 		log.Fatalf("server: %v", err)
 	}

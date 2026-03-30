@@ -40,18 +40,18 @@ const (
 
 // Submission is a user's code submission for a problem.
 type Submission struct {
-	ID           uuid.UUID
-	UserID       uuid.UUID
-	ProblemID    uuid.UUID
-	SessionID    *uuid.UUID // optional: links to a TimerSession
-	Language     Language
-	Code         string
-	Status       SubmissionStatus
-	Verdict      Verdict
-	PassedCases  int
-	TotalCases   int
-	RuntimeMS    int64  // execution time in milliseconds
-	ErrorMessage string // populated on CE/RE
-	SubmittedAt  time.Time
-	EvaluatedAt  *time.Time
+	ID           uuid.UUID        `json:"id"`
+	UserID       uuid.UUID        `json:"user_id"`
+	ProblemID    uuid.UUID        `json:"problem_id"`
+	SessionID    *uuid.UUID       `json:"session_id,omitempty"`
+	Language     Language         `json:"language"`
+	Code         string           `json:"code"`
+	Status       SubmissionStatus `json:"status"`
+	Verdict      Verdict          `json:"verdict"`
+	PassedCases  int              `json:"passed_cases"`
+	TotalCases   int              `json:"total_cases"`
+	RuntimeMS    int64            `json:"runtime_ms"`
+	ErrorMessage string           `json:"error_message"`
+	SubmittedAt  time.Time        `json:"submitted_at"`
+	EvaluatedAt  *time.Time       `json:"evaluated_at,omitempty"`
 }

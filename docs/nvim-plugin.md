@@ -7,6 +7,7 @@
 ## Installation
 
 Using lazy.nvim:
+
 ```lua
 {
   "tuannm99/nvim-judge-loop",
@@ -22,21 +23,22 @@ Using lazy.nvim:
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| `:JudgeStatus` | Show today's practice status |
-| `:JudgeStart [problem_slug]` | Start a timed session |
-| `:JudgeStop` | Stop active timer |
-| `:JudgeSubmit` | Submit current buffer |
-| `:JudgeMission` | Show daily mission |
-| `:JudgeProblems` | Browse problem list |
-| `:JudgeSync` | Sync registry from server |
+| Command                      | Description                  |
+| ---------------------------- | ---------------------------- |
+| `:JudgeStatus`               | Show today's practice status |
+| `:JudgeStart [problem_slug]` | Start a timed session        |
+| `:JudgeStop`                 | Stop active timer            |
+| `:JudgeSubmit`               | Submit current buffer        |
+| `:JudgeMission`              | Show daily mission           |
+| `:JudgeProblems`             | Browse problem list          |
+| `:JudgeSync`                 | Sync registry from server    |
 
 ## Startup reminder
 
 On `VimEnter`, the plugin calls `GET /local/status/today`.
 
 If `practiced: false`, it displays a notification:
+
 ```
 [judge-loop] No practice today yet! Run :JudgeStart to begin.
 ```
@@ -48,6 +50,7 @@ Uses `vim.notify` with level `WARN`. Compatible with nvim-notify.
 When a timer is active, elapsed time is shown in the status line.
 
 The plugin exposes a function for status line integration:
+
 ```lua
 require("judge-loop").timer_statusline()
 -- returns: " 12:34" or "" if no active timer
@@ -56,6 +59,7 @@ require("judge-loop").timer_statusline()
 ## Submit flow
 
 `:JudgeSubmit`:
+
 1. Reads current buffer content
 2. Detects language from `&filetype`
 3. Reads `problem_id` from buffer variable `b:judge_problem_id` (set by `:JudgeStart`)

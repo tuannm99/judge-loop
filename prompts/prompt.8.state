@@ -1,0 +1,164 @@
+==================================================
+STATE SNAPSHOT — Milestone 8 Complete (Registry)
+Date: 2026-03-30
+==================================================
+
+==================================================
+COMPLETED
+==================================================
+
+Milestone 8: Registry — DONE
+
+  registry/            — versioned JSON manifest files (local bundle)
+  internal/registry/   — manifest loading package
+  internal/storage/    — UpsertFromManifest + RegistryStore
+  api-server           — POST /api/registry/sync, GET /api/registry/version
+  local-agent          — real /local/sync implementation
+  go build ./...       — passes, exit 0
+
+==================================================
+NEW FILES
+==================================================
+
+registry/index.json
+  version: "1.0.0"
+  manifests: leetcode (providers/leetcode.json), blind75, neetcode150 (tracks/)
+
+registry/providers/leetcode.json
+  25 ProblemManifest entries (all seeded problems with full metadata)
+
+registry/tracks/blind75.json
+  25 ordered TrackProblem entries mapping to the 25 seeded problems
+
+registry/tracks/neetcode150.json
+  25 ordered TrackProblem entries (same problems, NeetCode 150 ordering)
+
+internal/registry/registry.go
+  Index{Version, UpdatedAt, Manifests []domain.ManifestRef}
+  ProviderManifest{Problems []domain.ProblemManifest}
+  TrackManifest{Name, Title, Description, Problems}
+  LoadIndex(registryPath) *Index
+  LoadAllProblems(registryPath, idx) []domain.ProblemManifest
+    — only loads provider manifests (dir == "providers")
+    — skips tracks/ and roadmaps/ (ordering data, not metadata)
+
+internal/storage/registry.go
+  RegistryStore{GetLatest, Save}
+    — GET latest from registry_versions table
+    — INSERT new version row on each sync
+  ProblemStore.UpsertFromManifest(ctx, ProblemManifest)
+    — INSERT ... ON CONFLICT (provider, external_id) DO UPDATE
+    — updates slug, title, difficulty, tags, pattern_tags, source_url, estimated_time
+
+internal/domain/registry.go  (modified)
+  Added json tags to ProblemManifest and ManifestRef (snake_case fields)
+
+cmd/api-server/handler/handler.go  (modified)
+  Added Registry *storage.RegistryStore field
+
+cmd/api-server/handler/registry.go  (NEW)
+  POST /api/registry/sync
+    → upserts all problems from req.Problems
+    → saves registry_versions row
+    → returns {version, synced: N}
+  GET /api/registry/version
+    → returns latest version + synced_at from registry_versions
+
+cmd/api-server/server.go  (modified)
+  Added routes: POST /api/registry/sync, GET /api/registry/version
+
+cmd/local-agent/config.go  (modified)
+  Added RegistryPath string (yaml: registry_path)
+    default: "./registry"
+    env: JUDGE_REGISTRY_PATH
+
+cmd/local-agent/handler.go  (modified)
+  Added registryPath string field to Handler
+  NewHandler stores cfg.RegistryPath
+
+cmd/local-agent/handler_sync.go  (replaced stub)
+  1. Validate registryPath is set
+  2. registry.LoadIndex(registryPath)
+  3. registry.LoadAllProblems(registryPath, idx)
+  4. client.RegistrySync(ctx, {Version, Problems, Manifests})
+  5. Returns {synced: true, version, problems: N, message}
+
+cmd/local-agent/apiclient.go  (modified)
+  Added RegistrySyncRequest{Version, Problems []domain.ProblemManifest, Manifests}
+  Added RegistrySyncResponse{Version, Synced}
+  Added RegistrySync(ctx, req) → POST /api/registry/sync
+
+==================================================
+SYNC FLOW
+==================================================
+
+1. :JudgeSync in Neovim → POST /local/sync
+2. local-agent reads ./registry/index.json
+3. Finds "providers/leetcode.json" → loads 25 ProblemManifest entries
+4. POSTs to api-server POST /api/registry/sync
+5. api-server upserts each problem (ON CONFLICT DO UPDATE)
+6. api-server saves new registry_versions row
+7. local-agent returns {synced: true, problems: 25, version: "1.0.0"}
+8. Plugin shows: "Registry synced: 25 problems (version 1.0.0)"
+
+curl example:
+  curl -X POST http://localhost:7070/local/sync -d '{}'
+  # Response: {"message":"Registry synced: 25 problems (version 1.0.0)","problems":25,"synced":true,"version":"1.0.0"}
+
+  curl http://localhost:8080/api/registry/version
+  # Response: {"synced_at":"...","version":"1.0.0"}
+
+==================================================
+CONFIG
+==================================================
+
+agent.yaml can now include:
+  registry_path: /path/to/judge-loop/registry
+
+Env override: JUDGE_REGISTRY_PATH
+Default: ./registry  (relative to CWD — works from repo root)
+
+==================================================
+DESIGN NOTES
+==================================================
+
+Local bundle (not HTTP download):
+  The registry files live in the repo under registry/.
+  The sync reads from disk — no external network calls for the registry itself.
+  Future: RegistryPath could point to a cloned remote registry repo.
+
+Track manifests not synced as problems:
+  Tracks are ordering/curation data, not problem metadata.
+  LoadAllProblems skips tracks/ and roadmaps/ — only providers/ have ProblemManifest.
+  Track data is not yet stored in DB (future milestone: track management API).
+
+Idempotent sync:
+  UpsertFromManifest uses ON CONFLICT DO UPDATE — safe to run repeatedly.
+  registry_versions gets a new row each sync (append-only audit trail).
+
+Test cases NOT in registry:
+  The registry is metadata-only (no problem statements, no test cases).
+  The 25 seeded problems have sample test cases from seed_problems.sql.
+  Future: provider-specific test case scripts or ICPC-style judge input files.
+
+==================================================
+WHAT'S NOT DONE (intentional)
+==================================================
+
+- Track/roadmap data not stored in DB (future)
+- Remote registry HTTP fetch (future — currently disk-only)
+- Checksum validation (sha256 field is placeholder "sha256:local")
+- Conflict detection based on version field (upserts unconditionally)
+- Test cases in registry manifests (out of scope per design)
+
+==================================================
+NEXT: Milestone 9 — Personalization
+==================================================
+
+Personalization engine:
+  internal/personalization/ — DailyMission generation
+  UserTrainingProfile management
+  GET /api/missions/today — generate daily mission from submissions history
+  GET /api/progress/performance — PerformanceSnapshot (avg solve time, patterns)
+  Spaced repetition review scheduling
+  Neovim :JudgeMission command (already in roadmap)
