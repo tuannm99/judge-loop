@@ -28,7 +28,7 @@ func (s *ReviewStore) GetDue(ctx context.Context, userID uuid.UUID) ([]DueReview
 	var out []DueReview
 	err := s.db.Gorm.WithContext(ctx).Raw(`
 		SELECT
-			p.id,
+			p.id AS problem_id,
 			p.slug,
 			p.title,
 			(SELECT MAX(submitted_at)

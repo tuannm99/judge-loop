@@ -59,6 +59,7 @@ func (s *RegistryStore) Save(
 		Version:   version,
 		UpdatedAt: updatedAt,
 		Manifests: manifests,
+		SyncedAt:  time.Now().UTC(),
 	}
 	if err := s.db.Gorm.WithContext(ctx).Create(&model).Error; err != nil {
 		return fmt.Errorf("save registry version: %w", err)

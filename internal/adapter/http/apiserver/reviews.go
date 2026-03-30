@@ -7,8 +7,8 @@ import (
 )
 
 // GetReviewsToday handles GET /api/reviews/today
-func (h *Handler) GetReviewsToday(c *gin.Context) {
-	reviews, err := h.Service.GetReviewsToday(c.Request.Context(), h.UserID)
+func (h *ReviewsAPI) GetReviewsToday(c *gin.Context) {
+	reviews, err := h.deps.reviews.GetReviewsToday(c.Request.Context(), h.deps.userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -14,7 +14,7 @@ type startTimerRequest struct {
 }
 
 // StartTimer handles POST /api/timers/start
-func (h *Handler) StartTimer(c *gin.Context) {
+func (h *TimersAPI) StartTimer(c *gin.Context) {
 	var req startTimerRequest
 	_ = c.ShouldBindJSON(&req) // optional body
 
@@ -25,7 +25,7 @@ func (h *Handler) StartTimer(c *gin.Context) {
 		}
 	}
 
-	ts, err := h.Service.StartTimer(c.Request.Context(), h.UserID, problemID)
+	ts, err := h.deps.timers.StartTimer(c.Request.Context(), h.deps.userID, problemID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -39,8 +39,8 @@ func (h *Handler) StartTimer(c *gin.Context) {
 }
 
 // StopTimer handles POST /api/timers/stop
-func (h *Handler) StopTimer(c *gin.Context) {
-	ts, err := h.Service.StopTimer(c.Request.Context(), h.UserID)
+func (h *TimersAPI) StopTimer(c *gin.Context) {
+	ts, err := h.deps.timers.StopTimer(c.Request.Context(), h.deps.userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -54,8 +54,8 @@ func (h *Handler) StopTimer(c *gin.Context) {
 }
 
 // CurrentTimer handles GET /api/timers/current
-func (h *Handler) CurrentTimer(c *gin.Context) {
-	ts, err := h.Service.CurrentTimer(c.Request.Context(), h.UserID)
+func (h *TimersAPI) CurrentTimer(c *gin.Context) {
+	ts, err := h.deps.timers.CurrentTimer(c.Request.Context(), h.deps.userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

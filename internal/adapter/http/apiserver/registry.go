@@ -18,14 +18,20 @@ type registrySyncRequest struct {
 
 // SyncRegistry handles POST /api/registry/sync.
 // It upserts all problems from the supplied manifests and records the registry version.
-func (h *Handler) SyncRegistry(c *gin.Context) {
+func (h *RegistryAPI) SyncRegistry(c *gin.Context) {
 	var req registrySyncRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	synced, err := h.Service.SyncRegistry(c.Request.Context(), req.Version, req.UpdatedAt, req.Problems, req.Manifests)
+	synced, err := h.deps.registry.SyncRegistry(
+		c.Request.Context(),
+		req.Version,
+		req.UpdatedAt,
+		req.Problems,
+		req.Manifests,
+	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -38,8 +44,8 @@ func (h *Handler) SyncRegistry(c *gin.Context) {
 }
 
 // GetRegistryVersion handles GET /api/registry/version.
-func (h *Handler) GetRegistryVersion(c *gin.Context) {
-	row, err := h.Service.GetRegistryVersion(c.Request.Context())
+func (h *RegistryAPI) GetRegistryVersion(c *gin.Context) {
+	row, err := h.deps.registry.GetRegistryVersion(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

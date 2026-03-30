@@ -10,9 +10,21 @@ import (
 )
 
 type APIService interface {
+	ProblemService
+	SubmissionService
+	ProgressService
+	TimerService
+	ReviewService
+	RegistryService
+}
+
+type ProblemService interface {
 	ListProblems(ctx context.Context, filter out.ProblemFilter) ([]domain.Problem, int, error)
 	GetProblem(ctx context.Context, rawID string) (*domain.Problem, error)
 	SuggestProblem(ctx context.Context, userID uuid.UUID) (*domain.Problem, error)
+}
+
+type SubmissionService interface {
 	CreateSubmission(
 		ctx context.Context,
 		userID uuid.UUID,
@@ -27,12 +39,24 @@ type APIService interface {
 		problemID *uuid.UUID,
 		limit, offset int,
 	) ([]domain.Submission, error)
+}
+
+type ProgressService interface {
 	GetProgressToday(ctx context.Context, userID uuid.UUID) (ProgressToday, error)
 	GetStreak(ctx context.Context, userID uuid.UUID) (out.StreakInfo, error)
+}
+
+type TimerService interface {
 	StartTimer(ctx context.Context, userID uuid.UUID, problemID *uuid.UUID) (*domain.TimerSession, error)
 	StopTimer(ctx context.Context, userID uuid.UUID) (*domain.TimerSession, error)
 	CurrentTimer(ctx context.Context, userID uuid.UUID) (*domain.TimerSession, error)
+}
+
+type ReviewService interface {
 	GetReviewsToday(ctx context.Context, userID uuid.UUID) ([]out.DueReview, error)
+}
+
+type RegistryService interface {
 	SyncRegistry(
 		ctx context.Context,
 		version string,

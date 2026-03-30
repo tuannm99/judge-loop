@@ -17,7 +17,7 @@ type createSubmissionRequest struct {
 
 // CreateSubmission handles POST /api/submissions.
 // It persists the submission as pending, then enqueues an evaluation job.
-func (h *Handler) CreateSubmission(c *gin.Context) {
+func (h *SubmissionsAPI) CreateSubmission(c *gin.Context) {
 	var req createSubmissionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -37,7 +37,14 @@ func (h *Handler) CreateSubmission(c *gin.Context) {
 		}
 	}
 
-	sub, err := h.Service.CreateSubmission(c.Request.Context(), h.UserID, problemID, req.Language, req.Code, sessionID)
+	sub, err := h.deps.submissions.CreateSubmission(
+		c.Request.Context(),
+		h.deps.userID,
+		problemID,
+		req.Language,
+		req.Code,
+		sessionID,
+	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -50,14 +57,14 @@ func (h *Handler) CreateSubmission(c *gin.Context) {
 }
 
 // GetSubmission handles GET /api/submissions/:id
-func (h *Handler) GetSubmission(c *gin.Context) {
+func (h *SubmissionsAPI) GetSubmission(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid submission id"})
 		return
 	}
 
-	sub, err := h.Service.GetSubmission(c.Request.Context(), id)
+	sub, err := h.deps.submissions.GetSubmission(c.Request.Context(), id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -71,7 +78,7 @@ func (h *Handler) GetSubmission(c *gin.Context) {
 }
 
 // ListSubmissions handles GET /api/submissions/history
-func (h *Handler) ListSubmissions(c *gin.Context) {
+func (h *SubmissionsAPI) ListSubmissions(c *gin.Context) {
 	var problemID *uuid.UUID
 	if raw := c.Query("problem_id"); raw != "" {
 		if id, err := uuid.Parse(raw); err == nil {
@@ -79,7 +86,7 @@ func (h *Handler) ListSubmissions(c *gin.Context) {
 		}
 	}
 
-	subs, err := h.Service.ListSubmissions(c.Request.Context(), h.UserID, problemID, 20, 0)
+	subs, err := h.deps.submissions.ListSubmissions(c.Request.Context(), h.deps.userID, problemID, 20, 0)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
