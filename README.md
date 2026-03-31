@@ -45,17 +45,15 @@ judge-loop/                        # module: github.com/tuannm99/judge-loop
     domain/                        # core domain types and pure domain logic
       judge/                       # verdict evaluation logic
     application/                   # use cases and orchestration
-      personalization/             # daily mission generation / weak-pattern logic
     port/
-      in/                          # inbound ports exposed to adapters
-      out/                         # outbound ports required by application
+      in/                          # inbound ports exposed to adapters, split by capability
+      out/                         # outbound ports required by application, split by dependency
     adapter/                       # delivery and integration adapters
       http/                        # Gin handlers for api-server and local-agent
       queue/                       # asynq-facing adapters
       sandbox/                     # code runner adapter
-      storage/                     # repository adapters over postgres stores
     infrastructure/                # concrete technical implementations
-      postgres/                    # PostgreSQL persistence via GORM + goose
+      postgres/                    # PostgreSQL persistence via GORM + goose; implements outbound repository ports
       queue/                       # asynq jobs and queue wiring
       sandbox/                     # Docker sandbox execution
       registry/                    # local registry manifest loading
@@ -97,9 +95,10 @@ The codebase now follows a ports-and-adapters style:
 
 - `domain` contains core business types and pure logic
 - `application` contains use cases
+- `application` owns concrete use-case services and mission-generation helpers
 - `port/in` defines what adapters can call
 - `port/out` defines what the application needs from infrastructure
-- `adapter` contains HTTP, queue, sandbox, and repository adapters
+- `adapter` contains HTTP, queue, and sandbox adapters
 - `infrastructure` contains concrete PostgreSQL, queue, sandbox, registry, and local timer implementations
 
 The dependency rule is simple: outer layers depend inward. `cmd/*` wires the graph; business logic stays out of entrypoints.

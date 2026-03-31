@@ -8,10 +8,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
-	sandboxadapter "github.com/tuannm99/judge-loop/internal/adapter/sandbox"
-	storageadapter "github.com/tuannm99/judge-loop/internal/adapter/storage"
-	application "github.com/tuannm99/judge-loop/internal/application"
-	postgres "github.com/tuannm99/judge-loop/internal/infrastructure/postgres"
 	q "github.com/tuannm99/judge-loop/internal/infrastructure/queue"
 	inport "github.com/tuannm99/judge-loop/internal/port/in"
 )
@@ -22,16 +18,11 @@ type Evaluator struct {
 	service       inport.EvaluationService
 }
 
-// NewEvaluator creates an Evaluator wired to the given database.
-func NewEvaluator(timeLimitSecs int, db *postgres.DB) *Evaluator {
+// NewEvaluator creates an Evaluator wired to the given evaluation service.
+func NewEvaluator(timeLimitSecs int, service inport.EvaluationService) *Evaluator {
 	return &Evaluator{
 		timeLimitSecs: timeLimitSecs,
-		service: application.NewEvaluationService(
-			storageadapter.NewSubmissionRepository(db),
-			storageadapter.NewTestCaseRepository(db),
-			storageadapter.NewSessionRepository(db),
-			sandboxadapter.NewRunner(),
-		),
+		service:       service,
 	}
 }
 

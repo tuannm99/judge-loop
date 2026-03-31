@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"github.com/tuannm99/judge-loop/internal/domain"
+	outport "github.com/tuannm99/judge-loop/internal/port/out"
 	"gorm.io/gorm"
 )
 
@@ -18,14 +19,7 @@ func NewProblemStore(db *DB) *ProblemStore { return &ProblemStore{db: db} }
 
 // ProblemFilter holds optional filters for listing problems.
 // Nil pointer fields mean "no filter".
-type ProblemFilter struct {
-	Difficulty *domain.Difficulty
-	Tag        string
-	Pattern    string
-	Provider   *domain.Provider
-	Limit      int
-	Offset     int
-}
+type ProblemFilter = outport.ProblemFilter
 
 // List returns problems matching the filter with a total count.
 func (s *ProblemStore) List(ctx context.Context, f ProblemFilter) ([]domain.Problem, int, error) {

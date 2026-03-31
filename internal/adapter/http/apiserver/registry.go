@@ -25,7 +25,7 @@ func (h *RegistryAPI) SyncRegistry(c *gin.Context) {
 		return
 	}
 
-	synced, err := h.deps.registry.SyncRegistry(
+	synced, err := h.service.SyncRegistry(
 		c.Request.Context(),
 		req.Version,
 		req.UpdatedAt,
@@ -45,7 +45,7 @@ func (h *RegistryAPI) SyncRegistry(c *gin.Context) {
 
 // GetRegistryVersion handles GET /api/registry/version.
 func (h *RegistryAPI) GetRegistryVersion(c *gin.Context) {
-	row, err := h.deps.registry.GetRegistryVersion(c.Request.Context())
+	row, err := h.service.GetRegistryVersion(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

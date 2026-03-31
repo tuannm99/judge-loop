@@ -19,8 +19,8 @@ import (
 func TestProgressHandlers(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	userID := uuid.New()
-	service := inmocks.NewMockAPIService(t)
-	api := NewWithService(service, userID)
+	service := inmocks.NewMockProgressService(t)
+	api := New(nil, nil, service, nil, nil, nil, userID)
 
 	service.EXPECT().
 		GetProgressToday(mock.Anything, userID).

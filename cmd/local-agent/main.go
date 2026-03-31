@@ -5,15 +5,18 @@ package main
 
 import (
 	"log"
+
+	"github.com/tuannm99/judge-loop/internal/config"
+	"github.com/tuannm99/judge-loop/internal/di"
 )
 
 func main() {
-	cfg := LoadConfig()
+	cfg, err := config.LoadLocalAgent()
+	if err != nil {
+		log.Fatalf("config: %v", err)
+	}
 
 	log.Printf("local-agent starting — server: %s, port: %d", cfg.ServerURL, cfg.Port)
 
-	srv := NewServer(cfg)
-	if err := srv.Run(); err != nil {
-		log.Fatalf("local-agent: %v", err)
-	}
+	di.NewLocalAgent(cfg).Run()
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/tuannm99/judge-loop/internal/domain"
+	outport "github.com/tuannm99/judge-loop/internal/port/out"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -18,15 +19,8 @@ type RegistryStore struct{ db *DB }
 // NewRegistryStore creates a new RegistryStore.
 func NewRegistryStore(db *DB) *RegistryStore { return &RegistryStore{db: db} }
 
-// RegistryVersionRow mirrors the registry_versions table.
-type RegistryVersionRow struct {
-	Version   string
-	UpdatedAt time.Time
-	SyncedAt  time.Time
-}
-
 // GetLatest returns the most recently saved registry version, or nil if none.
-func (s *RegistryStore) GetLatest(ctx context.Context) (*RegistryVersionRow, error) {
+func (s *RegistryStore) GetLatest(ctx context.Context) (*outport.RegistryVersion, error) {
 	var model registryVersionModel
 	err := s.db.Gorm.WithContext(ctx).Order("id DESC").Take(&model).Error
 	if err == gorm.ErrRecordNotFound {
@@ -36,7 +30,7 @@ func (s *RegistryStore) GetLatest(ctx context.Context) (*RegistryVersionRow, err
 		return nil, fmt.Errorf("get latest registry version: %w", err)
 	}
 
-	return &RegistryVersionRow{
+	return &outport.RegistryVersion{
 		Version:   model.Version,
 		UpdatedAt: model.UpdatedAt,
 		SyncedAt:  model.SyncedAt,

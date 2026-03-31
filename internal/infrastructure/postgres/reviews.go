@@ -3,19 +3,10 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/google/uuid"
+	outport "github.com/tuannm99/judge-loop/internal/port/out"
 )
-
-// DueReview is a problem due for spaced repetition review.
-type DueReview struct {
-	ProblemID   uuid.UUID
-	Slug        string
-	Title       string
-	LastSolved  *time.Time
-	DaysOverdue int
-}
 
 // ReviewStore handles review schedule queries.
 type ReviewStore struct{ db *DB }
@@ -24,8 +15,8 @@ type ReviewStore struct{ db *DB }
 func NewReviewStore(db *DB) *ReviewStore { return &ReviewStore{db: db} }
 
 // GetDue returns problems due for review today or overdue.
-func (s *ReviewStore) GetDue(ctx context.Context, userID uuid.UUID) ([]DueReview, error) {
-	var out []DueReview
+func (s *ReviewStore) GetDue(ctx context.Context, userID uuid.UUID) ([]outport.DueReview, error) {
+	var out []outport.DueReview
 	err := s.db.Gorm.WithContext(ctx).Raw(`
 		SELECT
 			p.id AS problem_id,

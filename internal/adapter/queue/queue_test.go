@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	postgres "github.com/tuannm99/judge-loop/internal/infrastructure/postgres"
 	q "github.com/tuannm99/judge-loop/internal/infrastructure/queue"
 	outport "github.com/tuannm99/judge-loop/internal/port/out"
 )
@@ -59,7 +58,7 @@ func TestEvaluationPublisherSuccess(t *testing.T) {
 }
 
 func TestNewEvaluatorAndProcessTask(t *testing.T) {
-	e := NewEvaluator(2, &postgres.DB{})
+	e := NewEvaluator(2, evaluationServiceFunc(func(context.Context, uuid.UUID, uuid.UUID, int) error { return nil }))
 	require.NotNil(t, e)
 
 	err := e.ProcessTask(context.Background(), asynq.NewTask(q.TypeEvaluateSubmission, []byte("{")))

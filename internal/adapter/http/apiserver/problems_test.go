@@ -18,8 +18,8 @@ import (
 func TestProblemHandlers(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	userID := uuid.New()
-	service := inmocks.NewMockAPIService(t)
-	api := NewWithService(service, userID)
+	service := inmocks.NewMockProblemService(t)
+	api := New(service, nil, nil, nil, nil, nil, userID)
 
 	t.Run("list problems success", func(t *testing.T) {
 		diff := domain.DifficultyEasy

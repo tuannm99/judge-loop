@@ -8,7 +8,7 @@ import (
 
 // GetProgressToday handles GET /api/progress/today
 func (h *ProgressAPI) GetProgressToday(c *gin.Context) {
-	progress, err := h.deps.progress.GetProgressToday(c.Request.Context(), h.deps.userID)
+	progress, err := h.service.GetProgressToday(c.Request.Context(), h.userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -25,7 +25,7 @@ func (h *ProgressAPI) GetProgressToday(c *gin.Context) {
 
 // GetStreak handles GET /api/streak
 func (h *ProgressAPI) GetStreak(c *gin.Context) {
-	streak, err := h.deps.progress.GetStreak(c.Request.Context(), h.deps.userID)
+	streak, err := h.service.GetStreak(c.Request.Context(), h.userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

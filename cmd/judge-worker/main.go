@@ -3,30 +3,20 @@
 package main
 
 import (
-	"context"
 	"log"
-	"time"
 
-	postgres "github.com/tuannm99/judge-loop/internal/infrastructure/postgres"
+	"github.com/tuannm99/judge-loop/internal/config"
+	"github.com/tuannm99/judge-loop/internal/di"
 )
 
 func main() {
-	cfg := LoadConfig()
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	db, err := postgres.Connect(ctx, cfg.DatabaseURL)
+	cfg, err := config.LoadJudgeWorker()
 	if err != nil {
-		log.Fatalf("db connect: %v", err)
+		log.Fatalf("config: %v", err)
 	}
-	defer db.Close()
 
-	w := NewWorker(cfg, db)
 	log.Printf("judge-worker starting (concurrency=%d, time_limit=%ds, redis=%s)",
 		cfg.Concurrency, cfg.TimeLimitSecs, cfg.RedisURL)
 
-	if err := w.Run(); err != nil {
-		log.Fatalf("worker: %v", err)
-	}
+	di.NewJudgeWorker(cfg).Run()
 }

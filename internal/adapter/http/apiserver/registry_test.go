@@ -20,8 +20,8 @@ import (
 
 func TestRegistryHandlers(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	service := inmocks.NewMockAPIService(t)
-	api := NewWithService(service, uuid.New())
+	service := inmocks.NewMockRegistryService(t)
+	api := New(nil, nil, nil, nil, nil, service, uuid.New())
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)

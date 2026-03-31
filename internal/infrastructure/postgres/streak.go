@@ -6,18 +6,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	outport "github.com/tuannm99/judge-loop/internal/port/out"
 )
-
-// StreakInfo holds current and longest streak data for a user.
-type StreakInfo struct {
-	Current       int
-	Longest       int
-	LastPracticed *time.Time
-}
 
 // GetStreak returns the user's current and all-time longest streak.
 // A streak day is any day with at least one accepted submission.
-func (s *SessionStore) GetStreak(ctx context.Context, userID uuid.UUID) (StreakInfo, error) {
+func (s *SessionStore) GetStreak(ctx context.Context, userID uuid.UUID) (outport.StreakInfo, error) {
 	var rows []dailySessionModel
 	if err := s.db.Gorm.WithContext(ctx).
 		Model(&dailySessionModel{}).
@@ -25,7 +19,7 @@ func (s *SessionStore) GetStreak(ctx context.Context, userID uuid.UUID) (StreakI
 		Where("user_id = ? AND solved_count > 0", userID).
 		Order("date DESC").
 		Find(&rows).Error; err != nil {
-		return StreakInfo{}, fmt.Errorf("streak query: %w", err)
+		return outport.StreakInfo{}, fmt.Errorf("streak query: %w", err)
 	}
 
 	dates := make([]time.Time, 0, len(rows))
@@ -37,12 +31,12 @@ func (s *SessionStore) GetStreak(ctx context.Context, userID uuid.UUID) (StreakI
 }
 
 // computeStreak calculates current and longest streak from a DESC-sorted list of dates.
-func computeStreak(dates []time.Time) StreakInfo {
+func computeStreak(dates []time.Time) outport.StreakInfo {
 	if len(dates) == 0 {
-		return StreakInfo{}
+		return outport.StreakInfo{}
 	}
 
-	info := StreakInfo{LastPracticed: &dates[0]}
+	info := outport.StreakInfo{LastPracticed: &dates[0]}
 
 	today := time.Now().UTC().Truncate(24 * time.Hour)
 	yesterday := today.AddDate(0, 0, -1)

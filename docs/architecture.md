@@ -48,14 +48,12 @@ Single Go module: `github.com/tuannm99/judge-loop`
 | `cmd/local-agent` | process entrypoint and dependency wiring for the local daemon |
 | `internal/domain` | domain entities and value types |
 | `internal/domain/judge` | pure verdict evaluation logic |
-| `internal/application` | application services / use cases |
-| `internal/application/personalization` | daily mission and weak-pattern generation |
+| `internal/application` | application use cases, orchestration, and mission-generation helpers |
 | `internal/port/in` | inbound ports implemented by application services |
 | `internal/port/out` | outbound ports implemented by adapters/infrastructure |
 | `internal/adapter/http` | Gin handlers for `api-server` and `local-agent` |
 | `internal/adapter/queue` | asynq-facing adapters for publish/consume flow |
 | `internal/adapter/sandbox` | code runner adapter used by application services |
-| `internal/adapter/storage` | repository adapters over postgres stores |
 | `internal/infrastructure/postgres` | GORM repositories and embedded goose migrations |
 | `internal/infrastructure/queue` | asynq task definitions and queue setup |
 | `internal/infrastructure/sandbox` | Docker-based code execution |

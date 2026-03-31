@@ -176,6 +176,80 @@ func (_c *MockProblemRepository_GetBySlug_Call) RunAndReturn(run func(ctx contex
 	return _c
 }
 
+// GetUnsolved provides a mock function for the type MockProblemRepository
+func (_mock *MockProblemRepository) GetUnsolved(ctx context.Context, userID uuid.UUID, limit int) ([]domain.Problem, error) {
+	ret := _mock.Called(ctx, userID, limit)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetUnsolved")
+	}
+
+	var r0 []domain.Problem
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, int) ([]domain.Problem, error)); ok {
+		return returnFunc(ctx, userID, limit)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, int) []domain.Problem); ok {
+		r0 = returnFunc(ctx, userID, limit)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]domain.Problem)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, int) error); ok {
+		r1 = returnFunc(ctx, userID, limit)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockProblemRepository_GetUnsolved_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUnsolved'
+type MockProblemRepository_GetUnsolved_Call struct {
+	*mock.Call
+}
+
+// GetUnsolved is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+//   - limit int
+func (_e *MockProblemRepository_Expecter) GetUnsolved(ctx interface{}, userID interface{}, limit interface{}) *MockProblemRepository_GetUnsolved_Call {
+	return &MockProblemRepository_GetUnsolved_Call{Call: _e.mock.On("GetUnsolved", ctx, userID, limit)}
+}
+
+func (_c *MockProblemRepository_GetUnsolved_Call) Run(run func(ctx context.Context, userID uuid.UUID, limit int)) *MockProblemRepository_GetUnsolved_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 int
+		if args[2] != nil {
+			arg2 = args[2].(int)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockProblemRepository_GetUnsolved_Call) Return(problems []domain.Problem, err error) *MockProblemRepository_GetUnsolved_Call {
+	_c.Call.Return(problems, err)
+	return _c
+}
+
+func (_c *MockProblemRepository_GetUnsolved_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, limit int) ([]domain.Problem, error)) *MockProblemRepository_GetUnsolved_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // List provides a mock function for the type MockProblemRepository
 func (_mock *MockProblemRepository) List(ctx context.Context, filter out.ProblemFilter) ([]domain.Problem, int, error) {
 	ret := _mock.Called(ctx, filter)

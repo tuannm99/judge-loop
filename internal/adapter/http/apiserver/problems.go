@@ -37,7 +37,7 @@ func (h *ProblemsAPI) ListProblems(c *gin.Context) {
 		}
 	}
 
-	problems, total, err := h.deps.problems.ListProblems(c.Request.Context(), f)
+	problems, total, err := h.service.ListProblems(c.Request.Context(), f)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -52,7 +52,7 @@ func (h *ProblemsAPI) ListProblems(c *gin.Context) {
 // GetProblem handles GET /api/problems/:id
 // Tries UUID parse first; falls back to slug lookup.
 func (h *ProblemsAPI) GetProblem(c *gin.Context) {
-	problem, err := h.deps.problems.GetProblem(c.Request.Context(), c.Param("id"))
+	problem, err := h.service.GetProblem(c.Request.Context(), c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -69,7 +69,7 @@ func (h *ProblemsAPI) GetProblem(c *gin.Context) {
 // Returns a random unsolved problem, preferring weak patterns from the user profile.
 // In Milestone 2, no profile is consulted — patterns list is empty.
 func (h *ProblemsAPI) SuggestProblem(c *gin.Context) {
-	problem, err := h.deps.problems.SuggestProblem(c.Request.Context(), h.deps.userID)
+	problem, err := h.service.SuggestProblem(c.Request.Context(), h.userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -25,7 +25,7 @@ func (h *TimersAPI) StartTimer(c *gin.Context) {
 		}
 	}
 
-	ts, err := h.deps.timers.StartTimer(c.Request.Context(), h.deps.userID, problemID)
+	ts, err := h.service.StartTimer(c.Request.Context(), h.userID, problemID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -40,7 +40,7 @@ func (h *TimersAPI) StartTimer(c *gin.Context) {
 
 // StopTimer handles POST /api/timers/stop
 func (h *TimersAPI) StopTimer(c *gin.Context) {
-	ts, err := h.deps.timers.StopTimer(c.Request.Context(), h.deps.userID)
+	ts, err := h.service.StopTimer(c.Request.Context(), h.userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -55,7 +55,7 @@ func (h *TimersAPI) StopTimer(c *gin.Context) {
 
 // CurrentTimer handles GET /api/timers/current
 func (h *TimersAPI) CurrentTimer(c *gin.Context) {
-	ts, err := h.deps.timers.CurrentTimer(c.Request.Context(), h.deps.userID)
+	ts, err := h.service.CurrentTimer(c.Request.Context(), h.userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

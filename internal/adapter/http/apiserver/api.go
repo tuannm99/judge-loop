@@ -3,35 +3,37 @@ package apiserver
 
 import (
 	"github.com/google/uuid"
-	"github.com/hibiken/asynq"
-	queueadapter "github.com/tuannm99/judge-loop/internal/adapter/queue"
-	storageadapter "github.com/tuannm99/judge-loop/internal/adapter/storage"
-	application "github.com/tuannm99/judge-loop/internal/application"
-	postgres "github.com/tuannm99/judge-loop/internal/infrastructure/postgres"
 	inport "github.com/tuannm99/judge-loop/internal/port/in"
 )
 
-type deps struct {
-	userID      uuid.UUID
-	problems    inport.ProblemService
-	submissions inport.SubmissionService
-	progress    inport.ProgressService
-	timers      inport.TimerService
-	reviews     inport.ReviewService
-	registry    inport.RegistryService
+type ProblemsAPI struct {
+	userID  uuid.UUID
+	service inport.ProblemService
 }
 
-type ProblemsAPI struct{ deps deps }
+type SubmissionsAPI struct {
+	userID  uuid.UUID
+	service inport.SubmissionService
+}
 
-type SubmissionsAPI struct{ deps deps }
+type ProgressAPI struct {
+	userID  uuid.UUID
+	service inport.ProgressService
+}
 
-type ProgressAPI struct{ deps deps }
+type TimersAPI struct {
+	userID  uuid.UUID
+	service inport.TimerService
+}
 
-type TimersAPI struct{ deps deps }
+type ReviewsAPI struct {
+	userID  uuid.UUID
+	service inport.ReviewService
+}
 
-type ReviewsAPI struct{ deps deps }
-
-type RegistryAPI struct{ deps deps }
+type RegistryAPI struct {
+	service inport.RegistryService
+}
 
 // API groups the feature-specific HTTP handlers for route registration.
 type API struct {
@@ -43,36 +45,22 @@ type API struct {
 	Registry    *RegistryAPI
 }
 
-// New creates an API wired to the given database and queue client.
-func New(db *postgres.DB, userID uuid.UUID, queueClient *asynq.Client) *API {
-	service := application.NewAPIService(
-		storageadapter.NewProblemRepository(db),
-		storageadapter.NewSubmissionRepository(db),
-		storageadapter.NewSessionRepository(db),
-		storageadapter.NewReviewRepository(db),
-		storageadapter.NewRegistryRepository(db),
-		queueadapter.NewEvaluationPublisher(queueClient),
-	)
-	return NewWithService(service, userID)
-}
-
-// NewWithService creates an API from a prebuilt service. Useful for tests.
-func NewWithService(service inport.APIService, userID uuid.UUID) *API {
-	d := deps{
-		userID:      userID,
-		problems:    service,
-		submissions: service,
-		progress:    service,
-		timers:      service,
-		reviews:     service,
-		registry:    service,
-	}
+// New creates an API from the given capability services.
+func New(
+	problems inport.ProblemService,
+	submissions inport.SubmissionService,
+	progress inport.ProgressService,
+	timers inport.TimerService,
+	reviews inport.ReviewService,
+	registry inport.RegistryService,
+	userID uuid.UUID,
+) *API {
 	return &API{
-		Problems:    &ProblemsAPI{deps: d},
-		Submissions: &SubmissionsAPI{deps: d},
-		Progress:    &ProgressAPI{deps: d},
-		Timers:      &TimersAPI{deps: d},
-		Reviews:     &ReviewsAPI{deps: d},
-		Registry:    &RegistryAPI{deps: d},
+		Problems:    &ProblemsAPI{userID: userID, service: problems},
+		Submissions: &SubmissionsAPI{userID: userID, service: submissions},
+		Progress:    &ProgressAPI{userID: userID, service: progress},
+		Timers:      &TimersAPI{userID: userID, service: timers},
+		Reviews:     &ReviewsAPI{userID: userID, service: reviews},
+		Registry:    &RegistryAPI{service: registry},
 	}
 }

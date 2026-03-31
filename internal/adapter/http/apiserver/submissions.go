@@ -37,9 +37,9 @@ func (h *SubmissionsAPI) CreateSubmission(c *gin.Context) {
 		}
 	}
 
-	sub, err := h.deps.submissions.CreateSubmission(
+	sub, err := h.service.CreateSubmission(
 		c.Request.Context(),
-		h.deps.userID,
+		h.userID,
 		problemID,
 		req.Language,
 		req.Code,
@@ -64,7 +64,7 @@ func (h *SubmissionsAPI) GetSubmission(c *gin.Context) {
 		return
 	}
 
-	sub, err := h.deps.submissions.GetSubmission(c.Request.Context(), id)
+	sub, err := h.service.GetSubmission(c.Request.Context(), id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -86,7 +86,7 @@ func (h *SubmissionsAPI) ListSubmissions(c *gin.Context) {
 		}
 	}
 
-	subs, err := h.deps.submissions.ListSubmissions(c.Request.Context(), h.deps.userID, problemID, 20, 0)
+	subs, err := h.service.ListSubmissions(c.Request.Context(), h.userID, problemID, 20, 0)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
