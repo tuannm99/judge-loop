@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/tuannm99/judge-loop/internal/domain"
+	inport "github.com/tuannm99/judge-loop/internal/port/in"
 	outport "github.com/tuannm99/judge-loop/internal/port/out"
 )
 
@@ -12,6 +13,8 @@ type RegistryService struct {
 	problems outport.ProblemRepository
 	registry outport.RegistryRepository
 }
+
+var _ inport.RegistryService = (*RegistryService)(nil)
 
 func NewRegistryService(
 	problems outport.ProblemRepository,

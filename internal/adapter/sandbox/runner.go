@@ -9,6 +9,8 @@ import (
 
 type Runner struct{}
 
+var _ outport.CodeRunner = (*Runner)(nil)
+
 func NewRunner() *Runner { return &Runner{} }
 
 func (r *Runner) Run(ctx context.Context, req outport.RunRequest) (sandbox.RunResult, error) {

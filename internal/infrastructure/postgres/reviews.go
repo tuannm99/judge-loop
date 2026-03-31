@@ -11,6 +11,8 @@ import (
 // ReviewStore handles review schedule queries.
 type ReviewStore struct{ db *DB }
 
+var _ outport.ReviewRepository = (*ReviewStore)(nil)
+
 // NewReviewStore creates a new ReviewStore.
 func NewReviewStore(db *DB) *ReviewStore { return &ReviewStore{db: db} }
 

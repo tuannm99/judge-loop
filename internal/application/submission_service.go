@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/tuannm99/judge-loop/internal/domain"
+	inport "github.com/tuannm99/judge-loop/internal/port/in"
 	outport "github.com/tuannm99/judge-loop/internal/port/out"
 )
 
@@ -13,6 +14,8 @@ type SubmissionService struct {
 	submissions outport.SubmissionRepository
 	publisher   outport.EvaluationPublisher
 }
+
+var _ inport.SubmissionService = (*SubmissionService)(nil)
 
 func NewSubmissionService(
 	submissions outport.SubmissionRepository,

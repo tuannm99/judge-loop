@@ -7,11 +7,14 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/tuannm99/judge-loop/internal/domain"
+	outport "github.com/tuannm99/judge-loop/internal/port/out"
 	"gorm.io/gorm"
 )
 
 // SubmissionStore handles all submission queries.
 type SubmissionStore struct{ db *DB }
+
+var _ outport.SubmissionRepository = (*SubmissionStore)(nil)
 
 // NewSubmissionStore creates a new SubmissionStore.
 func NewSubmissionStore(db *DB) *SubmissionStore { return &SubmissionStore{db: db} }

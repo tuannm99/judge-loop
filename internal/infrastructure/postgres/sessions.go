@@ -7,12 +7,15 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/tuannm99/judge-loop/internal/domain"
+	outport "github.com/tuannm99/judge-loop/internal/port/out"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 // SessionStore handles DailySession and TimerSession queries.
 type SessionStore struct{ db *DB }
+
+var _ outport.SessionRepository = (*SessionStore)(nil)
 
 // NewSessionStore creates a new SessionStore.
 func NewSessionStore(db *DB) *SessionStore { return &SessionStore{db: db} }

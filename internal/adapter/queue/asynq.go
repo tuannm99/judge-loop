@@ -12,6 +12,8 @@ type EvaluationPublisher struct {
 	client *asynq.Client
 }
 
+var _ outport.EvaluationPublisher = (*EvaluationPublisher)(nil)
+
 func NewEvaluationPublisher(client *asynq.Client) *EvaluationPublisher {
 	return &EvaluationPublisher{client: client}
 }

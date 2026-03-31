@@ -8,12 +8,15 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/tuannm99/judge-loop/internal/domain"
+	outport "github.com/tuannm99/judge-loop/internal/port/out"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 // MissionStore handles daily mission persistence.
 type MissionStore struct{ db *DB }
+
+var _ outport.MissionRepository = (*MissionStore)(nil)
 
 // NewMissionStore creates a new MissionStore.
 func NewMissionStore(db *DB) *MissionStore { return &MissionStore{db: db} }
@@ -60,6 +63,8 @@ func (s *MissionStore) Save(ctx context.Context, m domain.DailyMission) error {
 
 // PerformanceStore computes user performance metrics from submissions.
 type PerformanceStore struct{ db *DB }
+
+var _ outport.PerformanceRepository = (*PerformanceStore)(nil)
 
 // NewPerformanceStore creates a new PerformanceStore.
 func NewPerformanceStore(db *DB) *PerformanceStore { return &PerformanceStore{db: db} }

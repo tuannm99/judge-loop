@@ -5,12 +5,15 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/tuannm99/judge-loop/internal/domain"
+	inport "github.com/tuannm99/judge-loop/internal/port/in"
 	outport "github.com/tuannm99/judge-loop/internal/port/out"
 )
 
 type TimerService struct {
 	sessions outport.SessionRepository
 }
+
+var _ inport.TimerService = (*TimerService)(nil)
 
 func NewTimerService(sessions outport.SessionRepository) *TimerService {
 	return &TimerService{sessions: sessions}

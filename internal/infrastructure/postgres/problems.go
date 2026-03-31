@@ -14,6 +14,8 @@ import (
 // ProblemStore handles all problem queries.
 type ProblemStore struct{ db *DB }
 
+var _ outport.ProblemRepository = (*ProblemStore)(nil)
+
 // NewProblemStore creates a new ProblemStore.
 func NewProblemStore(db *DB) *ProblemStore { return &ProblemStore{db: db} }
 

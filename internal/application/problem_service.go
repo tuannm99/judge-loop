@@ -5,12 +5,15 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/tuannm99/judge-loop/internal/domain"
+	inport "github.com/tuannm99/judge-loop/internal/port/in"
 	outport "github.com/tuannm99/judge-loop/internal/port/out"
 )
 
 type ProblemService struct {
 	problems outport.ProblemRepository
 }
+
+var _ inport.ProblemService = (*ProblemService)(nil)
 
 func NewProblemService(problems outport.ProblemRepository) *ProblemService {
 	return &ProblemService{problems: problems}

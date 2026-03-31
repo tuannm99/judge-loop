@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/tuannm99/judge-loop/internal/domain"
+	inport "github.com/tuannm99/judge-loop/internal/port/in"
 	outport "github.com/tuannm99/judge-loop/internal/port/out"
 )
 
@@ -16,6 +17,8 @@ type MissionService struct {
 	problems    outport.ProblemRepository
 	reviews     outport.ReviewRepository
 }
+
+var _ inport.MissionService = (*MissionService)(nil)
 
 func NewMissionService(
 	missions outport.MissionRepository,

@@ -6,10 +6,13 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/tuannm99/judge-loop/internal/domain"
+	outport "github.com/tuannm99/judge-loop/internal/port/out"
 )
 
 // TestCaseStore handles test case queries.
 type TestCaseStore struct{ db *DB }
+
+var _ outport.TestCaseRepository = (*TestCaseStore)(nil)
 
 // NewTestCaseStore creates a new TestCaseStore.
 func NewTestCaseStore(db *DB) *TestCaseStore { return &TestCaseStore{db: db} }

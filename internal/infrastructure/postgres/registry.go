@@ -16,6 +16,8 @@ import (
 // RegistryStore handles registry version queries.
 type RegistryStore struct{ db *DB }
 
+var _ outport.RegistryRepository = (*RegistryStore)(nil)
+
 // NewRegistryStore creates a new RegistryStore.
 func NewRegistryStore(db *DB) *RegistryStore { return &RegistryStore{db: db} }
 

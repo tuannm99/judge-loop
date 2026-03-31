@@ -12,6 +12,8 @@ type ProgressService struct {
 	sessions outport.SessionRepository
 }
 
+var _ inport.ProgressService = (*ProgressService)(nil)
+
 func NewProgressService(sessions outport.SessionRepository) *ProgressService {
 	return &ProgressService{sessions: sessions}
 }

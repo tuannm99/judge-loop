@@ -10,6 +10,7 @@ import (
 	"github.com/tuannm99/judge-loop/internal/domain"
 	"github.com/tuannm99/judge-loop/internal/domain/judge"
 	"github.com/tuannm99/judge-loop/internal/infrastructure/sandbox"
+	inport "github.com/tuannm99/judge-loop/internal/port/in"
 	outport "github.com/tuannm99/judge-loop/internal/port/out"
 )
 
@@ -20,6 +21,8 @@ type EvaluationService struct {
 	sessions    outport.SessionRepository
 	runner      outport.CodeRunner
 }
+
+var _ inport.EvaluationService = (*EvaluationService)(nil)
 
 func NewEvaluationService(
 	submissions outport.SubmissionRepository,

@@ -18,6 +18,8 @@ type Evaluator struct {
 	service       inport.EvaluationService
 }
 
+var _ asynq.Handler = (*Evaluator)(nil)
+
 // NewEvaluator creates an Evaluator wired to the given evaluation service.
 func NewEvaluator(timeLimitSecs int, service inport.EvaluationService) *Evaluator {
 	return &Evaluator{
