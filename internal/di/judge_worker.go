@@ -14,6 +14,7 @@ import (
 	postgres "github.com/tuannm99/judge-loop/internal/infrastructure/postgres"
 	infraqueue "github.com/tuannm99/judge-loop/internal/infrastructure/queue"
 	inport "github.com/tuannm99/judge-loop/internal/port/in"
+	outport "github.com/tuannm99/judge-loop/internal/port/out"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 )
@@ -24,7 +25,12 @@ func NewJudgeWorker(cfg config.JudgeWorker) *fx.App {
 		fx.Supply(cfg),
 		fx.Provide(
 			provideJudgeWorkerDB,
-			provideEvaluationService,
+			fx.Annotate(postgres.NewSubmissionStore, fx.As(new(outport.SubmissionRepository))),
+			fx.Annotate(postgres.NewTestCaseStore, fx.As(new(outport.TestCaseRepository))),
+			fx.Annotate(postgres.NewReviewStore, fx.As(new(outport.ReviewRepository))),
+			fx.Annotate(postgres.NewSessionStore, fx.As(new(outport.SessionRepository))),
+			fx.Annotate(sandboxadapter.NewRunner, fx.As(new(outport.CodeRunner))),
+			fx.Annotate(application.NewEvaluationService, fx.As(new(inport.EvaluationService))),
 			provideEvaluator,
 			provideWorkerServer,
 			provideWorkerMux,
@@ -49,16 +55,6 @@ func provideJudgeWorkerDB(lc fx.Lifecycle, cfg config.JudgeWorker) (*postgres.DB
 		},
 	})
 	return db, nil
-}
-
-func provideEvaluationService(db *postgres.DB) inport.EvaluationService {
-	return application.NewEvaluationService(
-		postgres.NewSubmissionStore(db),
-		postgres.NewTestCaseStore(db),
-		postgres.NewReviewStore(db),
-		postgres.NewSessionStore(db),
-		sandboxadapter.NewRunner(),
-	)
 }
 
 func provideEvaluator(cfg config.JudgeWorker, service inport.EvaluationService) *queueadapter.Evaluator {

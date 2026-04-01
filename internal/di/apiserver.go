@@ -17,6 +17,7 @@ import (
 	postgres "github.com/tuannm99/judge-loop/internal/infrastructure/postgres"
 	infraqueue "github.com/tuannm99/judge-loop/internal/infrastructure/queue"
 	inport "github.com/tuannm99/judge-loop/internal/port/in"
+	outport "github.com/tuannm99/judge-loop/internal/port/out"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 )
@@ -28,12 +29,18 @@ func NewAPIServer(cfg config.APIServer) *fx.App {
 		fx.Provide(
 			provideAPIServerDB,
 			provideAPIQueueClient,
-			provideProblemService,
-			provideSubmissionService,
-			provideProgressService,
-			provideTimerService,
-			provideReviewService,
-			provideRegistryService,
+			fx.Annotate(postgres.NewProblemStore, fx.As(new(outport.ProblemRepository))),
+			fx.Annotate(postgres.NewSubmissionStore, fx.As(new(outport.SubmissionRepository))),
+			fx.Annotate(postgres.NewSessionStore, fx.As(new(outport.SessionRepository))),
+			fx.Annotate(postgres.NewReviewStore, fx.As(new(outport.ReviewRepository))),
+			fx.Annotate(postgres.NewRegistryStore, fx.As(new(outport.RegistryRepository))),
+			fx.Annotate(queueadapter.NewEvaluationPublisher, fx.As(new(outport.EvaluationPublisher))),
+			fx.Annotate(application.NewProblemService, fx.As(new(inport.ProblemService))),
+			fx.Annotate(application.NewSubmissionService, fx.As(new(inport.SubmissionService))),
+			fx.Annotate(application.NewProgressService, fx.As(new(inport.ProgressService))),
+			fx.Annotate(application.NewTimerService, fx.As(new(inport.TimerService))),
+			fx.Annotate(application.NewReviewService, fx.As(new(inport.ReviewService))),
+			fx.Annotate(application.NewRegistryService, fx.As(new(inport.RegistryService))),
 			provideAPI,
 		),
 		fx.Invoke(registerAPIServerLifecycle),
@@ -66,33 +73,6 @@ func provideAPIQueueClient(lc fx.Lifecycle, cfg config.APIServer) *asynq.Client 
 		},
 	})
 	return client
-}
-
-func provideProblemService(db *postgres.DB) inport.ProblemService {
-	return application.NewProblemService(postgres.NewProblemStore(db))
-}
-
-func provideSubmissionService(db *postgres.DB, queueClient *asynq.Client) inport.SubmissionService {
-	return application.NewSubmissionService(
-		postgres.NewSubmissionStore(db),
-		queueadapter.NewEvaluationPublisher(queueClient),
-	)
-}
-
-func provideProgressService(db *postgres.DB) inport.ProgressService {
-	return application.NewProgressService(postgres.NewSessionStore(db))
-}
-
-func provideTimerService(db *postgres.DB) inport.TimerService {
-	return application.NewTimerService(postgres.NewSessionStore(db))
-}
-
-func provideReviewService(db *postgres.DB) inport.ReviewService {
-	return application.NewReviewService(postgres.NewReviewStore(db))
-}
-
-func provideRegistryService(db *postgres.DB) inport.RegistryService {
-	return application.NewRegistryService(postgres.NewProblemStore(db), postgres.NewRegistryStore(db))
 }
 
 func provideAPI(

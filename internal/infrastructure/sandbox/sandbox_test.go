@@ -50,3 +50,59 @@ func TestRunAndTruncate(t *testing.T) {
 	require.Equal(t, "abc", truncate("abcdef", 3))
 	require.Equal(t, "abc", truncate("abc", 3))
 }
+
+func writeFakeDocker(t *testing.T, body string) string {
+	t.Helper()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "docker")
+	require.NoError(t, os.WriteFile(path, []byte(body), 0o755))
+	return dir
+}
+
+func TestRunReturnsExitCodeAndTruncatedStderr(t *testing.T) {
+	fakeBin := writeFakeDocker(
+		t,
+		"#!/bin/sh\nprintf 'out'\npython3 - <<'PY'\nimport sys\nsys.stderr.write('x' * 700)\nPY\nexit 7\n",
+	)
+	t.Setenv("PATH", fakeBin+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	result, err := Run(context.Background(), RunRequest{Language: "python", Code: "print(1)"})
+	require.NoError(t, err)
+	require.Equal(t, "out", result.Output)
+	require.Equal(t, 7, result.ExitCode)
+	require.Len(t, result.Stderr, 500)
+	require.False(t, result.TimedOut)
+}
+
+func TestRunMarksDeadlineExceededAsTimeout(t *testing.T) {
+	fakeBin := writeFakeDocker(t, "#!/bin/sh\nsleep 1\n")
+	t.Setenv("PATH", fakeBin+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+
+	result, err := Run(ctx, RunRequest{Language: "go", Code: "package main\nfunc main(){}"})
+	require.NoError(t, err)
+	require.True(t, result.TimedOut)
+}
+
+func TestRunReturnsDockerInvocationError(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+
+	_, err := Run(context.Background(), RunRequest{Language: "python", Code: "print(1)"})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "docker run")
+}
+
+func TestPrepareWriteErrors(t *testing.T) {
+	missingDir := filepath.Join(t.TempDir(), "missing")
+
+	_, err := prepare("python", "print(1)", missingDir)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "write solution")
+
+	_, err = prepare("go", "package main", missingDir)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "write solution")
+}
