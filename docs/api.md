@@ -1,33 +1,72 @@
-# API Reference
+# API Specs
 
-## api-server (port 8080)
+This spec is based on the current implementation in `internal/adapter/http/apiserver` and `internal/adapter/http/localagent`.
 
-Base URL: `http://localhost:8080`
+Purpose:
 
----
+- manual testing with `curl` or Postman
+- input for API test cases
+- reflect the code as it exists now, not the older roadmap/docs
 
-### Problems
+## Test Setup
 
-#### `GET /api/problems`
+### api-server
 
-List problems with optional filters.
+- Base URL: `http://localhost:8080`
+- Health: `GET /health`
+
+### local-agent
+
+- Base URL: `http://localhost:7070`
+- Health: `GET /health`
+
+### Notes
+
+- There is no runtime auth yet; `api-server` uses `USER_ID` from server config.
+- All JSON bodies should use `Content-Type: application/json`.
+- Validation and parse errors usually return:
+
+```json
+{
+  "error": "..."
+}
+```
+
+- Internal server errors usually return HTTP `500`.
+- Proxy failures from `local-agent` to `api-server` usually return HTTP `502`.
+
+## api-server
+
+### `GET /health`
+
+Response `200`:
+
+```json
+{
+  "status": "ok"
+}
+```
+
+### `GET /api/problems`
+
+List problems.
 
 Query params:
 
-- `difficulty` — easy | medium | hard
-- `tag` — algorithm tag (e.g. `array`, `dp`)
-- `pattern` — pattern tag (e.g. `sliding-window`)
-- `provider` — leetcode | neetcode | hackerrank
-- `limit` — default 20
-- `offset` — default 0
+- `difficulty`: `easy` | `medium` | `hard`
+- `tag`: string
+- `pattern`: string
+- `provider`: `leetcode` | `neetcode` | `hackerrank`
+- `limit`: integer > 0
+- `offset`: integer >= 0
 
-Response:
+Response `200`:
 
 ```json
 {
   "problems": [
     {
-      "id": "uuid",
+      "id": "6b0ef3c5-d73d-4064-a992-f34bb0e18f8e",
       "slug": "two-sum",
       "title": "Two Sum",
       "difficulty": "easy",
@@ -38,225 +77,563 @@ Response:
       "estimated_time": 15
     }
   ],
-  "total": 100
+  "total": 1
 }
 ```
 
-#### `GET /api/problems/:id`
+Example:
 
-Get a single problem by UUID or slug.
+```bash
+curl "http://localhost:8080/api/problems?difficulty=easy&limit=10&offset=0"
+```
 
-#### `GET /api/problems/suggest`
+### `GET /api/problems/:id`
 
-Get a suggested problem based on user profile.
+Get a problem by UUID or slug.
 
-Response: single problem object.
-
----
-
-### Submissions
-
-#### `POST /api/submissions`
-
-Submit code for evaluation.
-
-Body:
+Response `200`:
 
 ```json
 {
-  "problem_id": "uuid",
+  "id": "6b0ef3c5-d73d-4064-a992-f34bb0e18f8e",
+  "slug": "two-sum",
+  "title": "Two Sum",
+  "difficulty": "easy",
+  "tags": ["array", "hash-table"],
+  "pattern_tags": ["lookup"],
+  "provider": "leetcode",
+  "source_url": "https://leetcode.com/problems/two-sum",
+  "estimated_time": 15
+}
+```
+
+Response `404`:
+
+```json
+{
+  "error": "problem not found"
+}
+```
+
+### `GET /api/problems/suggest`
+
+Get a suggested problem for the current user.
+
+Response `200`: same shape as `GET /api/problems/:id`
+
+Response `404`:
+
+```json
+{
+  "error": "no unsolved problems available"
+}
+```
+
+### `POST /api/submissions`
+
+Create a submission and enqueue evaluation on a best-effort basis.
+
+Request body:
+
+```json
+{
+  "problem_id": "6b0ef3c5-d73d-4064-a992-f34bb0e18f8e",
   "language": "python",
-  "code": "def twoSum(...):\n  ...",
-  "session_id": "uuid (optional)"
+  "code": "print(1)",
+  "session_id": "2b6300da-739d-416a-9f60-aaf6ca4b3859"
 }
 ```
 
-Response:
+`session_id` is optional.
+
+Response `201`:
 
 ```json
 {
-  "submission_id": "uuid",
+  "submission_id": "59e4673e-b9af-4393-8465-433b63f89f74",
   "status": "pending"
 }
 ```
 
-#### `GET /api/submissions/:id`
-
-Poll submission status.
-
-Response:
+Response `400`:
 
 ```json
 {
-  "id": "uuid",
-  "status": "accepted",
-  "verdict": "Accepted",
-  "passed_cases": 10,
-  "total_cases": 10,
-  "runtime_ms": 42,
-  "error_message": null,
-  "submitted_at": "2026-01-01T10:00:00Z"
+  "error": "invalid problem_id"
 }
 ```
 
-Status values: `pending` | `running` | `accepted` | `wrong_answer` | `compile_error` | `runtime_error` | `time_limit_exceeded`
+Or a JSON bind/validation error:
 
-#### `GET /api/submissions/history`
+```json
+{
+  "error": "Key: 'createSubmissionRequest.Code' Error:Field validation for 'Code' failed on the 'required' tag"
+}
+```
 
-Get submission history.
+### `GET /api/submissions/:id`
+
+Get the current submission state.
+
+Response `200`:
+
+```json
+{
+  "id": "59e4673e-b9af-4393-8465-433b63f89f74",
+  "user_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+  "problem_id": "6b0ef3c5-d73d-4064-a992-f34bb0e18f8e",
+  "session_id": "2b6300da-739d-416a-9f60-aaf6ca4b3859",
+  "language": "python",
+  "code": "print(1)",
+  "status": "accepted",
+  "verdict": "Accepted",
+  "passed_cases": 2,
+  "total_cases": 2,
+  "runtime_ms": 10,
+  "error_message": "",
+  "submitted_at": "2026-04-03T10:00:00Z",
+  "evaluated_at": "2026-04-03T10:00:03Z"
+}
+```
+
+Status values:
+
+- `pending`
+- `running`
+- `accepted`
+- `wrong_answer`
+- `compile_error`
+- `runtime_error`
+- `time_limit_exceeded`
+
+Response `400`:
+
+```json
+{
+  "error": "invalid submission id"
+}
+```
+
+Response `404`:
+
+```json
+{
+  "error": "submission not found"
+}
+```
+
+### `GET /api/submissions/history`
+
+List submissions for the current user.
 
 Query params:
 
-- `problem_id` — filter by problem
-- `limit` — default 20
+- `problem_id`: optional UUID filter
 
----
-
-### Progress
-
-#### `GET /api/progress/today`
-
-Get today's practice summary.
-
-Response:
+Response `200`:
 
 ```json
 {
-  "date": "2026-01-01",
-  "solved": 2,
-  "attempted": 3,
-  "time_spent_minutes": 45,
-  "streak": 7
-}
-```
-
-#### `GET /api/streak`
-
-Get current streak info.
-
-Response:
-
-```json
-{
-  "current": 7,
-  "longest": 14,
-  "last_practiced": "2026-01-01"
-}
-```
-
----
-
-### Timers
-
-#### `POST /api/timers/start`
-
-Start a timer session.
-
-Body:
-
-```json
-{
-  "problem_id": "uuid (optional)"
-}
-```
-
-#### `POST /api/timers/stop`
-
-Stop current timer. Body: `{}`.
-
-#### `GET /api/timers/current`
-
-Get active timer.
-
-Response:
-
-```json
-{
-  "active": true,
-  "started_at": "2026-01-01T10:00:00Z",
-  "elapsed_seconds": 300,
-  "problem_id": "uuid or null"
-}
-```
-
----
-
-### Reviews
-
-#### `GET /api/reviews/today`
-
-Get problems due for spaced repetition review today.
-
-Response:
-
-```json
-{
-  "reviews": [
+  "submissions": [
     {
-      "problem_id": "uuid",
-      "slug": "two-sum",
-      "last_solved": "2025-12-25",
-      "days_overdue": 2
+      "id": "59e4673e-b9af-4393-8465-433b63f89f74",
+      "user_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+      "problem_id": "6b0ef3c5-d73d-4064-a992-f34bb0e18f8e",
+      "language": "python",
+      "code": "print(1)",
+      "status": "accepted",
+      "verdict": "Accepted",
+      "passed_cases": 2,
+      "total_cases": 2,
+      "runtime_ms": 10,
+      "error_message": "",
+      "submitted_at": "2026-04-03T10:00:00Z",
+      "evaluated_at": "2026-04-03T10:00:03Z"
     }
   ]
 }
 ```
 
----
+Note: the current handler uses fixed `limit=20` and `offset=0`.
 
-## local-agent (port 7070)
+### `GET /api/progress/today`
 
-Base URL: `http://localhost:7070`
+Response `200`:
 
-All endpoints are localhost-only.
+```json
+{
+  "date": "2026-04-03",
+  "solved": 1,
+  "attempted": 2,
+  "time_spent_minutes": 25,
+  "streak": 3
+}
+```
 
----
+### `GET /api/streak`
 
-#### `GET /local/status/today`
+Response `200`:
 
-Check if user has practiced today.
+```json
+{
+  "current": 3,
+  "longest": 5,
+  "last_practiced": "2026-04-03T00:00:00Z"
+}
+```
 
-Response:
+### `POST /api/timers/start`
+
+Body is optional.
+
+Request body:
+
+```json
+{
+  "problem_id": "6b0ef3c5-d73d-4064-a992-f34bb0e18f8e"
+}
+```
+
+Response `200`:
+
+```json
+{
+  "id": "2b6300da-739d-416a-9f60-aaf6ca4b3859",
+  "started_at": "2026-04-03T10:00:00Z",
+  "problem_id": "6b0ef3c5-d73d-4064-a992-f34bb0e18f8e"
+}
+```
+
+If `problem_id` cannot be parsed, the current server ignores it and still starts the timer with `problem_id = null`.
+
+### `POST /api/timers/stop`
+
+Body is not required.
+
+Response `200` when a timer exists:
+
+```json
+{
+  "elapsed_seconds": 320
+}
+```
+
+Response `200` when no timer exists:
+
+```json
+{
+  "active": false,
+  "elapsed_seconds": 0
+}
+```
+
+### `GET /api/timers/current`
+
+Response `200` when a timer exists:
+
+```json
+{
+  "active": true,
+  "id": "2b6300da-739d-416a-9f60-aaf6ca4b3859",
+  "started_at": "2026-04-03T10:00:00Z",
+  "elapsed_seconds": 320,
+  "problem_id": "6b0ef3c5-d73d-4064-a992-f34bb0e18f8e"
+}
+```
+
+Response `200` when no timer exists:
+
+```json
+{
+  "active": false
+}
+```
+
+### `GET /api/reviews/today`
+
+Response `200`:
+
+```json
+{
+  "reviews": [
+    {
+      "problem_id": "6b0ef3c5-d73d-4064-a992-f34bb0e18f8e",
+      "slug": "two-sum",
+      "title": "Two Sum",
+      "difficulty": "easy",
+      "days_overdue": 0
+    }
+  ]
+}
+```
+
+### `POST /api/registry/sync`
+
+Upsert registry version and problem manifests.
+
+Request body:
+
+```json
+{
+  "version": "2026-04-03",
+  "updated_at": "2026-04-03T08:00:00Z",
+  "problems": [
+    {
+      "slug": "two-sum",
+      "title": "Two Sum",
+      "difficulty": "easy",
+      "provider": "leetcode",
+      "source_url": "https://leetcode.com/problems/two-sum",
+      "tags": ["array", "hash-table"],
+      "pattern_tags": ["lookup"],
+      "estimated_time": 15
+    }
+  ],
+  "manifests": [
+    {
+      "kind": "provider",
+      "name": "leetcode",
+      "path": "providers/leetcode.json"
+    }
+  ]
+}
+```
+
+Response `200`:
+
+```json
+{
+  "version": "2026-04-03",
+  "synced": 1
+}
+```
+
+Response `400` if `version` or `problems` is missing.
+
+### `GET /api/registry/version`
+
+Response `200` when no sync has happened yet:
+
+```json
+{
+  "version": "none",
+  "synced_at": null
+}
+```
+
+Response `200` after sync:
+
+```json
+{
+  "version": "2026-04-03",
+  "synced_at": "2026-04-03T08:00:00Z"
+}
+```
+
+## local-agent
+
+### `GET /health`
+
+Response `200`:
+
+```json
+{
+  "status": "ok"
+}
+```
+
+### `GET /local/status/today`
+
+If `api-server` is reachable:
+
+Response `200`:
+
+```json
+{
+  "practiced": true,
+  "solved_count": 1,
+  "active_timer": false,
+  "streak": 3,
+  "message": "Good work today! Come back tomorrow."
+}
+```
+
+If `api-server` is unreachable:
+
+Response `200`:
 
 ```json
 {
   "practiced": false,
   "solved_count": 0,
   "active_timer": false,
-  "message": "No practice yet today. Start a session!"
+  "message": "No practice yet today. Start a session!",
+  "server_error": "Get \"http://localhost:8080/api/progress/today\": dial tcp ..."
 }
 ```
 
-#### `GET /local/timer/current`
+### `GET /local/timer/current`
 
-Get current timer state.
+If a local timer exists:
 
-#### `POST /local/timer/start`
+```json
+{
+  "active": true,
+  "id": "2b6300da-739d-416a-9f60-aaf6ca4b3859",
+  "started_at": "2026-04-03T10:00:00Z",
+  "elapsed_seconds": 320,
+  "problem_id": "6b0ef3c5-d73d-4064-a992-f34bb0e18f8e"
+}
+```
 
-Start a timer. Body: `{ "problem_id": "uuid or empty" }`.
+If no local timer exists and the server is unreachable:
 
-#### `POST /local/timer/stop`
+```json
+{
+  "active": false
+}
+```
 
-Stop active timer. Body: `{}`.
+If no local timer exists but the server is reachable, the response is proxied from `GET /api/timers/current`.
 
-#### `POST /local/submit`
+### `POST /local/timer/start`
 
-Proxy submission to api-server.
+Body is optional:
 
-Same body as `POST /api/submissions`.
+```json
+{
+  "problem_id": "6b0ef3c5-d73d-4064-a992-f34bb0e18f8e"
+}
+```
 
-Returns same response as api-server.
+Response `200`:
 
-#### `POST /local/sync`
+```json
+{
+  "id": "2b6300da-739d-416a-9f60-aaf6ca4b3859",
+  "started_at": "2026-04-03T10:00:00Z",
+  "problem_id": "6b0ef3c5-d73d-4064-a992-f34bb0e18f8e"
+}
+```
 
-Trigger registry sync from server.
+Note: `local-agent` starts the local timer first, then syncs to `api-server` on a best-effort background call.
 
-Response:
+### `POST /local/timer/stop`
+
+Response `200` when a timer exists:
+
+```json
+{
+  "elapsed_seconds": 320
+}
+```
+
+Response `200` when no timer exists:
+
+```json
+{
+  "active": false,
+  "elapsed_seconds": 0
+}
+```
+
+### `POST /local/submit`
+
+Proxy submission creation to `api-server`.
+
+Request body:
+
+```json
+{
+  "problem_id": "6b0ef3c5-d73d-4064-a992-f34bb0e18f8e",
+  "language": "python",
+  "code": "print(1)"
+}
+```
+
+If a local timer is active, `local-agent` automatically attaches `session_id`.
+
+Response `201`:
+
+```json
+{
+  "submission_id": "59e4673e-b9af-4393-8465-433b63f89f74",
+  "status": "pending"
+}
+```
+
+Response `400`: body validation error.
+
+Response `502`:
+
+```json
+{
+  "error": "api-server unreachable: ..."
+}
+```
+
+### `GET /local/submissions/:id`
+
+Proxy status from `GET /api/submissions/:id`.
+
+Response `200`:
+
+```json
+{
+  "id": "59e4673e-b9af-4393-8465-433b63f89f74",
+  "status": "accepted",
+  "verdict": "Accepted",
+  "passed_cases": 2,
+  "total_cases": 2,
+  "runtime_ms": 10,
+  "error_message": ""
+}
+```
+
+Response `502`:
+
+```json
+{
+  "error": "api-server GET /api/submissions/:id: 404 Not Found"
+}
+```
+
+### `POST /local/sync`
+
+Load the local registry from disk, then push it to `api-server`.
+
+Response `200`:
 
 ```json
 {
   "synced": true,
-  "problems_imported": 12,
-  "registry_version": "1.0.3"
+  "version": "2026-04-03",
+  "problems": 12,
+  "message": "Registry synced: 12 problems (version 2026-04-03)"
 }
+```
+
+Response `503` when `registry_path` is not configured:
+
+```json
+{
+  "synced": false,
+  "message": "registry_path not configured"
+}
+```
+
+Response `500` when loading the local index/manifests fails.
+
+Response `502` when sync to `api-server` fails.
+
+## Suggested Smoke Test Order
+
+```bash
+curl http://localhost:8080/health
+curl http://localhost:7070/health
+curl http://localhost:8080/api/problems
+curl -X POST http://localhost:7070/local/timer/start -H 'Content-Type: application/json' -d '{}'
+curl -X POST http://localhost:7070/local/submit -H 'Content-Type: application/json' -d '{"problem_id":"<uuid>","language":"python","code":"print(1)"}'
+curl http://localhost:7070/local/submissions/<submission_id>
+curl -X POST http://localhost:7070/local/timer/stop -H 'Content-Type: application/json' -d '{}'
 ```

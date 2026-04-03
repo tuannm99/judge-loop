@@ -10,8 +10,10 @@ import (
 type Language string
 
 const (
-	LanguagePython Language = "python"
-	LanguageGo     Language = "go"
+	LanguagePython     Language = "python"
+	LanguageGo         Language = "go"
+	LanguageJava       Language = "java"
+	LanguageJavascript Language = "javascript"
 )
 
 // SubmissionStatus represents the lifecycle state of a submission.

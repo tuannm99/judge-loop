@@ -48,10 +48,13 @@ func TestSubmissionServiceCreateSubmissionPublishesJob(t *testing.T) {
 	assert.Equal(t, domain.LanguagePython, sub.Language)
 }
 
-func TestSubmissionServiceCreateSubmissionReturnsPublisherError(t *testing.T) {
+func TestSubmissionServiceCreateSubmissionStillSucceedsWhenPublisherFails(t *testing.T) {
 	submissions := outmocks.NewMockSubmissionRepository(t)
 	publisher := outmocks.NewMockEvaluationPublisher(t)
 	service := NewSubmissionService(submissions, publisher)
+
+	userID := uuid.New()
+	problemID := uuid.New()
 
 	submissions.EXPECT().
 		Create(mock.Anything, mock.AnythingOfType("*domain.Submission")).
@@ -65,9 +68,12 @@ func TestSubmissionServiceCreateSubmissionReturnsPublisherError(t *testing.T) {
 
 	publisher.EXPECT().PublishEvaluation(mock.Anything).Return(errors.New("queue down")).Once()
 
-	_, err := service.CreateSubmission(context.Background(), uuid.New(), uuid.New(), "python", "print(1)", nil)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "queue down")
+	sub, err := service.CreateSubmission(context.Background(), userID, problemID, "python", "print(1)", nil)
+	require.NoError(t, err)
+	require.NotNil(t, sub)
+	assert.Equal(t, userID, sub.UserID)
+	assert.Equal(t, problemID, sub.ProblemID)
+	assert.Equal(t, domain.StatusPending, sub.Status)
 }
 
 func TestSubmissionServiceGetSubmission(t *testing.T) {
