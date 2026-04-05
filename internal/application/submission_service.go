@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/tuannm99/judge-loop/internal/domain"
@@ -46,10 +47,12 @@ func (s *SubmissionService) CreateSubmission(
 	if s.publisher == nil {
 		return sub, nil
 	}
-	_ = s.publisher.PublishEvaluation(outport.EvaluateSubmissionJob{
+	if err := s.publisher.PublishEvaluation(outport.EvaluateSubmissionJob{
 		SubmissionID: sub.ID.String(),
 		UserID:       sub.UserID.String(),
-	})
+	}); err != nil {
+		return nil, fmt.Errorf("publish evaluation job: %w", err)
+	}
 	return sub, nil
 }
 

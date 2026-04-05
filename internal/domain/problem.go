@@ -27,18 +27,28 @@ const (
 // Problem is a practice problem stored in the local bank.
 // Full problem statements are NOT stored — only metadata.
 type Problem struct {
-	ID            uuid.UUID
-	Slug          string
-	Title         string
-	Difficulty    Difficulty
-	Tags          []string // data structure / algorithm tags
-	PatternTags   []string // pattern tags (e.g. sliding-window)
-	Provider      Provider
-	ExternalID    string // provider's own ID
-	SourceURL     string
-	EstimatedTime int // minutes
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	ID            uuid.UUID         `json:"id"`
+	Slug          string            `json:"slug"`
+	Title         string            `json:"title"`
+	Difficulty    Difficulty        `json:"difficulty"`
+	Tags          []string          `json:"tags"`         // data structure / algorithm tags
+	PatternTags   []string          `json:"pattern_tags"` // pattern tags (e.g. sliding-window)
+	Provider      Provider          `json:"provider"`
+	ExternalID    string            `json:"external_id"` // provider's own ID
+	SourceURL     string            `json:"source_url"`
+	EstimatedTime int               `json:"estimated_time"` // minutes
+	StarterCode   map[string]string `json:"starter_code"`
+	CreatedAt     time.Time         `json:"created_at"`
+	UpdatedAt     time.Time         `json:"updated_at"`
+}
+
+type ProblemLabel struct {
+	ID        uuid.UUID `json:"id"`
+	Kind      string    `json:"kind"`
+	Slug      string    `json:"slug"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // TestCase stores input/output for judge evaluation.

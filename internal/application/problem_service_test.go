@@ -15,7 +15,8 @@ import (
 
 func TestProblemServiceListProblems(t *testing.T) {
 	problems := outmocks.NewMockProblemRepository(t)
-	service := NewProblemService(problems)
+	testCases := outmocks.NewMockTestCaseRepository(t)
+	service := NewProblemService(problems, testCases)
 
 	ctx := context.Background()
 	problemID := uuid.New()
@@ -31,9 +32,54 @@ func TestProblemServiceListProblems(t *testing.T) {
 	require.Equal(t, 1, total)
 }
 
+func TestProblemServiceListProblemLabels(t *testing.T) {
+	problems := outmocks.NewMockProblemRepository(t)
+	testCases := outmocks.NewMockTestCaseRepository(t)
+	service := NewProblemService(problems, testCases)
+
+	ctx := context.Background()
+	problems.EXPECT().ListLabels(ctx, "tag").Return([]string{"array", "graph"}, nil).Once()
+	problems.EXPECT().ListLabels(ctx, "pattern").Return([]string{"dp", "greedy"}, nil).Once()
+
+	tags, patterns, err := service.ListProblemLabels(ctx)
+	require.NoError(t, err)
+	require.Equal(t, []string{"array", "graph"}, tags)
+	require.Equal(t, []string{"dp", "greedy"}, patterns)
+}
+
+func TestProblemServiceProblemLabelCRUD(t *testing.T) {
+	problems := outmocks.NewMockProblemRepository(t)
+	testCases := outmocks.NewMockTestCaseRepository(t)
+	service := NewProblemService(problems, testCases)
+
+	ctx := context.Background()
+	labelID := uuid.New()
+
+	problems.EXPECT().ListLabelRecords(ctx, "tag").Return([]domain.ProblemLabel{{ID: labelID, Kind: "tag", Slug: "array", Name: "Array"}}, nil).Once()
+	labels, err := service.ListProblemLabelRecords(ctx, " tag ")
+	require.NoError(t, err)
+	require.Len(t, labels, 1)
+
+	problems.EXPECT().CreateLabel(ctx, domain.ProblemLabel{Kind: "tag", Slug: "graph", Name: "Graph"}).
+		Return(&domain.ProblemLabel{ID: labelID, Kind: "tag", Slug: "graph", Name: "Graph"}, nil).Once()
+	created, err := service.CreateProblemLabel(ctx, "tag", " graph ", "Graph")
+	require.NoError(t, err)
+	require.Equal(t, "graph", created.Slug)
+
+	problems.EXPECT().UpdateLabel(ctx, domain.ProblemLabel{ID: labelID, Slug: "graphs", Name: "Graphs"}).
+		Return(&domain.ProblemLabel{ID: labelID, Kind: "tag", Slug: "graphs", Name: "Graphs"}, nil).Once()
+	updated, err := service.UpdateProblemLabel(ctx, labelID, " graphs ", "Graphs")
+	require.NoError(t, err)
+	require.Equal(t, "graphs", updated.Slug)
+
+	problems.EXPECT().DeleteLabel(ctx, labelID).Return(nil).Once()
+	require.NoError(t, service.DeleteProblemLabel(ctx, labelID))
+}
+
 func TestProblemServiceGetProblemFallsBackToSlug(t *testing.T) {
 	problems := outmocks.NewMockProblemRepository(t)
-	service := NewProblemService(problems)
+	testCases := outmocks.NewMockTestCaseRepository(t)
+	service := NewProblemService(problems, testCases)
 
 	want := &domain.Problem{Slug: "two-sum"}
 	problems.EXPECT().GetBySlug(mock.Anything, "two-sum").Return(want, nil).Once()
@@ -45,7 +91,8 @@ func TestProblemServiceGetProblemFallsBackToSlug(t *testing.T) {
 
 func TestProblemServiceGetProblemByID(t *testing.T) {
 	problems := outmocks.NewMockProblemRepository(t)
-	service := NewProblemService(problems)
+	testCases := outmocks.NewMockTestCaseRepository(t)
+	service := NewProblemService(problems, testCases)
 
 	ctx := context.Background()
 	problemID := uuid.New()
@@ -59,7 +106,8 @@ func TestProblemServiceGetProblemByID(t *testing.T) {
 
 func TestProblemServiceSuggestProblem(t *testing.T) {
 	problems := outmocks.NewMockProblemRepository(t)
-	service := NewProblemService(problems)
+	testCases := outmocks.NewMockTestCaseRepository(t)
+	service := NewProblemService(problems, testCases)
 
 	ctx := context.Background()
 	userID := uuid.New()
@@ -69,4 +117,44 @@ func TestProblemServiceSuggestProblem(t *testing.T) {
 	got, err := service.SuggestProblem(ctx, userID)
 	require.NoError(t, err)
 	require.Equal(t, problem, got)
+}
+
+func TestProblemServiceContributeProblem(t *testing.T) {
+	problems := outmocks.NewMockProblemRepository(t)
+	testCases := outmocks.NewMockTestCaseRepository(t)
+	service := NewProblemService(problems, testCases)
+
+	ctx := context.Background()
+	manifest := domain.ProblemManifest{
+		Provider:   domain.ProviderLeetCode,
+		ExternalID: "1",
+		Slug:       "two-sum",
+		Title:      "Two Sum",
+		StarterCode: map[string]string{
+			"python": "class Solution:\n    pass\n",
+		},
+	}
+	saved := &domain.Problem{
+		ID:    uuid.New(),
+		Slug:  "two-sum",
+		Title: "Two Sum",
+		StarterCode: map[string]string{
+			"python": "class Solution:\n    pass\n",
+		},
+	}
+	inputCases := []domain.TestCase{
+		{Input: "1 2", Expected: "3"},
+		{Input: "2 3", Expected: "5", IsHidden: true},
+	}
+
+	problems.EXPECT().UpsertFromManifest(ctx, manifest).Return(nil).Once()
+	problems.EXPECT().GetBySlug(ctx, "two-sum").Return(saved, nil).Once()
+	testCases.EXPECT().ReplaceForProblem(ctx, saved.ID, []domain.TestCase{
+		{ProblemID: saved.ID, Input: "1 2", Expected: "3", OrderIdx: 0},
+		{ProblemID: saved.ID, Input: "2 3", Expected: "5", IsHidden: true, OrderIdx: 1},
+	}).Return(nil).Once()
+
+	got, err := service.ContributeProblem(ctx, manifest, inputCases)
+	require.NoError(t, err)
+	require.Equal(t, saved, got)
 }

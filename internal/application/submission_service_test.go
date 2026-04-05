@@ -48,7 +48,7 @@ func TestSubmissionServiceCreateSubmissionPublishesJob(t *testing.T) {
 	assert.Equal(t, domain.LanguagePython, sub.Language)
 }
 
-func TestSubmissionServiceCreateSubmissionStillSucceedsWhenPublisherFails(t *testing.T) {
+func TestSubmissionServiceCreateSubmissionReturnsPublishError(t *testing.T) {
 	submissions := outmocks.NewMockSubmissionRepository(t)
 	publisher := outmocks.NewMockEvaluationPublisher(t)
 	service := NewSubmissionService(submissions, publisher)
@@ -69,11 +69,9 @@ func TestSubmissionServiceCreateSubmissionStillSucceedsWhenPublisherFails(t *tes
 	publisher.EXPECT().PublishEvaluation(mock.Anything).Return(errors.New("queue down")).Once()
 
 	sub, err := service.CreateSubmission(context.Background(), userID, problemID, "python", "print(1)", nil)
-	require.NoError(t, err)
-	require.NotNil(t, sub)
-	assert.Equal(t, userID, sub.UserID)
-	assert.Equal(t, problemID, sub.ProblemID)
-	assert.Equal(t, domain.StatusPending, sub.Status)
+	require.Error(t, err)
+	require.Nil(t, sub)
+	require.ErrorContains(t, err, "publish evaluation job")
 }
 
 func TestSubmissionServiceGetSubmission(t *testing.T) {

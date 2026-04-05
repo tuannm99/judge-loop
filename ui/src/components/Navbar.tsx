@@ -6,7 +6,9 @@ import { IconCode, IconFlame } from '@tabler/icons-react'
 
 const links = [
   { to: '/', label: 'Problems' },
-  { to: '/dashboard', label: 'Dashboard' },
+  { to: '/problems/contribute', label: 'Contribute' },
+  { to: '/problem-labels', label: 'Labels' },
+  { to: '/dashboard', label: 'Dashboard' }
 ]
 
 export function Navbar() {
@@ -15,16 +17,23 @@ export function Navbar() {
   const { data } = useQuery({
     queryKey: ['progress-today'],
     queryFn: getProgressToday,
-    refetchInterval: 60_000,
+    refetchInterval: 60_000
   })
 
   return (
-    <header style={{ borderBottom: '1px solid var(--mantine-color-dark-4)', padding: '10px 24px' }}>
+    <header
+      style={{
+        borderBottom: '1px solid var(--mantine-color-dark-4)',
+        padding: '10px 24px'
+      }}
+    >
       <Group justify="space-between">
         <Group gap="lg">
           <Group gap="xs">
             <IconCode size={18} color="var(--mantine-color-teal-5)" />
-            <Text fw={700} c="teal.4">judge-loop</Text>
+            <Text fw={700} c="teal.4">
+              judge-loop
+            </Text>
           </Group>
 
           {links.map((l) => (
@@ -44,11 +53,16 @@ export function Navbar() {
         {data && (
           <Group gap="md">
             <Text size="sm" c="dimmed">
-              <Text span c="white" fw={500}>{data.solved}</Text> solved today
+              <Text span c="white" fw={500}>
+                {data.solved}
+              </Text>{' '}
+              solved today
             </Text>
             <Group gap={4}>
               <IconFlame size={14} color="var(--mantine-color-orange-4)" />
-              <Text size="sm" c="orange.4" fw={500}>{data.streak}</Text>
+              <Text size="sm" c="orange.4" fw={500}>
+                {data.streak}
+              </Text>
             </Group>
           </Group>
         )}

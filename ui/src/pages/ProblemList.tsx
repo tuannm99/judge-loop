@@ -7,13 +7,21 @@ import {
   getSortedRowModel,
   flexRender,
   createColumnHelper,
-  type SortingState,
+  type SortingState
 } from '@tanstack/react-table'
-import { listProblems, suggestProblem } from '@/api/client'
+import { listProblemLabels, listProblems, suggestProblem } from '@/api/client'
 import type { Problem, Difficulty } from '@/api/types'
 import { DifficultyBadge, Badge } from '@/components/ui'
 import {
-  Button, NativeSelect, Table, Text, Group, Stack, Center, Loader, Anchor,
+  Button,
+  NativeSelect,
+  Table,
+  Text,
+  Group,
+  Stack,
+  Center,
+  Loader,
+  Anchor
 } from '@mantine/core'
 import { IconArrowsShuffle, IconExternalLink } from '@tabler/icons-react'
 
@@ -22,58 +30,94 @@ const col = createColumnHelper<Problem>()
 const columns = [
   col.accessor('title', {
     header: 'Title',
-    cell: (i) => <Text size="sm" fw={500}>{i.getValue()}</Text>,
+    cell: (i) => (
+      <Text size="sm" fw={500}>
+        {i.getValue()}
+      </Text>
+    )
   }),
   col.accessor('difficulty', {
     header: 'Difficulty',
-    cell: (i) => <DifficultyBadge difficulty={i.getValue()} />,
+    cell: (i) => <DifficultyBadge difficulty={i.getValue()} />
   }),
   col.accessor('tags', {
     header: 'Tags',
     enableSorting: false,
     cell: (i) => (
       <Group gap={4}>
-        {i.getValue()?.map((t) => <Badge key={t} size="xs" variant="default">{t}</Badge>)}
+        {i.getValue()?.map((t) => (
+          <Badge key={t} size="xs" variant="default">
+            {t}
+          </Badge>
+        ))}
       </Group>
-    ),
+    )
   }),
   col.accessor('pattern_tags', {
     header: 'Patterns',
     enableSorting: false,
     cell: (i) => (
       <Group gap={4}>
-        {i.getValue()?.map((p) => <Badge key={p} size="xs" color="violet" variant="light">{p}</Badge>)}
+        {i.getValue()?.map((p) => (
+          <Badge key={p} size="xs" color="violet" variant="light">
+            {p}
+          </Badge>
+        ))}
       </Group>
-    ),
+    )
   }),
   col.accessor('provider', {
     header: 'Provider',
-    cell: (i) => <Text size="xs" c="dimmed">{i.getValue()}</Text>,
+    cell: (i) => (
+      <Text size="xs" c="dimmed">
+        {i.getValue()}
+      </Text>
+    )
   }),
   col.accessor('estimated_time', {
     header: 'Est.',
-    cell: (i) => <Text size="xs" c="dimmed">{i.getValue()}m</Text>,
+    cell: (i) => (
+      <Text size="xs" c="dimmed">
+        {i.getValue()}m
+      </Text>
+    )
   }),
   col.accessor('source_url', {
     header: '',
     enableSorting: false,
     cell: (i) =>
       i.getValue() ? (
-        <Anchor href={i.getValue()} target="_blank" onClick={(e) => e.stopPropagation()}>
+        <Anchor
+          href={i.getValue()}
+          target="_blank"
+          onClick={(e) => e.stopPropagation()}
+        >
           <IconExternalLink size={14} />
         </Anchor>
-      ) : null,
-  }),
+      ) : null
+  })
 ]
 
 export function ProblemList() {
   const navigate = useNavigate()
   const [difficulty, setDifficulty] = useState<Difficulty | ''>('')
+  const [tag, setTag] = useState('')
+  const [pattern, setPattern] = useState('')
   const [sorting, setSorting] = useState<SortingState>([])
 
   const { data, isLoading } = useQuery({
-    queryKey: ['problems', difficulty],
-    queryFn: () => listProblems({ difficulty: difficulty || undefined, limit: 200 }),
+    queryKey: ['problems', difficulty, tag, pattern],
+    queryFn: () =>
+      listProblems({
+        difficulty: difficulty || undefined,
+        tag: tag || undefined,
+        pattern: pattern || undefined,
+        limit: 200
+      })
+  })
+  const { data: labels } = useQuery({
+    queryKey: ['problem-labels'],
+    queryFn: listProblemLabels
   })
 
   const table = useReactTable({
@@ -82,22 +126,30 @@ export function ProblemList() {
     state: { sorting },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
+    getSortedRowModel: getSortedRowModel()
   })
 
   async function handleSuggest() {
     try {
       const p = await suggestProblem()
       navigate(`/problems/${p.slug}`)
-    } catch { /* no problems */ }
+    } catch {
+      /* no problems */
+    }
   }
 
   return (
     <Stack p="lg" gap="md">
       <Group justify="space-between">
         <Group gap="sm">
-          <Text size="xl" fw={600}>Problems</Text>
-          {data && <Text size="sm" c="dimmed">{data.total} total</Text>}
+          <Text size="xl" fw={600}>
+            Problems
+          </Text>
+          {data && (
+            <Text size="sm" c="dimmed">
+              {data.total} total
+            </Text>
+          )}
         </Group>
 
         <Group gap="sm">
@@ -108,7 +160,31 @@ export function ProblemList() {
               { value: '', label: 'All difficulties' },
               { value: 'easy', label: 'Easy' },
               { value: 'medium', label: 'Medium' },
-              { value: 'hard', label: 'Hard' },
+              { value: 'hard', label: 'Hard' }
+            ]}
+            size="sm"
+          />
+          <NativeSelect
+            value={tag}
+            onChange={(e) => setTag(e.target.value)}
+            data={[
+              { value: '', label: 'All tags' },
+              ...(labels?.tags ?? []).map((value) => ({
+                value,
+                label: value
+              }))
+            ]}
+            size="sm"
+          />
+          <NativeSelect
+            value={pattern}
+            onChange={(e) => setPattern(e.target.value)}
+            data={[
+              { value: '', label: 'All patterns' },
+              ...(labels?.patterns ?? []).map((value) => ({
+                value,
+                label: value
+              }))
             ]}
             size="sm"
           />
@@ -124,17 +200,26 @@ export function ProblemList() {
       </Group>
 
       {isLoading ? (
-        <Center h={200}><Loader /></Center>
+        <Center h={200}>
+          <Loader />
+        </Center>
       ) : (
         <Table.ScrollContainer minWidth={600}>
-          <Table striped highlightOnHover withTableBorder withColumnBorders={false}>
+          <Table
+            striped
+            highlightOnHover
+            withTableBorder
+            withColumnBorders={false}
+          >
             <Table.Thead>
               {table.getHeaderGroups().map((hg) => (
                 <Table.Tr key={hg.id}>
                   {hg.headers.map((h) => (
                     <Table.Th
                       key={h.id}
-                      style={{ cursor: h.column.getCanSort() ? 'pointer' : undefined }}
+                      style={{
+                        cursor: h.column.getCanSort() ? 'pointer' : undefined
+                      }}
                       onClick={h.column.getToggleSortingHandler()}
                     >
                       <Text size="xs" tt="uppercase" fw={600} c="dimmed">
@@ -152,7 +237,9 @@ export function ProblemList() {
                 <Table.Tr>
                   <Table.Td colSpan={columns.length}>
                     <Center py="xl">
-                      <Text c="dimmed" size="sm">No problems found. Run local-agent sync first.</Text>
+                      <Text c="dimmed" size="sm">
+                        No problems found. Run local-agent sync first.
+                      </Text>
                     </Center>
                   </Table.Td>
                 </Table.Tr>
@@ -165,7 +252,10 @@ export function ProblemList() {
                   >
                     {row.getVisibleCells().map((cell) => (
                       <Table.Td key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
                       </Table.Td>
                     ))}
                   </Table.Tr>

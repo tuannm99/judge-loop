@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -82,21 +81,25 @@ func seedUser(t *testing.T, db *DB) uuid.UUID {
 func seedProblem(t *testing.T, db *DB, slug string, tags, patternTags []string) uuid.UUID {
 	t.Helper()
 
-	id := uuid.New()
-	model := problemModel{
-		ID:            id,
+	store := NewProblemRepositoryImpl(db)
+	manifest := domain.ProblemManifest{
+		Provider:      domain.ProviderLeetCode,
+		ExternalID:    slug,
 		Slug:          slug,
 		Title:         "Title " + slug,
-		Difficulty:    string(domain.DifficultyEasy),
-		Tags:          pq.StringArray(tags),
-		PatternTags:   pq.StringArray(patternTags),
-		Provider:      string(domain.ProviderLeetCode),
-		ExternalID:    slug,
+		Difficulty:    domain.DifficultyEasy,
+		Tags:          tags,
+		PatternTags:   patternTags,
 		SourceURL:     "https://example.com/" + slug,
 		EstimatedTime: 15,
+		StarterCode:   map[string]string{},
 	}
-	require.NoError(t, db.Gorm.Create(&model).Error)
-	return id
+	require.NoError(t, store.UpsertFromManifest(context.Background(), manifest))
+
+	problem, err := store.GetBySlug(context.Background(), slug)
+	require.NoError(t, err)
+	require.NotNil(t, problem)
+	return problem.ID
 }
 
 func TestConnectRegistryAndMissionIntegration(t *testing.T) {
@@ -127,13 +130,19 @@ func TestConnectRegistryAndMissionIntegration(t *testing.T) {
 	require.Nil(t, current)
 
 	mission := domain.DailyMission{
-		ID:            uuid.New(),
-		UserID:        userID,
-		Date:          time.Now().UTC().Truncate(24 * time.Hour),
-		RequiredTasks: []domain.MissionTask{{ProblemID: uuid.New(), Slug: "two-sum", Title: "Two Sum", Reason: "unsolved", Priority: 3}},
-		OptionalTasks: []domain.MissionTask{{ProblemID: uuid.New(), Slug: "reverse", Title: "Reverse", Reason: "optional challenge", Priority: 1}},
-		ReviewTasks:   []domain.MissionTask{{ProblemID: uuid.New(), Slug: "dp", Title: "DP", Reason: "due for review", Priority: 10}},
-		GeneratedAt:   time.Now().UTC(),
+		ID:     uuid.New(),
+		UserID: userID,
+		Date:   time.Now().UTC().Truncate(24 * time.Hour),
+		RequiredTasks: []domain.MissionTask{
+			{ProblemID: uuid.New(), Slug: "two-sum", Title: "Two Sum", Reason: "unsolved", Priority: 3},
+		},
+		OptionalTasks: []domain.MissionTask{
+			{ProblemID: uuid.New(), Slug: "reverse", Title: "Reverse", Reason: "optional challenge", Priority: 1},
+		},
+		ReviewTasks: []domain.MissionTask{
+			{ProblemID: uuid.New(), Slug: "dp", Title: "DP", Reason: "due for review", Priority: 10},
+		},
+		GeneratedAt: time.Now().UTC(),
 	}
 	require.NoError(t, missionStore.Save(ctx, mission))
 
@@ -166,6 +175,10 @@ func TestProblemSubmissionSessionAndPerformanceIntegration(t *testing.T) {
 		ExternalID:    "1",
 		SourceURL:     "https://example.com/two-sum",
 		EstimatedTime: 15,
+		StarterCode: map[string]string{
+			"python": "class Solution:\n    pass\n",
+			"go":     "package main\n\nfunc main() {}\n",
+		},
 	}
 	problemB := domain.ProblemManifest{
 		Slug:          "best-time",
@@ -196,6 +209,8 @@ func TestProblemSubmissionSessionAndPerformanceIntegration(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, bySlug)
 	require.Equal(t, "two-sum", bySlug.Slug)
+	require.Equal(t, "class Solution:\n    pass\n", bySlug.StarterCode["python"])
+	require.Equal(t, "package main\n\nfunc main() {}\n", bySlug.StarterCode["go"])
 
 	suggested, err := problemStore.Suggest(ctx, userID, []string{"hash-map"})
 	require.NoError(t, err)

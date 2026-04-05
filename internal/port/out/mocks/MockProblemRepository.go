@@ -40,6 +40,113 @@ func (_m *MockProblemRepository) EXPECT() *MockProblemRepository_Expecter {
 	return &MockProblemRepository_Expecter{mock: &_m.Mock}
 }
 
+// ListLabels provides a mock function for the type MockProblemRepository
+func (_mock *MockProblemRepository) ListLabels(ctx context.Context, kind string) ([]string, error) {
+	ret := _mock.Called(ctx, kind)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListLabels")
+	}
+
+	var r0 []string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]string, error)); ok {
+		return returnFunc(ctx, kind)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []string); ok {
+		r0 = returnFunc(ctx, kind)
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).([]string)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, kind)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockProblemRepository_ListLabels_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListLabels'
+type MockProblemRepository_ListLabels_Call struct {
+	*mock.Call
+}
+
+// ListLabels is a helper method to define mock.On call
+//   - ctx context.Context
+//   - kind string
+func (_e *MockProblemRepository_Expecter) ListLabels(ctx interface{}, kind interface{}) *MockProblemRepository_ListLabels_Call {
+	return &MockProblemRepository_ListLabels_Call{Call: _e.mock.On("ListLabels", ctx, kind)}
+}
+
+func (_c *MockProblemRepository_ListLabels_Call) Run(run func(ctx context.Context, kind string)) *MockProblemRepository_ListLabels_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(arg0, arg1)
+	})
+	return _c
+}
+
+func (_c *MockProblemRepository_ListLabels_Call) Return(labels []string, err error) *MockProblemRepository_ListLabels_Call {
+	_c.Call.Return(labels, err)
+	return _c
+}
+
+func (_c *MockProblemRepository_ListLabels_Call) RunAndReturn(run func(ctx context.Context, kind string) ([]string, error)) *MockProblemRepository_ListLabels_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CreateLabel provides a mock function for the type MockProblemRepository
+func (_mock *MockProblemRepository) CreateLabel(ctx context.Context, label domain.ProblemLabel) (*domain.ProblemLabel, error) {
+	ret := _mock.Called(ctx, label)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateLabel")
+	}
+
+	var r0 *domain.ProblemLabel
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.ProblemLabel) (*domain.ProblemLabel, error)); ok {
+		return returnFunc(ctx, label)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.ProblemLabel) *domain.ProblemLabel); ok {
+		r0 = returnFunc(ctx, label)
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).(*domain.ProblemLabel)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.ProblemLabel) error); ok {
+		r1 = returnFunc(ctx, label)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+type MockProblemRepository_CreateLabel_Call struct {
+	*mock.Call
+}
+
+func (_e *MockProblemRepository_Expecter) CreateLabel(ctx interface{}, label interface{}) *MockProblemRepository_CreateLabel_Call {
+	return &MockProblemRepository_CreateLabel_Call{Call: _e.mock.On("CreateLabel", ctx, label)}
+}
+
+func (_c *MockProblemRepository_CreateLabel_Call) Return(label *domain.ProblemLabel, err error) *MockProblemRepository_CreateLabel_Call {
+	_c.Call.Return(label, err)
+	return _c
+}
+
+func (_c *MockProblemRepository_CreateLabel_Call) RunAndReturn(run func(context.Context, domain.ProblemLabel) (*domain.ProblemLabel, error)) *MockProblemRepository_CreateLabel_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetByID provides a mock function for the type MockProblemRepository
 func (_mock *MockProblemRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Problem, error) {
 	ret := _mock.Called(ctx, id)
@@ -324,6 +431,50 @@ func (_c *MockProblemRepository_List_Call) RunAndReturn(run func(ctx context.Con
 	return _c
 }
 
+// ListLabelRecords provides a mock function for the type MockProblemRepository
+func (_mock *MockProblemRepository) ListLabelRecords(ctx context.Context, kind string) ([]domain.ProblemLabel, error) {
+	ret := _mock.Called(ctx, kind)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListLabelRecords")
+	}
+
+	var r0 []domain.ProblemLabel
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]domain.ProblemLabel, error)); ok {
+		return returnFunc(ctx, kind)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []domain.ProblemLabel); ok {
+		r0 = returnFunc(ctx, kind)
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).([]domain.ProblemLabel)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, kind)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+type MockProblemRepository_ListLabelRecords_Call struct {
+	*mock.Call
+}
+
+func (_e *MockProblemRepository_Expecter) ListLabelRecords(ctx interface{}, kind interface{}) *MockProblemRepository_ListLabelRecords_Call {
+	return &MockProblemRepository_ListLabelRecords_Call{Call: _e.mock.On("ListLabelRecords", ctx, kind)}
+}
+
+func (_c *MockProblemRepository_ListLabelRecords_Call) Return(labels []domain.ProblemLabel, err error) *MockProblemRepository_ListLabelRecords_Call {
+	_c.Call.Return(labels, err)
+	return _c
+}
+
+func (_c *MockProblemRepository_ListLabelRecords_Call) RunAndReturn(run func(context.Context, string) ([]domain.ProblemLabel, error)) *MockProblemRepository_ListLabelRecords_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Suggest provides a mock function for the type MockProblemRepository
 func (_mock *MockProblemRepository) Suggest(ctx context.Context, userID uuid.UUID, patterns []string) (*domain.Problem, error) {
 	ret := _mock.Called(ctx, userID, patterns)
@@ -451,6 +602,82 @@ func (_c *MockProblemRepository_UpsertFromManifest_Call) Return(err error) *Mock
 }
 
 func (_c *MockProblemRepository_UpsertFromManifest_Call) RunAndReturn(run func(ctx context.Context, m domain.ProblemManifest) error) *MockProblemRepository_UpsertFromManifest_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateLabel provides a mock function for the type MockProblemRepository
+func (_mock *MockProblemRepository) UpdateLabel(ctx context.Context, label domain.ProblemLabel) (*domain.ProblemLabel, error) {
+	ret := _mock.Called(ctx, label)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateLabel")
+	}
+
+	var r0 *domain.ProblemLabel
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.ProblemLabel) (*domain.ProblemLabel, error)); ok {
+		return returnFunc(ctx, label)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.ProblemLabel) *domain.ProblemLabel); ok {
+		r0 = returnFunc(ctx, label)
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).(*domain.ProblemLabel)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.ProblemLabel) error); ok {
+		r1 = returnFunc(ctx, label)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+type MockProblemRepository_UpdateLabel_Call struct {
+	*mock.Call
+}
+
+func (_e *MockProblemRepository_Expecter) UpdateLabel(ctx interface{}, label interface{}) *MockProblemRepository_UpdateLabel_Call {
+	return &MockProblemRepository_UpdateLabel_Call{Call: _e.mock.On("UpdateLabel", ctx, label)}
+}
+
+func (_c *MockProblemRepository_UpdateLabel_Call) Return(label *domain.ProblemLabel, err error) *MockProblemRepository_UpdateLabel_Call {
+	_c.Call.Return(label, err)
+	return _c
+}
+
+func (_c *MockProblemRepository_UpdateLabel_Call) RunAndReturn(run func(context.Context, domain.ProblemLabel) (*domain.ProblemLabel, error)) *MockProblemRepository_UpdateLabel_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// DeleteLabel provides a mock function for the type MockProblemRepository
+func (_mock *MockProblemRepository) DeleteLabel(ctx context.Context, id uuid.UUID) error {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteLabel")
+	}
+
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
+		return returnFunc(ctx, id)
+	}
+	return ret.Error(0)
+}
+
+type MockProblemRepository_DeleteLabel_Call struct {
+	*mock.Call
+}
+
+func (_e *MockProblemRepository_Expecter) DeleteLabel(ctx interface{}, id interface{}) *MockProblemRepository_DeleteLabel_Call {
+	return &MockProblemRepository_DeleteLabel_Call{Call: _e.mock.On("DeleteLabel", ctx, id)}
+}
+
+func (_c *MockProblemRepository_DeleteLabel_Call) Return(err error) *MockProblemRepository_DeleteLabel_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockProblemRepository_DeleteLabel_Call) RunAndReturn(run func(context.Context, uuid.UUID) error) *MockProblemRepository_DeleteLabel_Call {
 	_c.Call.Return(run)
 	return _c
 }

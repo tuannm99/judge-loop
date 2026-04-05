@@ -5,43 +5,79 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 	"github.com/tuannm99/judge-loop/internal/domain"
 )
 
 type problemModel struct {
-	ID            uuid.UUID      `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	Slug          string         `gorm:"column:slug"`
-	Title         string         `gorm:"column:title"`
-	Difficulty    string         `gorm:"column:difficulty"`
-	Tags          pq.StringArray `gorm:"type:text[];column:tags"`
-	PatternTags   pq.StringArray `gorm:"type:text[];column:pattern_tags"`
-	Provider      string         `gorm:"column:provider"`
-	ExternalID    string         `gorm:"column:external_id"`
-	SourceURL     string         `gorm:"column:source_url"`
-	EstimatedTime int            `gorm:"column:estimated_time"`
-	CreatedAt     time.Time      `gorm:"column:created_at"`
-	UpdatedAt     time.Time      `gorm:"column:updated_at"`
+	ID            uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	Slug          string    `gorm:"column:slug"`
+	Title         string    `gorm:"column:title"`
+	Difficulty    string    `gorm:"column:difficulty"`
+	Provider      string    `gorm:"column:provider"`
+	ExternalID    string    `gorm:"column:external_id"`
+	SourceURL     string    `gorm:"column:source_url"`
+	EstimatedTime int       `gorm:"column:estimated_time"`
+	StarterCode   []byte    `gorm:"column:starter_code"`
+	CreatedAt     time.Time `gorm:"column:created_at"`
+	UpdatedAt     time.Time `gorm:"column:updated_at"`
+
+	Tags        []string `gorm:"-"`
+	PatternTags []string `gorm:"-"`
 }
 
 func (problemModel) TableName() string { return "problems" }
 
 func (m problemModel) toDomain() domain.Problem {
+	starterCode := map[string]string{}
+	if len(m.StarterCode) > 0 {
+		_ = json.Unmarshal(m.StarterCode, &starterCode)
+	}
+
 	return domain.Problem{
 		ID:            m.ID,
 		Slug:          m.Slug,
 		Title:         m.Title,
 		Difficulty:    domain.Difficulty(m.Difficulty),
-		Tags:          []string(m.Tags),
-		PatternTags:   []string(m.PatternTags),
+		Tags:          append([]string(nil), m.Tags...),
+		PatternTags:   append([]string(nil), m.PatternTags...),
 		Provider:      domain.Provider(m.Provider),
 		ExternalID:    m.ExternalID,
 		SourceURL:     m.SourceURL,
 		EstimatedTime: m.EstimatedTime,
+		StarterCode:   starterCode,
 		CreatedAt:     m.CreatedAt,
 		UpdatedAt:     m.UpdatedAt,
 	}
 }
+
+type problemLabelModel struct {
+	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	Kind      string    `gorm:"column:kind"`
+	Slug      string    `gorm:"column:slug"`
+	Name      string    `gorm:"column:name"`
+	CreatedAt time.Time `gorm:"column:created_at"`
+	UpdatedAt time.Time `gorm:"column:updated_at"`
+}
+
+func (problemLabelModel) TableName() string { return "problem_labels" }
+
+func (m problemLabelModel) toDomain() domain.ProblemLabel {
+	return domain.ProblemLabel{
+		ID:        m.ID,
+		Kind:      m.Kind,
+		Slug:      m.Slug,
+		Name:      m.Name,
+		CreatedAt: m.CreatedAt,
+		UpdatedAt: m.UpdatedAt,
+	}
+}
+
+type problemLabelLinkModel struct {
+	ProblemID      uuid.UUID `gorm:"column:problem_id;primaryKey"`
+	ProblemLabelID uuid.UUID `gorm:"column:problem_label_id;primaryKey"`
+}
+
+func (problemLabelLinkModel) TableName() string { return "problem_label_links" }
 
 type submissionModel struct {
 	ID           uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`

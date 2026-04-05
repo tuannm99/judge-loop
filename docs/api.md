@@ -73,8 +73,13 @@ Response `200`:
       "tags": ["array", "hash-table"],
       "pattern_tags": ["lookup"],
       "provider": "leetcode",
+      "external_id": "1",
       "source_url": "https://leetcode.com/problems/two-sum",
-      "estimated_time": 15
+      "estimated_time": 15,
+      "starter_code": {
+        "python": "class Solution:\n    pass\n",
+        "go": "package main\n\nfunc main() {}\n"
+      }
     }
   ],
   "total": 1
@@ -102,8 +107,13 @@ Response `200`:
   "tags": ["array", "hash-table"],
   "pattern_tags": ["lookup"],
   "provider": "leetcode",
+  "external_id": "1",
   "source_url": "https://leetcode.com/problems/two-sum",
-  "estimated_time": 15
+  "estimated_time": 15,
+  "starter_code": {
+    "python": "class Solution:\n    pass\n",
+    "go": "package main\n\nfunc main() {}\n"
+  }
 }
 ```
 
@@ -127,6 +137,97 @@ Response `404`:
 {
   "error": "no unsolved problems available"
 }
+```
+
+### `POST /api/problems/contribute`
+
+Add or update one problem in the question bank.
+
+Request body:
+
+```json
+{
+  "provider": "leetcode",
+  "external_id": "1",
+  "slug": "two-sum",
+  "title": "Two Sum",
+  "difficulty": "easy",
+  "tags": ["array", "hash-table"],
+  "pattern_tags": ["lookup"],
+  "source_url": "https://leetcode.com/problems/two-sum",
+  "estimated_time": 15,
+  "starter_code": {
+    "python": "class Solution:\n    pass\n",
+    "go": "package main\n\nfunc main() {}\n"
+  },
+  "version": 1,
+  "test_cases": [
+    {
+      "input": "2 7\n9",
+      "expected": "0 1"
+    },
+    {
+      "input": "3 2 4\n6",
+      "expected": "1 2",
+      "is_hidden": true
+    }
+  ]
+}
+```
+
+Response `201`:
+
+```json
+{
+  "id": "6b0ef3c5-d73d-4064-a992-f34bb0e18f8e",
+  "slug": "two-sum",
+  "title": "Two Sum",
+  "difficulty": "easy",
+  "tags": ["array", "hash-table"],
+  "pattern_tags": ["lookup"],
+  "provider": "leetcode",
+  "external_id": "1",
+  "source_url": "https://leetcode.com/problems/two-sum",
+  "estimated_time": 15,
+  "starter_code": {
+    "python": "class Solution:\n    pass\n",
+    "go": "package main\n\nfunc main() {}\n"
+  }
+}
+```
+
+Example:
+
+```bash
+curl -X POST http://localhost:8080/api/problems/contribute \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "provider": "leetcode",
+    "external_id": "1",
+    "slug": "two-sum",
+    "title": "Two Sum",
+    "difficulty": "easy",
+    "tags": ["array", "hash-table"],
+    "pattern_tags": ["lookup"],
+    "source_url": "https://leetcode.com/problems/two-sum",
+    "estimated_time": 15,
+    "starter_code": {
+      "python": "class Solution:\n    pass\n",
+      "go": "package main\n\nfunc main() {}\n"
+    },
+    "version": 1,
+    "test_cases": [
+      {
+        "input": "2 7\n9",
+        "expected": "0 1"
+      },
+      {
+        "input": "3 2 4\n6",
+        "expected": "1 2",
+        "is_hidden": true
+      }
+    ]
+  }'
 ```
 
 ### `POST /api/submissions`

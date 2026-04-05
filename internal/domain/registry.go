@@ -5,16 +5,17 @@ import "time"
 // ProblemManifest is the normalized metadata record for a problem in the registry.
 // Full problem statements are not stored; this is metadata only.
 type ProblemManifest struct {
-	Provider      Provider   `json:"provider"`
-	ExternalID    string     `json:"external_id"`
-	Slug          string     `json:"slug"`
-	Title         string     `json:"title"`
-	Difficulty    Difficulty `json:"difficulty"`
-	Tags          []string   `json:"tags"`
-	PatternTags   []string   `json:"pattern_tags"`
-	SourceURL     string     `json:"source_url"`
-	EstimatedTime int        `json:"estimated_time"`
-	Version       int        `json:"version"`
+	Provider      Provider          `json:"provider"`
+	ExternalID    string            `json:"external_id"`
+	Slug          string            `json:"slug"`
+	Title         string            `json:"title"`
+	Difficulty    Difficulty        `json:"difficulty"`
+	Tags          []string          `json:"tags"`
+	PatternTags   []string          `json:"pattern_tags"`
+	SourceURL     string            `json:"source_url"`
+	EstimatedTime int               `json:"estimated_time"`
+	StarterCode   map[string]string `json:"starter_code"`
+	Version       int               `json:"version"`
 }
 
 // ManifestRef is a pointer to a provider or track manifest in the index.

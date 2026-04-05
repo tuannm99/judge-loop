@@ -18,8 +18,10 @@ export interface Problem {
   tags: string[]
   pattern_tags: string[]
   provider: Provider
+  external_id: string
   source_url: string
   estimated_time: number
+  starter_code: Partial<Record<Language, string>>
 }
 
 export interface Submission {
@@ -57,7 +59,6 @@ export interface ReviewItem {
   problem_id: string
   slug: string
   title: string
-  difficulty: Difficulty
   days_overdue: number
 }
 
@@ -67,4 +68,18 @@ export interface Timer {
   started_at?: string
   elapsed_seconds?: number
   problem_id?: string
+}
+
+export interface ProblemLabels {
+  tags: string[]
+  patterns: string[]
+}
+
+export interface ProblemLabel {
+  id: string
+  kind: 'tag' | 'pattern'
+  slug: string
+  name: string
+  created_at: string
+  updated_at: string
 }

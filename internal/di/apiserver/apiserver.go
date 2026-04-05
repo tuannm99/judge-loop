@@ -22,6 +22,7 @@ func New(cfg config.APIServer) *fx.App {
 		fx.Module("problem",
 			fx.Provide(
 				fx.Annotate(postgres.NewProblemRepositoryImpl, fx.As(new(outport.ProblemRepository))),
+				fx.Annotate(postgres.NewTestCaseRepositoryImpl, fx.As(new(outport.TestCaseRepository))),
 				fx.Annotate(application.NewProblemService, fx.As(new(inport.ProblemService))),
 			),
 		),

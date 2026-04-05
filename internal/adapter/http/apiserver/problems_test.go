@@ -1,6 +1,8 @@
 package apiserver
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -57,6 +59,72 @@ func TestProblemHandlers(t *testing.T) {
 		require.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 
+	t.Run("list problem labels", func(t *testing.T) {
+		service.EXPECT().ListProblemLabels(mock.Anything).Return([]string{"array"}, []string{"dp"}, nil).Once()
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/api/problems/labels", nil)
+		api.Problems.ListProblemLabels(c)
+		require.Equal(t, http.StatusOK, w.Code)
+		require.Contains(t, w.Body.String(), `"tags":["array"]`)
+		require.Contains(t, w.Body.String(), `"patterns":["dp"]`)
+
+		service.EXPECT().ListProblemLabels(mock.Anything).Return(nil, nil, errors.New("boom")).Once()
+		w = httptest.NewRecorder()
+		c, _ = gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/api/problems/labels", nil)
+		api.Problems.ListProblemLabels(c)
+		require.Equal(t, http.StatusInternalServerError, w.Code)
+	})
+
+	t.Run("problem label crud", func(t *testing.T) {
+		labelID := uuid.New()
+
+		service.EXPECT().ListProblemLabelRecords(mock.Anything, "tag").
+			Return([]domain.ProblemLabel{{ID: labelID, Kind: "tag", Slug: "array", Name: "Array"}}, nil).Once()
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/api/problem-labels?kind=tag", nil)
+		q := c.Request.URL.Query()
+		q.Set("kind", "tag")
+		c.Request.URL.RawQuery = q.Encode()
+		api.Problems.ListProblemLabelRecords(c)
+		require.Equal(t, http.StatusOK, w.Code)
+		require.Contains(t, w.Body.String(), `"slug":"array"`)
+
+		body, err := json.Marshal(problemLabelRequest{Kind: "pattern", Slug: "sliding-window", Name: "Sliding Window"})
+		require.NoError(t, err)
+		service.EXPECT().CreateProblemLabel(mock.Anything, "pattern", "sliding-window", "Sliding Window").
+			Return(&domain.ProblemLabel{ID: labelID, Kind: "pattern", Slug: "sliding-window", Name: "Sliding Window"}, nil).Once()
+		w = httptest.NewRecorder()
+		c, _ = gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodPost, "/api/problem-labels", bytes.NewReader(body))
+		c.Request.Header.Set("Content-Type", "application/json")
+		api.Problems.CreateProblemLabel(c)
+		require.Equal(t, http.StatusCreated, w.Code)
+
+		updateBody, err := json.Marshal(updateProblemLabelRequest{Slug: "two-pointers", Name: "Two Pointers"})
+		require.NoError(t, err)
+		service.EXPECT().UpdateProblemLabel(mock.Anything, labelID, "two-pointers", "Two Pointers").
+			Return(&domain.ProblemLabel{ID: labelID, Kind: "pattern", Slug: "two-pointers", Name: "Two Pointers"}, nil).Once()
+		w = httptest.NewRecorder()
+		c, _ = gin.CreateTestContext(w)
+		c.Params = gin.Params{{Key: "id", Value: labelID.String()}}
+		c.Request = httptest.NewRequest(http.MethodPut, "/api/problem-labels/"+labelID.String(), bytes.NewReader(updateBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+		api.Problems.UpdateProblemLabel(c)
+		require.Equal(t, http.StatusOK, w.Code)
+
+		service.EXPECT().DeleteProblemLabel(mock.Anything, labelID).Return(nil).Once()
+		w = httptest.NewRecorder()
+		c, _ = gin.CreateTestContext(w)
+		c.Params = gin.Params{{Key: "id", Value: labelID.String()}}
+		c.Request = httptest.NewRequest(http.MethodDelete, "/api/problem-labels/"+labelID.String(), nil)
+		api.Problems.DeleteProblemLabel(c)
+		require.Equal(t, http.StatusNoContent, w.Code)
+	})
+
 	t.Run("get problem branches", func(t *testing.T) {
 		service.EXPECT().GetProblem(mock.Anything, "slug").Return(&domain.Problem{Slug: "slug"}, nil).Once()
 		w := httptest.NewRecorder()
@@ -103,6 +171,77 @@ func TestProblemHandlers(t *testing.T) {
 		c, _ = gin.CreateTestContext(w)
 		c.Request = httptest.NewRequest(http.MethodGet, "/api/problems/suggest", nil)
 		api.Problems.SuggestProblem(c)
+		require.Equal(t, http.StatusInternalServerError, w.Code)
+	})
+
+	t.Run("contribute problem branches", func(t *testing.T) {
+		body, err := json.Marshal(contributeProblemRequest{
+			Provider:      domain.ProviderLeetCode,
+			ExternalID:    "1",
+			Slug:          "two-sum",
+			Title:         "Two Sum",
+			Difficulty:    domain.DifficultyEasy,
+			Tags:          []string{"array"},
+			PatternTags:   []string{"lookup"},
+			SourceURL:     "https://leetcode.com/problems/two-sum",
+			EstimatedTime: 15,
+			StarterCode: map[string]string{
+				"python": "class Solution:\n    pass\n",
+				"go":     "package main\n\nfunc main() {}\n",
+			},
+			Version: 1,
+			TestCases: []contributeTestCaseRequest{
+				{Input: "1 2", Expected: "3"},
+				{Input: "2 3", Expected: "5", IsHidden: true},
+			},
+		})
+		require.NoError(t, err)
+
+		service.EXPECT().ContributeProblem(mock.Anything, domain.ProblemManifest{
+			Provider:      domain.ProviderLeetCode,
+			ExternalID:    "1",
+			Slug:          "two-sum",
+			Title:         "Two Sum",
+			Difficulty:    domain.DifficultyEasy,
+			Tags:          []string{"array"},
+			PatternTags:   []string{"lookup"},
+			SourceURL:     "https://leetcode.com/problems/two-sum",
+			EstimatedTime: 15,
+			StarterCode: map[string]string{
+				"python": "class Solution:\n    pass\n",
+				"go":     "package main\n\nfunc main() {}\n",
+			},
+			Version: 1,
+		}, []domain.TestCase{
+			{Input: "1 2", Expected: "3", OrderIdx: 0},
+			{Input: "2 3", Expected: "5", IsHidden: true, OrderIdx: 1},
+		}).Return(&domain.Problem{
+			Slug: "two-sum",
+			StarterCode: map[string]string{
+				"python": "class Solution:\n    pass\n",
+			},
+		}, nil).Once()
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodPost, "/api/problems/contribute", bytes.NewReader(body))
+		c.Request.Header.Set("Content-Type", "application/json")
+		api.Problems.ContributeProblem(c)
+		require.Equal(t, http.StatusCreated, w.Code)
+
+		w = httptest.NewRecorder()
+		c, _ = gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodPost, "/api/problems/contribute", bytes.NewBufferString("{"))
+		c.Request.Header.Set("Content-Type", "application/json")
+		api.Problems.ContributeProblem(c)
+		require.Equal(t, http.StatusBadRequest, w.Code)
+
+		service.EXPECT().ContributeProblem(mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("boom")).Once()
+		w = httptest.NewRecorder()
+		c, _ = gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodPost, "/api/problems/contribute", bytes.NewReader(body))
+		c.Request.Header.Set("Content-Type", "application/json")
+		api.Problems.ContributeProblem(c)
 		require.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 }

@@ -9,6 +9,11 @@ import (
 
 type ProblemRepository interface {
 	List(ctx context.Context, filter ProblemFilter) ([]domain.Problem, int, error)
+	ListLabels(ctx context.Context, kind string) ([]string, error)
+	ListLabelRecords(ctx context.Context, kind string) ([]domain.ProblemLabel, error)
+	CreateLabel(ctx context.Context, label domain.ProblemLabel) (*domain.ProblemLabel, error)
+	UpdateLabel(ctx context.Context, label domain.ProblemLabel) (*domain.ProblemLabel, error)
+	DeleteLabel(ctx context.Context, id uuid.UUID) error
 	GetByID(ctx context.Context, id uuid.UUID) (*domain.Problem, error)
 	GetBySlug(ctx context.Context, slug string) (*domain.Problem, error)
 	Suggest(ctx context.Context, userID uuid.UUID, patterns []string) (*domain.Problem, error)

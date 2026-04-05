@@ -3,9 +3,9 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 	"github.com/tuannm99/judge-loop/internal/domain"
 	outport "github.com/tuannm99/judge-loop/internal/port/out"
 	"gorm.io/gorm"
@@ -29,28 +29,40 @@ func (s *ProblemRepositoryImpl) List(ctx context.Context, f ProblemFilter) ([]do
 		f.Limit = 20
 	}
 
-	q := s.db.Gorm.WithContext(ctx).Model(&problemModel{})
+	baseQuery := s.db.Gorm.WithContext(ctx).Model(&problemModel{})
 	if f.Difficulty != nil {
-		q = q.Where("difficulty = ?", string(*f.Difficulty))
+		baseQuery = baseQuery.Where("difficulty = ?", string(*f.Difficulty))
 	}
 	if f.Provider != nil {
-		q = q.Where("provider = ?", string(*f.Provider))
+		baseQuery = baseQuery.Where("provider = ?", string(*f.Provider))
 	}
 	if f.Tag != "" {
-		q = q.Where("? = ANY(tags)", f.Tag)
+		baseQuery = joinProblemLabelFilter(baseQuery, "tag", f.Tag)
 	}
 	if f.Pattern != "" {
-		q = q.Where("? = ANY(pattern_tags)", f.Pattern)
+		baseQuery = joinProblemLabelFilter(baseQuery, "pattern", f.Pattern)
 	}
 
 	var total int64
-	if err := q.Count(&total).Error; err != nil {
+	if err := baseQuery.Session(&gorm.Session{}).Distinct("problems.id").Count(&total).Error; err != nil {
 		return nil, 0, fmt.Errorf("count problems: %w", err)
 	}
 
 	var models []problemModel
-	if err := q.Order("created_at DESC").Limit(f.Limit).Offset(f.Offset).Find(&models).Error; err != nil {
+	if err := baseQuery.Session(&gorm.Session{}).
+		Distinct("problems.*").
+		Order("created_at DESC").
+		Limit(f.Limit).
+		Offset(f.Offset).
+		Find(&models).Error; err != nil {
 		return nil, 0, fmt.Errorf("list problems: %w", err)
+	}
+	modelPtrs := make([]*problemModel, 0, len(models))
+	for i := range models {
+		modelPtrs = append(modelPtrs, &models[i])
+	}
+	if err := s.loadProblemLabels(ctx, modelPtrs); err != nil {
+		return nil, 0, err
 	}
 
 	out := make([]domain.Problem, 0, len(models))
@@ -58,6 +70,75 @@ func (s *ProblemRepositoryImpl) List(ctx context.Context, f ProblemFilter) ([]do
 		out = append(out, model.toDomain())
 	}
 	return out, int(total), nil
+}
+
+func (s *ProblemRepositoryImpl) ListLabels(ctx context.Context, kind string) ([]string, error) {
+	var labels []string
+	if err := s.db.Gorm.WithContext(ctx).
+		Table("problem_labels").
+		Where("kind = ?", kind).
+		Order("slug ASC").
+		Pluck("slug", &labels).Error; err != nil {
+		return nil, fmt.Errorf("list %s labels: %w", kind, err)
+	}
+	return labels, nil
+}
+
+func (s *ProblemRepositoryImpl) ListLabelRecords(ctx context.Context, kind string) ([]domain.ProblemLabel, error) {
+	var models []problemLabelModel
+	if err := s.db.Gorm.WithContext(ctx).
+		Where("kind = ?", kind).
+		Order("name ASC, slug ASC").
+		Find(&models).Error; err != nil {
+		return nil, fmt.Errorf("list %s label records: %w", kind, err)
+	}
+
+	labels := make([]domain.ProblemLabel, 0, len(models))
+	for _, model := range models {
+		labels = append(labels, model.toDomain())
+	}
+	return labels, nil
+}
+
+func (s *ProblemRepositoryImpl) CreateLabel(ctx context.Context, label domain.ProblemLabel) (*domain.ProblemLabel, error) {
+	model := problemLabelModel{
+		Kind: label.Kind,
+		Slug: label.Slug,
+		Name: label.Name,
+	}
+	if err := s.db.Gorm.WithContext(ctx).Create(&model).Error; err != nil {
+		return nil, fmt.Errorf("create label %s/%s: %w", label.Kind, label.Slug, err)
+	}
+	out := model.toDomain()
+	return &out, nil
+}
+
+func (s *ProblemRepositoryImpl) UpdateLabel(ctx context.Context, label domain.ProblemLabel) (*domain.ProblemLabel, error) {
+	updates := map[string]any{
+		"slug":       label.Slug,
+		"name":       label.Name,
+		"updated_at": gorm.Expr("NOW()"),
+	}
+	if err := s.db.Gorm.WithContext(ctx).
+		Model(&problemLabelModel{}).
+		Where("id = ?", label.ID).
+		Updates(updates).Error; err != nil {
+		return nil, fmt.Errorf("update label %s: %w", label.ID, err)
+	}
+
+	var model problemLabelModel
+	if err := s.db.Gorm.WithContext(ctx).First(&model, "id = ?", label.ID).Error; err != nil {
+		return nil, fmt.Errorf("load updated label %s: %w", label.ID, err)
+	}
+	out := model.toDomain()
+	return &out, nil
+}
+
+func (s *ProblemRepositoryImpl) DeleteLabel(ctx context.Context, id uuid.UUID) error {
+	if err := s.db.Gorm.WithContext(ctx).Delete(&problemLabelModel{}, "id = ?", id).Error; err != nil {
+		return fmt.Errorf("delete label %s: %w", id, err)
+	}
+	return nil
 }
 
 // GetByID returns a problem by UUID, or nil if not found.
@@ -69,6 +150,9 @@ func (s *ProblemRepositoryImpl) GetByID(ctx context.Context, id uuid.UUID) (*dom
 	}
 	if err != nil {
 		return nil, fmt.Errorf("get problem by id: %w", err)
+	}
+	if err := s.loadProblemLabels(ctx, []*problemModel{&model}); err != nil {
+		return nil, err
 	}
 	p := model.toDomain()
 	return &p, nil
@@ -84,20 +168,27 @@ func (s *ProblemRepositoryImpl) GetBySlug(ctx context.Context, slug string) (*do
 	if err != nil {
 		return nil, fmt.Errorf("get problem by slug: %w", err)
 	}
+	if err := s.loadProblemLabels(ctx, []*problemModel{&model}); err != nil {
+		return nil, err
+	}
 	p := model.toDomain()
 	return &p, nil
 }
 
 // Suggest returns a random unsolved problem for the user.
 // If patterns is non-empty, problems matching those patterns are prioritized.
-func (s *ProblemRepositoryImpl) Suggest(ctx context.Context, userID uuid.UUID, patterns []string) (*domain.Problem, error) {
+func (s *ProblemRepositoryImpl) Suggest(
+	ctx context.Context,
+	userID uuid.UUID,
+	patterns []string,
+) (*domain.Problem, error) {
 	if patterns == nil {
 		patterns = []string{}
 	}
 
 	q := s.db.Gorm.WithContext(ctx).
 		Model(&problemModel{}).
-		Where("id NOT IN (?)",
+		Where("problems.id NOT IN (?)",
 			s.db.Gorm.WithContext(ctx).
 				Model(&submissionModel{}).
 				Select("DISTINCT problem_id").
@@ -105,7 +196,16 @@ func (s *ProblemRepositoryImpl) Suggest(ctx context.Context, userID uuid.UUID, p
 		)
 
 	if len(patterns) > 0 {
-		q = q.Order(gorm.Expr("CASE WHEN ?::text[] && pattern_tags THEN 0 ELSE 1 END", pq.Array(patterns)))
+		q = q.Order(gorm.Expr(`
+			CASE WHEN EXISTS (
+				SELECT 1
+				FROM problem_label_links pll
+				JOIN problem_labels pl ON pl.id = pll.problem_label_id
+				WHERE pll.problem_id = problems.id
+				  AND pl.kind = ?
+				  AND pl.slug IN ?
+			) THEN 0 ELSE 1 END
+		`, "pattern", patterns))
 	}
 
 	var model problemModel
@@ -116,6 +216,67 @@ func (s *ProblemRepositoryImpl) Suggest(ctx context.Context, userID uuid.UUID, p
 	if err != nil {
 		return nil, fmt.Errorf("suggest problem: %w", err)
 	}
+	if err := s.loadProblemLabels(ctx, []*problemModel{&model}); err != nil {
+		return nil, err
+	}
 	p := model.toDomain()
 	return &p, nil
+}
+
+func joinProblemLabelFilter(q *gorm.DB, kind, slug string) *gorm.DB {
+	aliasPrefix := strings.ReplaceAll(kind, "-", "_")
+	linkAlias := aliasPrefix + "_pll"
+	labelAlias := aliasPrefix + "_pl"
+
+	return q.Joins(fmt.Sprintf(
+		"JOIN problem_label_links %s ON %s.problem_id = problems.id",
+		linkAlias, linkAlias,
+	)).Joins(fmt.Sprintf(
+		"JOIN problem_labels %s ON %s.id = %s.problem_label_id AND %s.kind = ? AND %s.slug = ?",
+		labelAlias, labelAlias, linkAlias, labelAlias, labelAlias,
+	), kind, slug)
+}
+
+func (s *ProblemRepositoryImpl) loadProblemLabels(ctx context.Context, models []*problemModel) error {
+	if len(models) == 0 {
+		return nil
+	}
+
+	ids := make([]uuid.UUID, 0, len(models))
+	indexByID := make(map[uuid.UUID]*problemModel, len(models))
+	for _, model := range models {
+		ids = append(ids, model.ID)
+		indexByID[model.ID] = model
+	}
+
+	type row struct {
+		ProblemID uuid.UUID
+		Kind      string
+		Slug      string
+	}
+
+	var rows []row
+	if err := s.db.Gorm.WithContext(ctx).
+		Table("problem_label_links pll").
+		Select("pll.problem_id, pl.kind, pl.slug").
+		Joins("JOIN problem_labels pl ON pl.id = pll.problem_label_id").
+		Where("pll.problem_id IN ?", ids).
+		Order("pl.kind ASC, pl.slug ASC").
+		Scan(&rows).Error; err != nil {
+		return fmt.Errorf("load problem labels: %w", err)
+	}
+
+	for _, row := range rows {
+		model := indexByID[row.ProblemID]
+		if model == nil {
+			continue
+		}
+		switch row.Kind {
+		case "tag":
+			model.Tags = append(model.Tags, row.Slug)
+		case "pattern":
+			model.PatternTags = append(model.PatternTags, row.Slug)
+		}
+	}
+	return nil
 }

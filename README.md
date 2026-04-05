@@ -40,7 +40,7 @@ judge-loop/                        # module: github.com/tuannm99/judge-loop
   cmd/                             # executable entry points (main packages only)
     migrate/                       # Run goose migrations manually
     api-server/                    # REST API server
-    judge-worker/                  # Async submission evaluator
+    judge-worker/                  # Async submission evaluator (+ optional queue monitor UI)
     local-agent/                   # Local HTTP daemon (runs on dev machine)
   internal/                        # private application code
     domain/                        # core domain types and pure domain logic
@@ -77,6 +77,8 @@ make migrate        # 2. run migrations (required before first start)
 make api-server     # 3. start API server
 make judge-worker   # 4. start judge worker
 make local-agent    # 5. start local agent
+make ui-install     # 6. install UI dependencies (first time only)
+make ui             # 7. start UI dev server at http://localhost:5173
 ```
 
 Or without Make:
@@ -94,6 +96,9 @@ go run ./cmd/api-server
 
 # 4. Start judge-worker
 go run ./cmd/judge-worker
+
+# Optional: start judge-worker with embedded Asynq monitor UI
+go run ./cmd/judge-worker -ui -ui-port=8081 -ui-path=/monitoring
 
 # 5. Start local-agent
 go run ./cmd/local-agent
@@ -127,6 +132,13 @@ Migrations are **not** run automatically on startup. Run `cmd/migrate` manually 
 | `REDIS_URL`       | `localhost:6379` | Redis address                         |
 | `CONCURRENCY`     | `2`              | Number of parallel evaluation workers |
 | `TIME_LIMIT_SECS` | `10`             | Per-submission execution time limit   |
+
+`cmd/judge-worker` also supports optional flags for the embedded Asynq monitor UI:
+
+```bash
+go run ./cmd/judge-worker -ui -ui-port=8081 -ui-path=/monitoring
+make judge-worker JUDGE_WORKER_FLAGS='-ui -ui-port=8081 -ui-path=/monitoring'
+```
 
 **`cmd/local-agent`**
 

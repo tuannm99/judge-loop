@@ -106,3 +106,59 @@ func (_c *MockTestCaseRepository_GetByProblem_Call) RunAndReturn(run func(ctx co
 	_c.Call.Return(run)
 	return _c
 }
+
+// ReplaceForProblem provides a mock function for the type MockTestCaseRepository
+func (_mock *MockTestCaseRepository) ReplaceForProblem(ctx context.Context, problemID uuid.UUID, testCases []domain.TestCase) error {
+	ret := _mock.Called(ctx, problemID, testCases)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ReplaceForProblem")
+	}
+
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, []domain.TestCase) error); ok {
+		return returnFunc(ctx, problemID, testCases)
+	}
+	return ret.Error(0)
+}
+
+// MockTestCaseRepository_ReplaceForProblem_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ReplaceForProblem'
+type MockTestCaseRepository_ReplaceForProblem_Call struct {
+	*mock.Call
+}
+
+// ReplaceForProblem is a helper method to define mock.On call
+//   - ctx context.Context
+//   - problemID uuid.UUID
+//   - testCases []domain.TestCase
+func (_e *MockTestCaseRepository_Expecter) ReplaceForProblem(ctx interface{}, problemID interface{}, testCases interface{}) *MockTestCaseRepository_ReplaceForProblem_Call {
+	return &MockTestCaseRepository_ReplaceForProblem_Call{Call: _e.mock.On("ReplaceForProblem", ctx, problemID, testCases)}
+}
+
+func (_c *MockTestCaseRepository_ReplaceForProblem_Call) Run(run func(ctx context.Context, problemID uuid.UUID, testCases []domain.TestCase)) *MockTestCaseRepository_ReplaceForProblem_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 []domain.TestCase
+		if args[2] != nil {
+			arg2 = args[2].([]domain.TestCase)
+		}
+		run(arg0, arg1, arg2)
+	})
+	return _c
+}
+
+func (_c *MockTestCaseRepository_ReplaceForProblem_Call) Return(err error) *MockTestCaseRepository_ReplaceForProblem_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockTestCaseRepository_ReplaceForProblem_Call) RunAndReturn(run func(ctx context.Context, problemID uuid.UUID, testCases []domain.TestCase) error) *MockTestCaseRepository_ReplaceForProblem_Call {
+	_c.Call.Return(run)
+	return _c
+}

@@ -18,5 +18,5 @@ export {
   ActionIcon,
   Anchor,
   Paper,
-  Center,
+  Center
 } from '@mantine/core'

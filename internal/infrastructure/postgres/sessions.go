@@ -22,19 +22,20 @@ func NewSessionRepositoryImpl(db *DB) *SessionRepositoryImpl { return &SessionRe
 
 // GetOrCreateToday returns today's DailySession for the user, creating it if needed.
 func (s *SessionRepositoryImpl) GetOrCreateToday(ctx context.Context, userID uuid.UUID) (*domain.DailySession, error) {
-	today := time.Now().UTC().Truncate(24 * time.Hour)
-	model := dailySessionModel{
+	today := dateOnlyUTC(time.Now())
+	insertModel := dailySessionModel{
 		ID:     uuid.New(),
 		UserID: userID,
 		Date:   today,
 	}
 	if err := s.db.Gorm.WithContext(ctx).
 		Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "user_id"}, {Name: "date"}}, DoNothing: true}).
-		Create(&model).Error; err != nil {
+		Create(&insertModel).Error; err != nil {
 		return nil, fmt.Errorf("create daily session: %w", err)
 	}
 
-	if err := s.db.Gorm.WithContext(ctx).Where("user_id = ? AND date = ?", userID, today).Take(&model).Error; err != nil {
+	var model dailySessionModel
+	if err := s.db.Gorm.WithContext(ctx).Where("user_id = ? AND date = ?", userID, today.Format("2006-01-02")).Take(&model).Error; err != nil {
 		return nil, fmt.Errorf("get or create daily session: %w", err)
 	}
 	ds := model.toDomain()
@@ -48,7 +49,7 @@ func (s *SessionRepositoryImpl) RecordSubmission(ctx context.Context, userID uui
 	if accepted {
 		solved = 1
 	}
-	today := time.Now().UTC().Truncate(24 * time.Hour)
+	today := dateOnlyUTC(time.Now())
 
 	return s.db.Gorm.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		model := dailySessionModel{
@@ -62,7 +63,7 @@ func (s *SessionRepositoryImpl) RecordSubmission(ctx context.Context, userID uui
 			return fmt.Errorf("insert daily session: %w", err)
 		}
 		if err := tx.Model(&dailySessionModel{}).
-			Where("user_id = ? AND date = ?", userID, today).
+			Where("user_id = ? AND date = ?", userID, today.Format("2006-01-02")).
 			Updates(map[string]any{
 				"attempted_count": gorm.Expr("attempted_count + ?", 1),
 				"solved_count":    gorm.Expr("solved_count + ?", solved),
@@ -131,7 +132,7 @@ func (s *SessionRepositoryImpl) StopTimer(ctx context.Context, userID uuid.UUID)
 		return nil, fmt.Errorf("stop timer save: %w", err)
 	}
 
-	today := now.UTC().Truncate(24 * time.Hour)
+	today := dateOnlyUTC(now)
 	if err := s.db.Gorm.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		session := dailySessionModel{
 			ID:     uuid.New(),
@@ -142,7 +143,7 @@ func (s *SessionRepositoryImpl) StopTimer(ctx context.Context, userID uuid.UUID)
 			return err
 		}
 		return tx.Model(&dailySessionModel{}).
-			Where("user_id = ? AND date = ?", userID, today).
+			Where("user_id = ? AND date = ?", userID, today.Format("2006-01-02")).
 			Updates(map[string]any{
 				"time_spent_secs": gorm.Expr("time_spent_secs + ?", elapsed),
 				"updated_at":      gorm.Expr("NOW()"),
@@ -181,4 +182,9 @@ func ElapsedNow(ts *domain.TimerSession) int {
 		return ts.ElapsedSecs
 	}
 	return int(time.Since(ts.StartedAt).Seconds())
+}
+
+func dateOnlyUTC(now time.Time) time.Time {
+	y, m, d := now.UTC().Date()
+	return time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
 }

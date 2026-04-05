@@ -67,7 +67,9 @@ type PerformanceRepositoryImpl struct{ db *DB }
 var _ outport.PerformanceRepository = (*PerformanceRepositoryImpl)(nil)
 
 // NewPerformanceRepositoryImpl creates a new PerformanceRepositoryImpl.
-func NewPerformanceRepositoryImpl(db *DB) *PerformanceRepositoryImpl { return &PerformanceRepositoryImpl{db: db} }
+func NewPerformanceRepositoryImpl(db *DB) *PerformanceRepositoryImpl {
+	return &PerformanceRepositoryImpl{db: db}
+}
 
 // PatternScoreRow holds per-pattern accepted/attempted counts.
 type PatternScoreRow struct {
@@ -81,13 +83,16 @@ func (s *PerformanceRepositoryImpl) GetPatternScores(ctx context.Context, userID
 	var rows []PatternScoreRow
 	err := s.db.Gorm.WithContext(ctx).Raw(`
 		SELECT
-			unnest(p.pattern_tags)                         AS pattern,
+			pl.slug                                       AS pattern,
 			COUNT(*) FILTER (WHERE s.status = 'accepted') AS accepted,
 			COUNT(*)                                      AS attempted
 		FROM submissions s
 		JOIN problems p ON p.id = s.problem_id
+		JOIN problem_label_links pll ON pll.problem_id = p.id
+		JOIN problem_labels pl ON pl.id = pll.problem_label_id
 		WHERE s.user_id = $1
-		GROUP BY pattern
+		  AND pl.kind = 'pattern'
+		GROUP BY pl.slug
 		ORDER BY pattern`,
 		userID,
 	).Scan(&rows).Error
@@ -139,7 +144,7 @@ func (s *ProblemRepositoryImpl) GetUnsolved(ctx context.Context, userID uuid.UUI
 	var models []problemModel
 	err := s.db.Gorm.WithContext(ctx).
 		Model(&problemModel{}).
-		Where("id NOT IN (?)",
+		Where("problems.id NOT IN (?)",
 			s.db.Gorm.WithContext(ctx).
 				Model(&submissionModel{}).
 				Select("DISTINCT problem_id").
@@ -150,6 +155,13 @@ func (s *ProblemRepositoryImpl) GetUnsolved(ctx context.Context, userID uuid.UUI
 		Find(&models).Error
 	if err != nil {
 		return nil, fmt.Errorf("get unsolved: %w", err)
+	}
+	modelPtrs := make([]*problemModel, 0, len(models))
+	for i := range models {
+		modelPtrs = append(modelPtrs, &models[i])
+	}
+	if err := s.loadProblemLabels(ctx, modelPtrs); err != nil {
+		return nil, err
 	}
 
 	out := make([]domain.Problem, 0, len(models))

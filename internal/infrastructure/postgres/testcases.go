@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/tuannm99/judge-loop/internal/domain"
 	outport "github.com/tuannm99/judge-loop/internal/port/out"
+	"gorm.io/gorm"
 )
 
 // TestCaseRepositoryImpl handles test case queries.
@@ -15,7 +16,9 @@ type TestCaseRepositoryImpl struct{ db *DB }
 var _ outport.TestCaseRepository = (*TestCaseRepositoryImpl)(nil)
 
 // NewTestCaseRepositoryImpl creates a new TestCaseRepositoryImpl.
-func NewTestCaseRepositoryImpl(db *DB) *TestCaseRepositoryImpl { return &TestCaseRepositoryImpl{db: db} }
+func NewTestCaseRepositoryImpl(db *DB) *TestCaseRepositoryImpl {
+	return &TestCaseRepositoryImpl{db: db}
+}
 
 // GetByProblem returns all non-hidden test cases for a problem, ordered by order_idx.
 func (s *TestCaseRepositoryImpl) GetByProblem(ctx context.Context, problemID uuid.UUID) ([]domain.TestCase, error) {
@@ -32,4 +35,41 @@ func (s *TestCaseRepositoryImpl) GetByProblem(ctx context.Context, problemID uui
 		out = append(out, model.toDomain())
 	}
 	return out, nil
+}
+
+func (s *TestCaseRepositoryImpl) ReplaceForProblem(
+	ctx context.Context,
+	problemID uuid.UUID,
+	testCases []domain.TestCase,
+) error {
+	return s.db.Gorm.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("problem_id = ?", problemID).Delete(&testCaseModel{}).Error; err != nil {
+			return fmt.Errorf("delete test cases: %w", err)
+		}
+
+		if len(testCases) == 0 {
+			return nil
+		}
+
+		models := make([]testCaseModel, 0, len(testCases))
+		for i, tc := range testCases {
+			id := tc.ID
+			if id == uuid.Nil {
+				id = uuid.New()
+			}
+			models = append(models, testCaseModel{
+				ID:        id,
+				ProblemID: problemID,
+				Input:     tc.Input,
+				Expected:  tc.Expected,
+				IsHidden:  tc.IsHidden,
+				OrderIdx:  i,
+			})
+		}
+
+		if err := tx.Create(&models).Error; err != nil {
+			return fmt.Errorf("create test cases: %w", err)
+		}
+		return nil
+	})
 }

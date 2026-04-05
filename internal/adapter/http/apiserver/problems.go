@@ -3,11 +3,138 @@ package apiserver
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/tuannm99/judge-loop/internal/domain"
 	outport "github.com/tuannm99/judge-loop/internal/port/out"
 )
+
+type contributeProblemRequest struct {
+	Provider      domain.Provider             `json:"provider" binding:"required"`
+	ExternalID    string                      `json:"external_id" binding:"required"`
+	Slug          string                      `json:"slug" binding:"required"`
+	Title         string                      `json:"title" binding:"required"`
+	Difficulty    domain.Difficulty           `json:"difficulty" binding:"required"`
+	Tags          []string                    `json:"tags"`
+	PatternTags   []string                    `json:"pattern_tags"`
+	SourceURL     string                      `json:"source_url" binding:"required"`
+	EstimatedTime int                         `json:"estimated_time"`
+	StarterCode   map[string]string           `json:"starter_code"`
+	Version       int                         `json:"version"`
+	TestCases     []contributeTestCaseRequest `json:"test_cases" binding:"required,min=1"`
+}
+
+type contributeTestCaseRequest struct {
+	Input    string `json:"input" binding:"required"`
+	Expected string `json:"expected" binding:"required"`
+	IsHidden bool   `json:"is_hidden"`
+}
+
+type problemLabelRequest struct {
+	Kind string `json:"kind"`
+	Slug string `json:"slug" binding:"required"`
+	Name string `json:"name"`
+}
+
+type updateProblemLabelRequest struct {
+	Slug string `json:"slug" binding:"required"`
+	Name string `json:"name"`
+}
+
+// ListProblemLabels handles GET /api/problems/labels.
+func (h *ProblemsAPI) ListProblemLabels(c *gin.Context) {
+	tags, patterns, err := h.service.ListProblemLabels(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"tags":     tags,
+		"patterns": patterns,
+	})
+}
+
+// ListProblemLabelRecords handles GET /api/problem-labels?kind=tag|pattern.
+func (h *ProblemsAPI) ListProblemLabelRecords(c *gin.Context) {
+	kind := normalizeProblemLabelKind(c.Query("kind"))
+	if kind == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "kind must be tag or pattern"})
+		return
+	}
+
+	labels, err := h.service.ListProblemLabelRecords(c.Request.Context(), kind)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"labels": labels})
+}
+
+// CreateProblemLabel handles POST /api/problem-labels.
+func (h *ProblemsAPI) CreateProblemLabel(c *gin.Context) {
+	var req problemLabelRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	kind := normalizeProblemLabelKind(req.Kind)
+	if kind == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "kind must be tag or pattern"})
+		return
+	}
+
+	label, err := h.service.CreateProblemLabel(c.Request.Context(), kind, req.Slug, req.Name)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, label)
+}
+
+// UpdateProblemLabel handles PUT /api/problem-labels/:id.
+func (h *ProblemsAPI) UpdateProblemLabel(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid label id"})
+		return
+	}
+
+	var req updateProblemLabelRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	label, err := h.service.UpdateProblemLabel(c.Request.Context(), id, req.Slug, req.Name)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, label)
+}
+
+// DeleteProblemLabel handles DELETE /api/problem-labels/:id.
+func (h *ProblemsAPI) DeleteProblemLabel(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid label id"})
+		return
+	}
+
+	if err := h.service.DeleteProblemLabel(c.Request.Context(), id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.AbortWithStatus(http.StatusNoContent)
+}
 
 // ListProblems handles GET /api/problems
 func (h *ProblemsAPI) ListProblems(c *gin.Context) {
@@ -79,4 +206,58 @@ func (h *ProblemsAPI) SuggestProblem(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, problem)
+}
+
+// ContributeProblem handles POST /api/problems/contribute
+func (h *ProblemsAPI) ContributeProblem(c *gin.Context) {
+	var req contributeProblemRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	testCases := make([]domain.TestCase, 0, len(req.TestCases))
+	for i, tc := range req.TestCases {
+		testCases = append(testCases, domain.TestCase{
+			Input:    tc.Input,
+			Expected: tc.Expected,
+			IsHidden: tc.IsHidden,
+			OrderIdx: i,
+		})
+	}
+
+	problem, err := h.service.ContributeProblem(c.Request.Context(), domain.ProblemManifest{
+		Provider:      req.Provider,
+		ExternalID:    req.ExternalID,
+		Slug:          req.Slug,
+		Title:         req.Title,
+		Difficulty:    req.Difficulty,
+		Tags:          req.Tags,
+		PatternTags:   req.PatternTags,
+		SourceURL:     req.SourceURL,
+		EstimatedTime: req.EstimatedTime,
+		StarterCode:   req.StarterCode,
+		Version:       req.Version,
+	}, testCases)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if problem == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "problem not found after contribution"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, problem)
+}
+
+func normalizeProblemLabelKind(kind string) string {
+	switch strings.TrimSpace(kind) {
+	case "tag":
+		return "tag"
+	case "pattern":
+		return "pattern"
+	default:
+		return ""
+	}
 }
