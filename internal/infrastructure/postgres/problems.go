@@ -11,20 +11,20 @@ import (
 	"gorm.io/gorm"
 )
 
-// ProblemStore handles all problem queries.
-type ProblemStore struct{ db *DB }
+// ProblemRepositoryImpl handles all problem queries.
+type ProblemRepositoryImpl struct{ db *DB }
 
-var _ outport.ProblemRepository = (*ProblemStore)(nil)
+var _ outport.ProblemRepository = (*ProblemRepositoryImpl)(nil)
 
-// NewProblemStore creates a new ProblemStore.
-func NewProblemStore(db *DB) *ProblemStore { return &ProblemStore{db: db} }
+// NewProblemRepositoryImpl creates a new ProblemRepositoryImpl.
+func NewProblemRepositoryImpl(db *DB) *ProblemRepositoryImpl { return &ProblemRepositoryImpl{db: db} }
 
 // ProblemFilter holds optional filters for listing problems.
 // Nil pointer fields mean "no filter".
 type ProblemFilter = outport.ProblemFilter
 
 // List returns problems matching the filter with a total count.
-func (s *ProblemStore) List(ctx context.Context, f ProblemFilter) ([]domain.Problem, int, error) {
+func (s *ProblemRepositoryImpl) List(ctx context.Context, f ProblemFilter) ([]domain.Problem, int, error) {
 	if f.Limit <= 0 {
 		f.Limit = 20
 	}
@@ -61,7 +61,7 @@ func (s *ProblemStore) List(ctx context.Context, f ProblemFilter) ([]domain.Prob
 }
 
 // GetByID returns a problem by UUID, or nil if not found.
-func (s *ProblemStore) GetByID(ctx context.Context, id uuid.UUID) (*domain.Problem, error) {
+func (s *ProblemRepositoryImpl) GetByID(ctx context.Context, id uuid.UUID) (*domain.Problem, error) {
 	var model problemModel
 	err := s.db.Gorm.WithContext(ctx).First(&model, "id = ?", id).Error
 	if err == gorm.ErrRecordNotFound {
@@ -75,7 +75,7 @@ func (s *ProblemStore) GetByID(ctx context.Context, id uuid.UUID) (*domain.Probl
 }
 
 // GetBySlug returns a problem by slug, or nil if not found.
-func (s *ProblemStore) GetBySlug(ctx context.Context, slug string) (*domain.Problem, error) {
+func (s *ProblemRepositoryImpl) GetBySlug(ctx context.Context, slug string) (*domain.Problem, error) {
 	var model problemModel
 	err := s.db.Gorm.WithContext(ctx).First(&model, "slug = ?", slug).Error
 	if err == gorm.ErrRecordNotFound {
@@ -90,7 +90,7 @@ func (s *ProblemStore) GetBySlug(ctx context.Context, slug string) (*domain.Prob
 
 // Suggest returns a random unsolved problem for the user.
 // If patterns is non-empty, problems matching those patterns are prioritized.
-func (s *ProblemStore) Suggest(ctx context.Context, userID uuid.UUID, patterns []string) (*domain.Problem, error) {
+func (s *ProblemRepositoryImpl) Suggest(ctx context.Context, userID uuid.UUID, patterns []string) (*domain.Problem, error) {
 	if patterns == nil {
 		patterns = []string{}
 	}

@@ -13,16 +13,16 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-// MissionStore handles daily mission persistence.
-type MissionStore struct{ db *DB }
+// MissionRepositoryImpl handles daily mission persistence.
+type MissionRepositoryImpl struct{ db *DB }
 
-var _ outport.MissionRepository = (*MissionStore)(nil)
+var _ outport.MissionRepository = (*MissionRepositoryImpl)(nil)
 
-// NewMissionStore creates a new MissionStore.
-func NewMissionStore(db *DB) *MissionStore { return &MissionStore{db: db} }
+// NewMissionRepositoryImpl creates a new MissionRepositoryImpl.
+func NewMissionRepositoryImpl(db *DB) *MissionRepositoryImpl { return &MissionRepositoryImpl{db: db} }
 
 // GetToday returns today's cached mission for the user, or nil if none exists yet.
-func (s *MissionStore) GetToday(ctx context.Context, userID uuid.UUID) (*domain.DailyMission, error) {
+func (s *MissionRepositoryImpl) GetToday(ctx context.Context, userID uuid.UUID) (*domain.DailyMission, error) {
 	var model dailyMissionModel
 	err := s.db.Gorm.WithContext(ctx).
 		Where("user_id = ? AND date = CURRENT_DATE", userID).
@@ -46,7 +46,7 @@ func (s *MissionStore) GetToday(ctx context.Context, userID uuid.UUID) (*domain.
 }
 
 // Save inserts or replaces today's mission for the user.
-func (s *MissionStore) Save(ctx context.Context, m domain.DailyMission) error {
+func (s *MissionRepositoryImpl) Save(ctx context.Context, m domain.DailyMission) error {
 	model, err := missionModelFromDomain(m)
 	if err != nil {
 		return fmt.Errorf("build mission model: %w", err)
@@ -61,13 +61,13 @@ func (s *MissionStore) Save(ctx context.Context, m domain.DailyMission) error {
 	return nil
 }
 
-// PerformanceStore computes user performance metrics from submissions.
-type PerformanceStore struct{ db *DB }
+// PerformanceRepositoryImpl computes user performance metrics from submissions.
+type PerformanceRepositoryImpl struct{ db *DB }
 
-var _ outport.PerformanceRepository = (*PerformanceStore)(nil)
+var _ outport.PerformanceRepository = (*PerformanceRepositoryImpl)(nil)
 
-// NewPerformanceStore creates a new PerformanceStore.
-func NewPerformanceStore(db *DB) *PerformanceStore { return &PerformanceStore{db: db} }
+// NewPerformanceRepositoryImpl creates a new PerformanceRepositoryImpl.
+func NewPerformanceRepositoryImpl(db *DB) *PerformanceRepositoryImpl { return &PerformanceRepositoryImpl{db: db} }
 
 // PatternScoreRow holds per-pattern accepted/attempted counts.
 type PatternScoreRow struct {
@@ -77,7 +77,7 @@ type PatternScoreRow struct {
 }
 
 // GetPatternScores returns a map of pattern tag -> score (accepted/attempted).
-func (s *PerformanceStore) GetPatternScores(ctx context.Context, userID uuid.UUID) (map[string]float64, error) {
+func (s *PerformanceRepositoryImpl) GetPatternScores(ctx context.Context, userID uuid.UUID) (map[string]float64, error) {
 	var rows []PatternScoreRow
 	err := s.db.Gorm.WithContext(ctx).Raw(`
 		SELECT
@@ -112,7 +112,7 @@ type PerformanceStats struct {
 }
 
 // GetStats returns aggregate performance statistics for the user.
-func (s *PerformanceStore) GetStats(ctx context.Context, userID uuid.UUID) (PerformanceStats, error) {
+func (s *PerformanceRepositoryImpl) GetStats(ctx context.Context, userID uuid.UUID) (PerformanceStats, error) {
 	var st PerformanceStats
 	err := s.db.Gorm.WithContext(ctx).Raw(`
 		SELECT
@@ -131,7 +131,7 @@ func (s *PerformanceStore) GetStats(ctx context.Context, userID uuid.UUID) (Perf
 }
 
 // GetUnsolved returns problems the user has not yet accepted, in random order.
-func (s *ProblemStore) GetUnsolved(ctx context.Context, userID uuid.UUID, limit int) ([]domain.Problem, error) {
+func (s *ProblemRepositoryImpl) GetUnsolved(ctx context.Context, userID uuid.UUID, limit int) ([]domain.Problem, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -160,7 +160,7 @@ func (s *ProblemStore) GetUnsolved(ctx context.Context, userID uuid.UUID, limit 
 }
 
 // UpsertReview creates or advances the review schedule for a problem.
-func (s *ReviewStore) Upsert(ctx context.Context, userID, problemID uuid.UUID) error {
+func (s *ReviewRepositoryImpl) Upsert(ctx context.Context, userID, problemID uuid.UUID) error {
 	now := time.Now()
 
 	return s.db.Gorm.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -211,7 +211,7 @@ func (s *ReviewStore) Upsert(ctx context.Context, userID, problemID uuid.UUID) e
 }
 
 // LastSyncedAt returns when the registry was last synced, or zero time.
-func (s *RegistryStore) LastSyncedAt(ctx context.Context) time.Time {
+func (s *RegistryRepositoryImpl) LastSyncedAt(ctx context.Context) time.Time {
 	row, _ := s.GetLatest(ctx)
 	if row == nil {
 		return time.Time{}

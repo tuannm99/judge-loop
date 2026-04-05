@@ -13,16 +13,16 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-// RegistryStore handles registry version queries.
-type RegistryStore struct{ db *DB }
+// RegistryRepositoryImpl handles registry version queries.
+type RegistryRepositoryImpl struct{ db *DB }
 
-var _ outport.RegistryRepository = (*RegistryStore)(nil)
+var _ outport.RegistryRepository = (*RegistryRepositoryImpl)(nil)
 
-// NewRegistryStore creates a new RegistryStore.
-func NewRegistryStore(db *DB) *RegistryStore { return &RegistryStore{db: db} }
+// NewRegistryRepositoryImpl creates a new RegistryRepositoryImpl.
+func NewRegistryRepositoryImpl(db *DB) *RegistryRepositoryImpl { return &RegistryRepositoryImpl{db: db} }
 
 // GetLatest returns the most recently saved registry version, or nil if none.
-func (s *RegistryStore) GetLatest(ctx context.Context) (*outport.RegistryVersion, error) {
+func (s *RegistryRepositoryImpl) GetLatest(ctx context.Context) (*outport.RegistryVersion, error) {
 	var model registryVersionModel
 	err := s.db.Gorm.WithContext(ctx).Order("id DESC").Take(&model).Error
 	if err == gorm.ErrRecordNotFound {
@@ -40,7 +40,7 @@ func (s *RegistryStore) GetLatest(ctx context.Context) (*outport.RegistryVersion
 }
 
 // Save inserts a new registry version record.
-func (s *RegistryStore) Save(
+func (s *RegistryRepositoryImpl) Save(
 	ctx context.Context,
 	version string,
 	updatedAt time.Time,
@@ -65,7 +65,7 @@ func (s *RegistryStore) Save(
 
 // UpsertFromManifest inserts or updates a problem row from a ProblemManifest.
 // The (provider, external_id) unique constraint is the conflict target.
-func (s *ProblemStore) UpsertFromManifest(ctx context.Context, m domain.ProblemManifest) error {
+func (s *ProblemRepositoryImpl) UpsertFromManifest(ctx context.Context, m domain.ProblemManifest) error {
 	model := problemModel{
 		Slug:          m.Slug,
 		Title:         m.Title,

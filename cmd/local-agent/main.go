@@ -7,7 +7,7 @@ import (
 	"log"
 
 	"github.com/tuannm99/judge-loop/internal/config"
-	"github.com/tuannm99/judge-loop/internal/di"
+	diagent "github.com/tuannm99/judge-loop/internal/di/localagent"
 )
 
 func main() {
@@ -18,5 +18,5 @@ func main() {
 
 	log.Printf("local-agent starting — server: %s, port: %d", cfg.ServerURL, cfg.Port)
 
-	di.NewLocalAgent(cfg).Run()
+	diagent.New(cfg).Run()
 }

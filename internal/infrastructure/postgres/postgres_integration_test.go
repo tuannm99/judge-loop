@@ -55,7 +55,9 @@ func newIntegrationDB(t *testing.T) *DB {
 	require.Eventually(t, func() bool {
 		db, err = Connect(context.Background(), dsn)
 		return err == nil
-	}, 30*time.Second, 500*time.Millisecond, "connect/migrate postgres")
+	}, 30*time.Second, 500*time.Millisecond, "connect postgres")
+
+	require.NoError(t, RunMigrations(context.Background(), db.SQL), "migrate postgres")
 
 	t.Cleanup(func() {
 		db.Close()
@@ -101,7 +103,7 @@ func TestConnectRegistryAndMissionIntegration(t *testing.T) {
 	db := newIntegrationDB(t)
 	ctx := context.Background()
 
-	registryStore := NewRegistryStore(db)
+	registryStore := NewRegistryRepositoryImpl(db)
 	latest, err := registryStore.GetLatest(ctx)
 	require.NoError(t, err)
 	require.Nil(t, latest)
@@ -119,7 +121,7 @@ func TestConnectRegistryAndMissionIntegration(t *testing.T) {
 	require.False(t, registryStore.LastSyncedAt(ctx).IsZero())
 
 	userID := seedUser(t, db)
-	missionStore := NewMissionStore(db)
+	missionStore := NewMissionRepositoryImpl(db)
 	current, err := missionStore.GetToday(ctx, userID)
 	require.NoError(t, err)
 	require.Nil(t, current)
@@ -148,11 +150,11 @@ func TestProblemSubmissionSessionAndPerformanceIntegration(t *testing.T) {
 	ctx := context.Background()
 	userID := seedUser(t, db)
 
-	problemStore := NewProblemStore(db)
-	submissionStore := NewSubmissionStore(db)
-	sessionStore := NewSessionStore(db)
-	testCaseStore := NewTestCaseStore(db)
-	performanceStore := NewPerformanceStore(db)
+	problemStore := NewProblemRepositoryImpl(db)
+	submissionStore := NewSubmissionRepositoryImpl(db)
+	sessionStore := NewSessionRepositoryImpl(db)
+	testCaseStore := NewTestCaseRepositoryImpl(db)
+	performanceStore := NewPerformanceRepositoryImpl(db)
 
 	problemA := domain.ProblemManifest{
 		Slug:          "two-sum",
@@ -309,7 +311,7 @@ func TestReviewStoreIntegration(t *testing.T) {
 	userID := seedUser(t, db)
 	problemID := seedProblem(t, db, "review-me", []string{"array"}, []string{"dp"})
 
-	reviewStore := NewReviewStore(db)
+	reviewStore := NewReviewRepositoryImpl(db)
 
 	due, err := reviewStore.GetDue(ctx, userID)
 	require.NoError(t, err)

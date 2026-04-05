@@ -8,16 +8,16 @@ import (
 	outport "github.com/tuannm99/judge-loop/internal/port/out"
 )
 
-// ReviewStore handles review schedule queries.
-type ReviewStore struct{ db *DB }
+// ReviewRepositoryImpl handles review schedule queries.
+type ReviewRepositoryImpl struct{ db *DB }
 
-var _ outport.ReviewRepository = (*ReviewStore)(nil)
+var _ outport.ReviewRepository = (*ReviewRepositoryImpl)(nil)
 
-// NewReviewStore creates a new ReviewStore.
-func NewReviewStore(db *DB) *ReviewStore { return &ReviewStore{db: db} }
+// NewReviewRepositoryImpl creates a new ReviewRepositoryImpl.
+func NewReviewRepositoryImpl(db *DB) *ReviewRepositoryImpl { return &ReviewRepositoryImpl{db: db} }
 
 // GetDue returns problems due for review today or overdue.
-func (s *ReviewStore) GetDue(ctx context.Context, userID uuid.UUID) ([]outport.DueReview, error) {
+func (s *ReviewRepositoryImpl) GetDue(ctx context.Context, userID uuid.UUID) ([]outport.DueReview, error) {
 	var out []outport.DueReview
 	err := s.db.Gorm.WithContext(ctx).Raw(`
 		SELECT

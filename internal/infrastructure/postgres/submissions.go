@@ -11,16 +11,16 @@ import (
 	"gorm.io/gorm"
 )
 
-// SubmissionStore handles all submission queries.
-type SubmissionStore struct{ db *DB }
+// SubmissionRepositoryImpl handles all submission queries.
+type SubmissionRepositoryImpl struct{ db *DB }
 
-var _ outport.SubmissionRepository = (*SubmissionStore)(nil)
+var _ outport.SubmissionRepository = (*SubmissionRepositoryImpl)(nil)
 
-// NewSubmissionStore creates a new SubmissionStore.
-func NewSubmissionStore(db *DB) *SubmissionStore { return &SubmissionStore{db: db} }
+// NewSubmissionRepositoryImpl creates a new SubmissionRepositoryImpl.
+func NewSubmissionRepositoryImpl(db *DB) *SubmissionRepositoryImpl { return &SubmissionRepositoryImpl{db: db} }
 
 // Create inserts a new submission with status=pending and returns the ID.
-func (s *SubmissionStore) Create(ctx context.Context, sub *domain.Submission) error {
+func (s *SubmissionRepositoryImpl) Create(ctx context.Context, sub *domain.Submission) error {
 	sub.ID = uuid.New()
 	sub.Status = domain.StatusPending
 	sub.SubmittedAt = time.Now()
@@ -33,7 +33,7 @@ func (s *SubmissionStore) Create(ctx context.Context, sub *domain.Submission) er
 }
 
 // GetByID returns a submission by UUID, or nil if not found.
-func (s *SubmissionStore) GetByID(ctx context.Context, id uuid.UUID) (*domain.Submission, error) {
+func (s *SubmissionRepositoryImpl) GetByID(ctx context.Context, id uuid.UUID) (*domain.Submission, error) {
 	var model submissionModel
 	err := s.db.Gorm.WithContext(ctx).First(&model, "id = ?", id).Error
 	if err == gorm.ErrRecordNotFound {
@@ -47,7 +47,7 @@ func (s *SubmissionStore) GetByID(ctx context.Context, id uuid.UUID) (*domain.Su
 }
 
 // UpdateVerdict writes the final verdict back to the submission row.
-func (s *SubmissionStore) UpdateVerdict(
+func (s *SubmissionRepositoryImpl) UpdateVerdict(
 	ctx context.Context,
 	id uuid.UUID,
 	status, verdict string,
@@ -75,7 +75,7 @@ func (s *SubmissionStore) UpdateVerdict(
 }
 
 // ListByUser returns the user's submission history, ordered by most recent.
-func (s *SubmissionStore) ListByUser(
+func (s *SubmissionRepositoryImpl) ListByUser(
 	ctx context.Context,
 	userID uuid.UUID,
 	problemID *uuid.UUID,

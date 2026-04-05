@@ -23,14 +23,14 @@ A discipline-driven coding practice system for algorithm and interview training.
 
 ## Tech stack
 
-| Layer | Tech |
-|-------|------|
-| Backend | Go, Gin |
-| Database | PostgreSQL (GORM) |
-| Migrations | goose |
-| Queue | Redis + asynq |
-| Sandbox | Docker |
-| Plugin | Lua (Neovim) |
+| Layer      | Tech              |
+| ---------- | ----------------- |
+| Backend    | Go, Gin           |
+| Database   | PostgreSQL (GORM) |
+| Migrations | goose             |
+| Queue      | Redis + asynq     |
+| Sandbox    | Docker            |
+| Plugin     | Lua (Neovim)      |
 
 ## Structure
 
@@ -38,6 +38,7 @@ A discipline-driven coding practice system for algorithm and interview training.
 judge-loop/                        # module: github.com/tuannm99/judge-loop
   go.mod                           # single module — no go.work, no per-package go.mod
   cmd/                             # executable entry points (main packages only)
+    migrate/                       # Run goose migrations manually
     api-server/                    # REST API server
     judge-worker/                  # Async submission evaluator
     local-agent/                   # Local HTTP daemon (runs on dev machine)
@@ -71,23 +72,71 @@ judge-loop/                        # module: github.com/tuannm99/judge-loop
 ## Quickstart
 
 ```bash
-# Start infrastructure
+make infra          # 1. start PostgreSQL + Redis
+make migrate        # 2. run migrations (required before first start)
+make api-server     # 3. start API server
+make judge-worker   # 4. start judge worker
+make local-agent    # 5. start local agent
+```
+
+Or without Make:
+
+```bash
+# 1. Start infrastructure (PostgreSQL + Redis)
 docker compose -f deploy/compose/docker-compose.yml up -d
 
-# Start api-server (runs goose migrations on boot)
+# 2. Run database migrations (must be done before first start, and after pulling new migrations)
+DATABASE_URL=postgres://judgeloop:judgeloop@localhost:5432/judgeloop?sslmode=disable \
+  go run ./cmd/migrate
+
+# 3. Start api-server
 go run ./cmd/api-server
 
-# Start judge-worker (also runs goose migrations on boot)
+# 4. Start judge-worker
 go run ./cmd/judge-worker
 
-# Start local-agent
+# 5. Start local-agent
 go run ./cmd/local-agent
 
 # Optional: seed development problems + test cases
 psql $DATABASE_URL < scripts/seed_problems.sql
 ```
 
-`internal/infrastructure/postgres/migrations/` is managed by goose and embedded into the Go binaries. You do not need to run the schema SQL manually for normal local startup.
+Migrations are **not** run automatically on startup. Run `cmd/migrate` manually before the first start and whenever new migration files are added.
+
+### Environment variables
+
+**`cmd/migrate` and `cmd/api-server` and `cmd/judge-worker`**
+
+| Variable       | Default                                                                   | Description    |
+| -------------- | ------------------------------------------------------------------------- | -------------- |
+| `DATABASE_URL` | `postgres://judgeloop:judgeloop@localhost:5432/judgeloop?sslmode=disable` | PostgreSQL DSN |
+
+**`cmd/api-server`**
+
+| Variable    | Default                                | Description                     |
+| ----------- | -------------------------------------- | ------------------------------- |
+| `REDIS_URL` | `localhost:6379`                       | Redis address for the job queue |
+| `PORT`      | `8080`                                 | HTTP listen port                |
+| `USER_ID`   | `00000000-0000-0000-0000-000000000001` | UUID of the local user account  |
+
+**`cmd/judge-worker`**
+
+| Variable          | Default          | Description                           |
+| ----------------- | ---------------- | ------------------------------------- |
+| `REDIS_URL`       | `localhost:6379` | Redis address                         |
+| `CONCURRENCY`     | `2`              | Number of parallel evaluation workers |
+| `TIME_LIMIT_SECS` | `10`             | Per-submission execution time limit   |
+
+**`cmd/local-agent`**
+
+| Variable              | Default                                | Description                        |
+| --------------------- | -------------------------------------- | ---------------------------------- |
+| `JUDGE_SERVER_URL`    | `http://localhost:8080`                | URL of the api-server              |
+| `JUDGE_PORT`          | `7070`                                 | Local agent listen port            |
+| `JUDGE_USER_ID`       | `00000000-0000-0000-0000-000000000001` | UUID of the local user account     |
+| `JUDGE_REGISTRY_PATH` | `./registry`                           | Path to the local problem registry |
+| `JUDGE_DATA_DIR`      | OS-specific user data dir              | Directory for local agent state    |
 
 ## Architecture
 
@@ -105,16 +154,16 @@ The dependency rule is simple: outer layers depend inward. `cmd/*` wires the gra
 
 ## Milestones
 
-| # | Name | Status |
-|---|------|--------|
-| 1 | Bootstrap | ✅ done |
-| 2 | API server MVP | ✅ done |
-| 3 | Local agent MVP | pending |
-| 4 | Neovim plugin MVP | pending |
-| 5 | Vertical slice | pending |
-| 6 | Judge worker | pending |
-| 7 | Registry | pending |
-| 8 | Personalization | pending |
+| #   | Name              | Status  |
+| --- | ----------------- | ------- |
+| 1   | Bootstrap         | ✅ done |
+| 2   | API server MVP    | ✅ done |
+| 3   | Local agent MVP   | pending |
+| 4   | Neovim plugin MVP | pending |
+| 5   | Vertical slice    | pending |
+| 6   | Judge worker      | pending |
+| 7   | Registry          | pending |
+| 8   | Personalization   | pending |
 
 ## Docs
 

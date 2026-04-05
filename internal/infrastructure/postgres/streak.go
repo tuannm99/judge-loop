@@ -11,7 +11,7 @@ import (
 
 // GetStreak returns the user's current and all-time longest streak.
 // A streak day is any day with at least one accepted submission.
-func (s *SessionStore) GetStreak(ctx context.Context, userID uuid.UUID) (outport.StreakInfo, error) {
+func (s *SessionRepositoryImpl) GetStreak(ctx context.Context, userID uuid.UUID) (outport.StreakInfo, error) {
 	var rows []dailySessionModel
 	if err := s.db.Gorm.WithContext(ctx).
 		Model(&dailySessionModel{}).

@@ -17,7 +17,8 @@ type DB struct {
 	SQL  *sql.DB
 }
 
-// Connect opens the database, verifies connectivity, and runs goose migrations.
+// Connect opens the database and verifies connectivity.
+// Migrations are not run automatically — use the migrate command instead.
 func Connect(ctx context.Context, dsn string) (*DB, error) {
 	gdb, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		SkipDefaultTransaction: true,
@@ -39,11 +40,6 @@ func Connect(ctx context.Context, dsn string) (*DB, error) {
 	if err := sqlDB.PingContext(ctx); err != nil {
 		_ = sqlDB.Close()
 		return nil, fmt.Errorf("ping db: %w", err)
-	}
-
-	if err := runMigrations(ctx, sqlDB); err != nil {
-		_ = sqlDB.Close()
-		return nil, err
 	}
 
 	return &DB{Gorm: gdb, SQL: sqlDB}, nil

@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/tuannm99/judge-loop/internal/config"
-	"github.com/tuannm99/judge-loop/internal/di"
+	diserver "github.com/tuannm99/judge-loop/internal/di/apiserver"
 )
 
 func main() {
@@ -16,5 +16,5 @@ func main() {
 	}
 
 	log.Printf("api-server listening on :%s (redis: %s)", cfg.Port, cfg.RedisURL)
-	di.NewAPIServer(cfg).Run()
+	diserver.New(cfg).Run()
 }

@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/tuannm99/judge-loop/internal/config"
-	"github.com/tuannm99/judge-loop/internal/di"
+	dijudge "github.com/tuannm99/judge-loop/internal/di/judgeworker"
 )
 
 func main() {
@@ -18,5 +18,5 @@ func main() {
 	log.Printf("judge-worker starting (concurrency=%d, time_limit=%ds, redis=%s)",
 		cfg.Concurrency, cfg.TimeLimitSecs, cfg.RedisURL)
 
-	di.NewJudgeWorker(cfg).Run()
+	dijudge.New(cfg).Run()
 }

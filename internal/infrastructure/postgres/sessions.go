@@ -12,16 +12,16 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-// SessionStore handles DailySession and TimerSession queries.
-type SessionStore struct{ db *DB }
+// SessionRepositoryImpl handles DailySession and TimerSession queries.
+type SessionRepositoryImpl struct{ db *DB }
 
-var _ outport.SessionRepository = (*SessionStore)(nil)
+var _ outport.SessionRepository = (*SessionRepositoryImpl)(nil)
 
-// NewSessionStore creates a new SessionStore.
-func NewSessionStore(db *DB) *SessionStore { return &SessionStore{db: db} }
+// NewSessionRepositoryImpl creates a new SessionRepositoryImpl.
+func NewSessionRepositoryImpl(db *DB) *SessionRepositoryImpl { return &SessionRepositoryImpl{db: db} }
 
 // GetOrCreateToday returns today's DailySession for the user, creating it if needed.
-func (s *SessionStore) GetOrCreateToday(ctx context.Context, userID uuid.UUID) (*domain.DailySession, error) {
+func (s *SessionRepositoryImpl) GetOrCreateToday(ctx context.Context, userID uuid.UUID) (*domain.DailySession, error) {
 	today := time.Now().UTC().Truncate(24 * time.Hour)
 	model := dailySessionModel{
 		ID:     uuid.New(),
@@ -43,7 +43,7 @@ func (s *SessionStore) GetOrCreateToday(ctx context.Context, userID uuid.UUID) (
 
 // RecordSubmission updates today's DailySession after a submission is evaluated.
 // It always increments attempted_count; it increments solved_count only when accepted=true.
-func (s *SessionStore) RecordSubmission(ctx context.Context, userID uuid.UUID, accepted bool) error {
+func (s *SessionRepositoryImpl) RecordSubmission(ctx context.Context, userID uuid.UUID, accepted bool) error {
 	solved := 0
 	if accepted {
 		solved = 1
@@ -75,7 +75,7 @@ func (s *SessionStore) RecordSubmission(ctx context.Context, userID uuid.UUID, a
 }
 
 // StartTimer stops any existing active timer and starts a new one.
-func (s *SessionStore) StartTimer(
+func (s *SessionRepositoryImpl) StartTimer(
 	ctx context.Context,
 	userID uuid.UUID,
 	problemID *uuid.UUID,
@@ -106,7 +106,7 @@ func (s *SessionStore) StartTimer(
 
 // StopTimer stops the currently active timer for the user and records elapsed
 // time in today's DailySession.
-func (s *SessionStore) StopTimer(ctx context.Context, userID uuid.UUID) (*domain.TimerSession, error) {
+func (s *SessionRepositoryImpl) StopTimer(ctx context.Context, userID uuid.UUID) (*domain.TimerSession, error) {
 	var model timerSessionModel
 	err := s.db.Gorm.WithContext(ctx).
 		Where("user_id = ? AND ended_at IS NULL", userID).
@@ -156,7 +156,7 @@ func (s *SessionStore) StopTimer(ctx context.Context, userID uuid.UUID) (*domain
 }
 
 // ActiveTimer returns the currently running timer for the user, or nil.
-func (s *SessionStore) ActiveTimer(ctx context.Context, userID uuid.UUID) (*domain.TimerSession, error) {
+func (s *SessionRepositoryImpl) ActiveTimer(ctx context.Context, userID uuid.UUID) (*domain.TimerSession, error) {
 	var model timerSessionModel
 	err := s.db.Gorm.WithContext(ctx).
 		Where("user_id = ? AND ended_at IS NULL", userID).

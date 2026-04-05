@@ -9,16 +9,16 @@ import (
 	outport "github.com/tuannm99/judge-loop/internal/port/out"
 )
 
-// TestCaseStore handles test case queries.
-type TestCaseStore struct{ db *DB }
+// TestCaseRepositoryImpl handles test case queries.
+type TestCaseRepositoryImpl struct{ db *DB }
 
-var _ outport.TestCaseRepository = (*TestCaseStore)(nil)
+var _ outport.TestCaseRepository = (*TestCaseRepositoryImpl)(nil)
 
-// NewTestCaseStore creates a new TestCaseStore.
-func NewTestCaseStore(db *DB) *TestCaseStore { return &TestCaseStore{db: db} }
+// NewTestCaseRepositoryImpl creates a new TestCaseRepositoryImpl.
+func NewTestCaseRepositoryImpl(db *DB) *TestCaseRepositoryImpl { return &TestCaseRepositoryImpl{db: db} }
 
 // GetByProblem returns all non-hidden test cases for a problem, ordered by order_idx.
-func (s *TestCaseStore) GetByProblem(ctx context.Context, problemID uuid.UUID) ([]domain.TestCase, error) {
+func (s *TestCaseRepositoryImpl) GetByProblem(ctx context.Context, problemID uuid.UUID) ([]domain.TestCase, error) {
 	var models []testCaseModel
 	if err := s.db.Gorm.WithContext(ctx).
 		Where("problem_id = ? AND is_hidden = false", problemID).

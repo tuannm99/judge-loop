@@ -12,7 +12,9 @@ import (
 //go:embed migrations/*.sql
 var migrationFS embed.FS
 
-func runMigrations(ctx context.Context, sqlDB *sql.DB) error {
+// RunMigrations applies all pending goose migrations. Call this from the
+// migrate command, not from application startup.
+func RunMigrations(ctx context.Context, sqlDB *sql.DB) error {
 	goose.SetBaseFS(migrationFS)
 	if err := goose.SetDialect("postgres"); err != nil {
 		return fmt.Errorf("set goose dialect: %w", err)
