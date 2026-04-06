@@ -116,9 +116,9 @@ func prepare(language, code, dir string) ([]string, error) {
 	}
 }
 
-func truncate(s string, max int) string {
-	if len(s) <= max {
+func truncate(s string, m int) string {
+	if len(s) <= m {
 		return s
 	}
-	return s[:max]
+	return s[:m]
 }

@@ -17,7 +17,9 @@ type SubmissionRepositoryImpl struct{ db *DB }
 var _ outport.SubmissionRepository = (*SubmissionRepositoryImpl)(nil)
 
 // NewSubmissionRepositoryImpl creates a new SubmissionRepositoryImpl.
-func NewSubmissionRepositoryImpl(db *DB) *SubmissionRepositoryImpl { return &SubmissionRepositoryImpl{db: db} }
+func NewSubmissionRepositoryImpl(db *DB) *SubmissionRepositoryImpl {
+	return &SubmissionRepositoryImpl{db: db}
+}
 
 // Create inserts a new submission with status=pending and returns the ID.
 func (s *SubmissionRepositoryImpl) Create(ctx context.Context, sub *domain.Submission) error {
@@ -44,6 +46,18 @@ func (s *SubmissionRepositoryImpl) GetByID(ctx context.Context, id uuid.UUID) (*
 	}
 	sub := model.toDomain()
 	return &sub, nil
+}
+
+// TryStartEvaluation transitions a submission from pending to running once.
+func (s *SubmissionRepositoryImpl) TryStartEvaluation(ctx context.Context, id uuid.UUID) (bool, error) {
+	result := s.db.Gorm.WithContext(ctx).
+		Model(&submissionModel{}).
+		Where("id = ? AND status = ?", id, string(domain.StatusPending)).
+		Update("status", string(domain.StatusRunning))
+	if result.Error != nil {
+		return false, fmt.Errorf("start evaluation: %w", result.Error)
+	}
+	return result.RowsAffected == 1, nil
 }
 
 // UpdateVerdict writes the final verdict back to the submission row.

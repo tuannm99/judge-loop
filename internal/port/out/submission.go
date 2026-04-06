@@ -11,6 +11,7 @@ import (
 type SubmissionRepository interface {
 	Create(ctx context.Context, sub *domain.Submission) error
 	GetByID(ctx context.Context, id uuid.UUID) (*domain.Submission, error)
+	TryStartEvaluation(ctx context.Context, id uuid.UUID) (bool, error)
 	UpdateVerdict(
 		ctx context.Context,
 		id uuid.UUID,

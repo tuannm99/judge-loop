@@ -12,23 +12,23 @@ import (
 )
 
 type contributeProblemRequest struct {
-	Provider      domain.Provider             `json:"provider" binding:"required"`
-	ExternalID    string                      `json:"external_id" binding:"required"`
-	Slug          string                      `json:"slug" binding:"required"`
-	Title         string                      `json:"title" binding:"required"`
-	Difficulty    domain.Difficulty           `json:"difficulty" binding:"required"`
+	Provider      domain.Provider             `json:"provider"       binding:"required"`
+	ExternalID    string                      `json:"external_id"    binding:"required"`
+	Slug          string                      `json:"slug"           binding:"required"`
+	Title         string                      `json:"title"          binding:"required"`
+	Difficulty    domain.Difficulty           `json:"difficulty"     binding:"required"`
 	Tags          []string                    `json:"tags"`
 	PatternTags   []string                    `json:"pattern_tags"`
-	SourceURL     string                      `json:"source_url" binding:"required"`
+	SourceURL     string                      `json:"source_url"     binding:"required"`
 	EstimatedTime int                         `json:"estimated_time"`
 	StarterCode   map[string]string           `json:"starter_code"`
 	Version       int                         `json:"version"`
-	TestCases     []contributeTestCaseRequest `json:"test_cases" binding:"required,min=1"`
+	TestCases     []contributeTestCaseRequest `json:"test_cases"     binding:"required,min=1"`
 }
 
 type contributeTestCaseRequest struct {
-	Input    string `json:"input" binding:"required"`
-	Expected string `json:"expected" binding:"required"`
+	Input    string `json:"input"     binding:"required"`
+	Expected string `json:"expected"  binding:"required"`
 	IsHidden bool   `json:"is_hidden"`
 }
 

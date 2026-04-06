@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	sandboxadapter "github.com/tuannm99/judge-loop/internal/adapter/sandbox"
 	application "github.com/tuannm99/judge-loop/internal/application"
 	"github.com/tuannm99/judge-loop/internal/config"
 	postgres "github.com/tuannm99/judge-loop/internal/infrastructure/postgres"
@@ -30,6 +31,13 @@ func New(cfg config.APIServer) *fx.App {
 			fx.Provide(
 				fx.Annotate(postgres.NewSubmissionRepositoryImpl, fx.As(new(outport.SubmissionRepository))),
 				fx.Annotate(application.NewSubmissionService, fx.As(new(inport.SubmissionService))),
+			),
+		),
+		fx.Module("evaluation",
+			fx.Provide(
+				fx.Annotate(sandboxadapter.NewRunner, fx.As(new(outport.CodeRunner))),
+				fx.Annotate(application.NewEvaluationService, fx.As(new(inport.EvaluationService))),
+				func(cfg config.APIServer) int { return cfg.TimeLimitSecs },
 			),
 		),
 		fx.Module("session",

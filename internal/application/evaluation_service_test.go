@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
@@ -51,9 +50,7 @@ func TestEvaluationServiceEvaluateSubmission(t *testing.T) {
 		cases := []domain.TestCase{{ProblemID: problemID, Input: "1", Expected: "1"}}
 
 		submissions.EXPECT().GetByID(mock.Anything, subID).Return(sub, nil)
-		submissions.EXPECT().
-			UpdateVerdict(mock.Anything, subID, "running", "", 0, 0, int64(0), "", (*time.Time)(nil)).
-			Return(nil)
+		submissions.EXPECT().TryStartEvaluation(mock.Anything, subID).Return(true, nil)
 		testCases.EXPECT().GetByProblem(mock.Anything, problemID).Return(cases, nil)
 		runner.EXPECT().Run(mock.Anything, mock.MatchedBy(func(req any) bool {
 			r, ok := req.(outport.RunRequest)
@@ -78,9 +75,7 @@ func TestEvaluationServiceEvaluateSubmission(t *testing.T) {
 		sub := &domain.Submission{ID: subID, ProblemID: problemID, Language: domain.LanguagePython, Code: "print(1)"}
 
 		submissions.EXPECT().GetByID(mock.Anything, subID).Return(sub, nil)
-		submissions.EXPECT().
-			UpdateVerdict(mock.Anything, subID, "running", "", 0, 0, int64(0), "", (*time.Time)(nil)).
-			Return(nil)
+		submissions.EXPECT().TryStartEvaluation(mock.Anything, subID).Return(true, nil)
 		testCases.EXPECT().GetByProblem(mock.Anything, problemID).Return(nil, errors.New("no cases"))
 		submissions.EXPECT().
 			UpdateVerdict(mock.Anything, subID, string(domain.StatusRuntimeError), string(domain.VerdictRuntimeError), 0, 0, int64(0), "load test cases: no cases", mock.Anything).
@@ -101,9 +96,7 @@ func TestEvaluationServiceEvaluateSubmission(t *testing.T) {
 		sub := &domain.Submission{ID: subID, ProblemID: problemID, Language: domain.LanguagePython, Code: "print(1)"}
 
 		submissions.EXPECT().GetByID(mock.Anything, subID).Return(sub, nil)
-		submissions.EXPECT().
-			UpdateVerdict(mock.Anything, subID, "running", "", 0, 0, int64(0), "", (*time.Time)(nil)).
-			Return(nil)
+		submissions.EXPECT().TryStartEvaluation(mock.Anything, subID).Return(true, nil)
 		testCases.EXPECT().GetByProblem(mock.Anything, problemID).Return([]domain.TestCase{}, nil)
 		submissions.EXPECT().
 			UpdateVerdict(mock.Anything, subID, string(domain.StatusRuntimeError), string(domain.VerdictRuntimeError), 0, 0, int64(0), "no visible test cases configured for problem", mock.Anything).
@@ -135,9 +128,7 @@ func TestEvaluationServiceEvaluateSubmission(t *testing.T) {
 		cases := []domain.TestCase{{ProblemID: problemID, Input: "1", Expected: "1"}}
 
 		submissions.EXPECT().GetByID(mock.Anything, subID).Return(sub, nil)
-		submissions.EXPECT().
-			UpdateVerdict(mock.Anything, subID, "running", "", 0, 0, int64(0), "", (*time.Time)(nil)).
-			Return(nil)
+		submissions.EXPECT().TryStartEvaluation(mock.Anything, subID).Return(true, nil)
 		testCases.EXPECT().GetByProblem(mock.Anything, problemID).Return(cases, nil)
 		runner.EXPECT().Run(mock.Anything, mock.Anything).Return(sandbox.RunResult{Output: "1", RuntimeMS: 5}, nil)
 		submissions.EXPECT().
@@ -149,5 +140,18 @@ func TestEvaluationServiceEvaluateSubmission(t *testing.T) {
 		err := svc.EvaluateSubmission(context.Background(), subID, userID, 1)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "update review schedule")
+	})
+
+	t.Run("returns nil when another evaluator already claimed submission", func(t *testing.T) {
+		submissions := outmocks.NewMockSubmissionRepository(t)
+
+		subID := uuid.New()
+		sub := &domain.Submission{ID: subID, ProblemID: uuid.New(), Language: domain.LanguagePython, Code: "print(1)"}
+
+		submissions.EXPECT().GetByID(mock.Anything, subID).Return(sub, nil)
+		submissions.EXPECT().TryStartEvaluation(mock.Anything, subID).Return(false, nil)
+
+		svc := NewEvaluationService(submissions, nil, nil, nil, nil)
+		require.NoError(t, svc.EvaluateSubmission(context.Background(), subID, uuid.New(), 1))
 	})
 }

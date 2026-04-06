@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/tuannm99/judge-loop/internal/domain"
+	inmocks "github.com/tuannm99/judge-loop/internal/port/in/mocks"
 	outport "github.com/tuannm99/judge-loop/internal/port/out"
 	outmocks "github.com/tuannm99/judge-loop/internal/port/out/mocks"
 )
@@ -18,7 +19,8 @@ import (
 func TestSubmissionServiceCreateSubmissionPublishesJob(t *testing.T) {
 	submissions := outmocks.NewMockSubmissionRepository(t)
 	publisher := outmocks.NewMockEvaluationPublisher(t)
-	service := NewSubmissionService(submissions, publisher)
+	evaluator := inmocks.NewMockEvaluationService(t)
+	service := NewSubmissionService(submissions, publisher, evaluator, 1)
 
 	userID := uuid.New()
 	problemID := uuid.New()
@@ -39,6 +41,7 @@ func TestSubmissionServiceCreateSubmissionPublishesJob(t *testing.T) {
 		})).
 		Return(nil).
 		Once()
+	evaluator.EXPECT().EvaluateSubmission(mock.Anything, mock.Anything, userID, 1).Return(nil).Maybe()
 
 	sub, err := service.CreateSubmission(context.Background(), userID, problemID, "python", "print(1)", nil)
 	require.NoError(t, err)
@@ -51,7 +54,8 @@ func TestSubmissionServiceCreateSubmissionPublishesJob(t *testing.T) {
 func TestSubmissionServiceCreateSubmissionReturnsPublishError(t *testing.T) {
 	submissions := outmocks.NewMockSubmissionRepository(t)
 	publisher := outmocks.NewMockEvaluationPublisher(t)
-	service := NewSubmissionService(submissions, publisher)
+	evaluator := inmocks.NewMockEvaluationService(t)
+	service := NewSubmissionService(submissions, publisher, evaluator, 1)
 
 	userID := uuid.New()
 	problemID := uuid.New()
@@ -67,16 +71,16 @@ func TestSubmissionServiceCreateSubmissionReturnsPublishError(t *testing.T) {
 		Once()
 
 	publisher.EXPECT().PublishEvaluation(mock.Anything).Return(errors.New("queue down")).Once()
+	evaluator.EXPECT().EvaluateSubmission(mock.Anything, mock.Anything, userID, 1).Return(nil).Maybe()
 
 	sub, err := service.CreateSubmission(context.Background(), userID, problemID, "python", "print(1)", nil)
-	require.Error(t, err)
-	require.Nil(t, sub)
-	require.ErrorContains(t, err, "publish evaluation job")
+	require.NoError(t, err)
+	require.NotNil(t, sub)
 }
 
 func TestSubmissionServiceGetSubmission(t *testing.T) {
 	submissions := outmocks.NewMockSubmissionRepository(t)
-	service := NewSubmissionService(submissions, nil)
+	service := NewSubmissionService(submissions, nil, nil, 0)
 
 	ctx := context.Background()
 	submissionID := uuid.New()
@@ -90,7 +94,7 @@ func TestSubmissionServiceGetSubmission(t *testing.T) {
 
 func TestSubmissionServiceListSubmissions(t *testing.T) {
 	submissions := outmocks.NewMockSubmissionRepository(t)
-	service := NewSubmissionService(submissions, nil)
+	service := NewSubmissionService(submissions, nil, nil, 0)
 
 	ctx := context.Background()
 	userID := uuid.New()
@@ -106,7 +110,7 @@ func TestSubmissionServiceListSubmissions(t *testing.T) {
 
 func TestSubmissionServiceCreateSubmissionReturnsCreateError(t *testing.T) {
 	submissions := outmocks.NewMockSubmissionRepository(t)
-	service := NewSubmissionService(submissions, nil)
+	service := NewSubmissionService(submissions, nil, nil, 0)
 
 	ctx := context.Background()
 	userID := uuid.New()

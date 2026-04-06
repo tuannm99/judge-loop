@@ -50,7 +50,13 @@ func (s *EvaluationService) EvaluateSubmission(
 		return fmt.Errorf("get submission %s: %w", submissionID, err)
 	}
 
-	_ = s.submissions.UpdateVerdict(ctx, submissionID, "running", "", 0, 0, 0, "", nil)
+	started, err := s.submissions.TryStartEvaluation(ctx, submissionID)
+	if err != nil {
+		return fmt.Errorf("start evaluation %s: %w", submissionID, err)
+	}
+	if !started {
+		return nil
+	}
 
 	cases, err := s.testCases.GetByProblem(ctx, sub.ProblemID)
 	if err != nil {

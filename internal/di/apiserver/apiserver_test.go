@@ -58,6 +58,26 @@ func TestNew(t *testing.T) {
 	require.NotNil(t, New(config.APIServer{}))
 }
 
+func TestNewStarts(t *testing.T) {
+	dsn := newPostgresDSN(t)
+
+	app := New(config.APIServer{
+		DatabaseURL:   dsn,
+		RedisURL:      "localhost:6379",
+		Port:          "0",
+		UserID:        uuid.NewString(),
+		TimeLimitSecs: 10,
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	require.NoError(t, app.Start(ctx))
+
+	stopCtx, stopCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer stopCancel()
+	require.NoError(t, app.Stop(stopCtx))
+}
+
 func TestProvideDB(t *testing.T) {
 	dsn := newPostgresDSN(t)
 
