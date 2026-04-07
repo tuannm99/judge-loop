@@ -12,7 +12,7 @@ func New(cfg config.LocalAgent) *fx.App {
 		fx.WithLogger(func() fxevent.Logger { return fxevent.NopLogger }),
 		fx.Supply(cfg),
 		fx.Provide(provideHandler),
-		httpModule(),
+		httpModule,
 		fx.Invoke(registerLifecycle),
 	)
 }

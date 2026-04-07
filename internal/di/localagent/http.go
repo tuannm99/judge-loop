@@ -13,11 +13,9 @@ import (
 	"go.uber.org/fx"
 )
 
-func httpModule() fx.Option {
-	return fx.Module("http",
-		fx.Provide(provideHTTP),
-	)
-}
+var httpModule fx.Option = fx.Module("http",
+	fx.Provide(provideHTTP),
+)
 
 func provideHTTP(cfg config.LocalAgent, handler *localagent.Handler) *http.Server {
 	return &http.Server{
