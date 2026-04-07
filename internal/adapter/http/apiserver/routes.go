@@ -51,5 +51,8 @@ func RegisterRoutes(router gin.IRouter, api *API) {
 		v1.GET("/reviews/today", api.Reviews.GetReviewsToday)
 		v1.POST("/registry/sync", api.Registry.SyncRegistry)
 		v1.GET("/registry/version", api.Registry.GetRegistryVersion)
+
+		v1.GET("/missions/today", api.Missions.GetDailyMission)
+		v1.GET("/progress/goal", api.Progress.GetGoalProgress)
 	}
 }

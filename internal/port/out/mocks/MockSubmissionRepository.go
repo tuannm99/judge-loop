@@ -165,6 +165,72 @@ func (_c *MockSubmissionRepository_GetByID_Call) RunAndReturn(run func(ctx conte
 	return _c
 }
 
+// GetDistinctSolvedCount provides a mock function for the type MockSubmissionRepository
+func (_mock *MockSubmissionRepository) GetDistinctSolvedCount(ctx context.Context, userID uuid.UUID) (int, error) {
+	ret := _mock.Called(ctx, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetDistinctSolvedCount")
+	}
+
+	var r0 int
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) (int, error)); ok {
+		return returnFunc(ctx, userID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) int); ok {
+		r0 = returnFunc(ctx, userID)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockSubmissionRepository_GetDistinctSolvedCount_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetDistinctSolvedCount'
+type MockSubmissionRepository_GetDistinctSolvedCount_Call struct {
+	*mock.Call
+}
+
+// GetDistinctSolvedCount is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+func (_e *MockSubmissionRepository_Expecter) GetDistinctSolvedCount(ctx interface{}, userID interface{}) *MockSubmissionRepository_GetDistinctSolvedCount_Call {
+	return &MockSubmissionRepository_GetDistinctSolvedCount_Call{Call: _e.mock.On("GetDistinctSolvedCount", ctx, userID)}
+}
+
+func (_c *MockSubmissionRepository_GetDistinctSolvedCount_Call) Run(run func(ctx context.Context, userID uuid.UUID)) *MockSubmissionRepository_GetDistinctSolvedCount_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockSubmissionRepository_GetDistinctSolvedCount_Call) Return(n int, err error) *MockSubmissionRepository_GetDistinctSolvedCount_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockSubmissionRepository_GetDistinctSolvedCount_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID) (int, error)) *MockSubmissionRepository_GetDistinctSolvedCount_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListByUser provides a mock function for the type MockSubmissionRepository
 func (_mock *MockSubmissionRepository) ListByUser(ctx context.Context, userID uuid.UUID, problemID *uuid.UUID, limit int, offset int) ([]domain.Submission, error) {
 	ret := _mock.Called(ctx, userID, problemID, limit, offset)
@@ -299,13 +365,16 @@ func (_c *MockSubmissionRepository_TryStartEvaluation_Call) Run(run func(ctx con
 		if args[1] != nil {
 			arg1 = args[1].(uuid.UUID)
 		}
-		run(arg0, arg1)
+		run(
+			arg0,
+			arg1,
+		)
 	})
 	return _c
 }
 
-func (_c *MockSubmissionRepository_TryStartEvaluation_Call) Return(started bool, err error) *MockSubmissionRepository_TryStartEvaluation_Call {
-	_c.Call.Return(started, err)
+func (_c *MockSubmissionRepository_TryStartEvaluation_Call) Return(b bool, err error) *MockSubmissionRepository_TryStartEvaluation_Call {
+	_c.Call.Return(b, err)
 	return _c
 }
 

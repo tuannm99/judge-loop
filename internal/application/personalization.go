@@ -11,8 +11,8 @@ import (
 
 const (
 	defaultDailyGoal     = 2
+	maxDailyGoal         = 5
 	weakPatternThreshold = 0.5 // score below this is "weak"
-	minAttemptsForWeak   = 2   // need at least this many attempts before flagging weak
 	optionalTaskCount    = 2
 )
 
@@ -22,6 +22,22 @@ type Input struct {
 	Unsolved      []domain.Problem   // problems not yet accepted by the user
 	DueReviews    []outport.DueReview
 	DailyGoal     int // 0 = use default
+	Streak        int // current streak, used to scale daily goal
+}
+
+// AdaptiveDailyGoal scales the daily goal based on the user's current streak.
+// Streak 0–7: 2, 8–21: 3, 22–49: 4, 50+: 5.
+func AdaptiveDailyGoal(streak int) int {
+	switch {
+	case streak >= 50:
+		return maxDailyGoal
+	case streak >= 22:
+		return 4
+	case streak >= 8:
+		return 3
+	default:
+		return defaultDailyGoal
+	}
 }
 
 // Generate builds a DailyMission from the given input.
@@ -29,7 +45,7 @@ type Input struct {
 func Generate(userID uuid.UUID, in Input) domain.DailyMission {
 	goal := in.DailyGoal
 	if goal <= 0 {
-		goal = defaultDailyGoal
+		goal = AdaptiveDailyGoal(in.Streak)
 	}
 
 	mission := domain.DailyMission{

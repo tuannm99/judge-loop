@@ -115,10 +115,13 @@ func (_mock *MockTestCaseRepository) ReplaceForProblem(ctx context.Context, prob
 		panic("no return value specified for ReplaceForProblem")
 	}
 
+	var r0 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, []domain.TestCase) error); ok {
-		return returnFunc(ctx, problemID, testCases)
+		r0 = returnFunc(ctx, problemID, testCases)
+	} else {
+		r0 = ret.Error(0)
 	}
-	return ret.Error(0)
+	return r0
 }
 
 // MockTestCaseRepository_ReplaceForProblem_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ReplaceForProblem'
@@ -148,7 +151,11 @@ func (_c *MockTestCaseRepository_ReplaceForProblem_Call) Run(run func(ctx contex
 		if args[2] != nil {
 			arg2 = args[2].([]domain.TestCase)
 		}
-		run(arg0, arg1, arg2)
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
 	})
 	return _c
 }

@@ -18,7 +18,7 @@ func TestReviewHandlers(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	userID := uuid.New()
 	service := inmocks.NewMockReviewService(t)
-	api := New(nil, nil, nil, nil, service, nil, userID)
+	api := New(nil, nil, nil, nil, service, nil, nil, userID)
 	problemID := uuid.New()
 
 	service.EXPECT().GetReviewsToday(mock.Anything, userID).Return([]outport.DueReview{{ProblemID: problemID}}, nil).Once()

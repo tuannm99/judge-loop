@@ -27,4 +27,6 @@ type SubmissionRepository interface {
 		problemID *uuid.UUID,
 		limit, offset int,
 	) ([]domain.Submission, error)
+	// GetDistinctSolvedCount returns the number of distinct problems accepted by the user.
+	GetDistinctSolvedCount(ctx context.Context, userID uuid.UUID) (int, error)
 }

@@ -37,3 +37,13 @@ func (h *ProgressAPI) GetStreak(c *gin.Context) {
 		"last_practiced": streak.LastPracticed,
 	})
 }
+
+// GetGoalProgress handles GET /api/progress/goal
+func (h *ProgressAPI) GetGoalProgress(c *gin.Context) {
+	goal, err := h.service.GetGoalProgress(c.Request.Context(), h.userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, goal)
+}

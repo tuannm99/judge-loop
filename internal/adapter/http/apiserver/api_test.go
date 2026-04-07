@@ -16,6 +16,7 @@ func TestNew(t *testing.T) {
 		inmocks.NewMockTimerService(t),
 		inmocks.NewMockReviewService(t),
 		inmocks.NewMockRegistryService(t),
+		inmocks.NewMockMissionService(t),
 		uuid.New(),
 	)
 	require.NotNil(t, api)
@@ -25,4 +26,5 @@ func TestNew(t *testing.T) {
 	require.NotNil(t, api.Timers)
 	require.NotNil(t, api.Reviews)
 	require.NotNil(t, api.Registry)
+	require.NotNil(t, api.Missions)
 }

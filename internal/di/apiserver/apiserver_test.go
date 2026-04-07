@@ -113,6 +113,7 @@ func TestProvideHTTPAndQueue(t *testing.T) {
 		inmocks.NewMockTimerService(t),
 		inmocks.NewMockReviewService(t),
 		inmocks.NewMockRegistryService(t),
+		inmocks.NewMockMissionService(t),
 	)
 	require.NoError(t, err)
 	require.Equal(t, ":8080", server.Addr)
@@ -126,6 +127,7 @@ func TestProvideHTTPAndQueue(t *testing.T) {
 		inmocks.NewMockTimerService(t),
 		inmocks.NewMockReviewService(t),
 		inmocks.NewMockRegistryService(t),
+		inmocks.NewMockMissionService(t),
 	)
 	require.Error(t, err)
 

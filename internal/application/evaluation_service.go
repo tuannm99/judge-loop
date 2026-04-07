@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -88,13 +89,22 @@ func (s *EvaluationService) EvaluateSubmission(
 		return fmt.Errorf("update verdict: %w", err)
 	}
 
-	if status == domain.StatusAccepted && s.reviews != nil {
-		if err := s.reviews.Upsert(ctx, userID, sub.ProblemID); err != nil {
-			return fmt.Errorf("update review schedule: %w", err)
+	if s.reviews != nil {
+		if status == domain.StatusAccepted {
+			if err := s.reviews.Upsert(ctx, userID, sub.ProblemID); err != nil {
+				return fmt.Errorf("update review schedule: %w", err)
+			}
+		} else {
+			// Regression: failed review → reset schedule to retry tomorrow.
+			if err := s.reviews.Reset(ctx, userID, sub.ProblemID); err != nil {
+				log.Printf("reset review schedule for %s/%s: %v", userID, sub.ProblemID, err)
+			}
 		}
 	}
 
-	_ = s.sessions.RecordSubmission(ctx, userID, status == domain.StatusAccepted)
+	if err := s.sessions.RecordSubmission(ctx, userID, status == domain.StatusAccepted); err != nil {
+		log.Printf("record submission stats for user %s: %v", userID, err)
+	}
 	return nil
 }
 

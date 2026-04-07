@@ -18,6 +18,7 @@ func TestNewRouterHealth(t *testing.T) {
 		inmocks.NewMockTimerService(t),
 		inmocks.NewMockReviewService(t),
 		inmocks.NewMockRegistryService(t),
+		inmocks.NewMockMissionService(t),
 		uuid.New(),
 	))
 

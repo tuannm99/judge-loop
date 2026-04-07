@@ -16,7 +16,7 @@ import (
 
 func TestProgressServiceGetProgressToday(t *testing.T) {
 	sessions := outmocks.NewMockSessionRepository(t)
-	service := NewProgressService(sessions)
+	service := NewProgressService(sessions, nil)
 
 	ctx := context.Background()
 	userID := uuid.New()
@@ -43,7 +43,7 @@ func TestProgressServiceGetProgressToday(t *testing.T) {
 
 func TestProgressServiceGetStreak(t *testing.T) {
 	sessions := outmocks.NewMockSessionRepository(t)
-	service := NewProgressService(sessions)
+	service := NewProgressService(sessions, nil)
 
 	ctx := context.Background()
 	userID := uuid.New()
@@ -61,12 +61,12 @@ func TestProgressServiceErrors(t *testing.T) {
 
 	sessions := outmocks.NewMockSessionRepository(t)
 	sessions.EXPECT().GetOrCreateToday(ctx, userID).Return(nil, errors.New("daily"))
-	_, err := NewProgressService(sessions).GetProgressToday(ctx, userID)
+	_, err := NewProgressService(sessions, nil).GetProgressToday(ctx, userID)
 	require.Error(t, err)
 
 	sessions2 := outmocks.NewMockSessionRepository(t)
 	sessions2.EXPECT().GetOrCreateToday(ctx, userID).Return(&domain.DailySession{}, nil)
 	sessions2.EXPECT().GetStreak(ctx, userID).Return(outport.StreakInfo{}, errors.New("streak"))
-	_, err = NewProgressService(sessions2).GetProgressToday(ctx, userID)
+	_, err = NewProgressService(sessions2, nil).GetProgressToday(ctx, userID)
 	require.Error(t, err)
 }

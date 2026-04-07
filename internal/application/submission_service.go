@@ -84,10 +84,13 @@ func (s *SubmissionService) scheduleFallback(submissionID, userID uuid.UUID) {
 	if s.evaluator == nil || s.timeLimit <= 0 {
 		return
 	}
-
+	timeLimit := s.timeLimit
 	go func() {
 		time.Sleep(2 * time.Second)
-		if err := s.evaluator.EvaluateSubmission(context.Background(), submissionID, userID, s.timeLimit); err != nil {
+		// Bound context to time limit + 30s buffer so the goroutine cannot run forever.
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeLimit+30)*time.Second)
+		defer cancel()
+		if err := s.evaluator.EvaluateSubmission(ctx, submissionID, userID, timeLimit); err != nil {
 			log.Printf("submission %s: fallback evaluation failed: %v", submissionID, err)
 		}
 	}()

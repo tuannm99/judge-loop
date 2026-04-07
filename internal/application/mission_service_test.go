@@ -20,7 +20,7 @@ func TestMissionServiceReturnsCachedMission(t *testing.T) {
 	missions := outmocks.NewMockMissionRepository(t)
 	missions.EXPECT().GetToday(mock.Anything, userID).Return(cached, nil).Once()
 
-	svc := NewMissionService(missions, nil, nil, nil)
+	svc := NewMissionService(missions, nil, nil, nil, nil)
 
 	got, err := svc.GetDailyMission(context.Background(), userID)
 	require.NoError(t, err)
@@ -58,7 +58,7 @@ func TestMissionServiceGeneratesAndSavesMission(t *testing.T) {
 			mission.RequiredTasks[0].ProblemID == weakID
 	})).Return(nil).Once()
 
-	svc := NewMissionService(missions, performance, problems, reviews)
+	svc := NewMissionService(missions, performance, problems, reviews, nil)
 
 	got, err := svc.GetDailyMission(context.Background(), userID)
 	require.NoError(t, err)
@@ -76,33 +76,33 @@ func TestMissionServiceReturnsDependencyErrors(t *testing.T) {
 
 	missions := outmocks.NewMockMissionRepository(t)
 	missions.EXPECT().GetToday(mock.Anything, userID).Return(nil, errors.New("mission")).Once()
-	_, err := NewMissionService(missions, nil, nil, nil).GetDailyMission(context.Background(), userID)
+	_, err := NewMissionService(missions, nil, nil, nil, nil).GetDailyMission(context.Background(), userID)
 	require.ErrorContains(t, err, "mission")
 
 	missions = outmocks.NewMockMissionRepository(t)
 	performance := outmocks.NewMockPerformanceRepository(t)
 	missions.EXPECT().GetToday(mock.Anything, userID).Return(nil, nil).Once()
 	performance.EXPECT().GetPatternScores(mock.Anything, userID).Return(nil, errors.New("scores")).Once()
-	_, err = NewMissionService(missions, performance, nil, nil).GetDailyMission(context.Background(), userID)
+	_, err = NewMissionService(missions, performance, nil, nil, nil).GetDailyMission(context.Background(), userID)
 	require.ErrorContains(t, err, "scores")
 
 	missions = outmocks.NewMockMissionRepository(t)
 	problems := outmocks.NewMockProblemRepository(t)
 	missions.EXPECT().GetToday(mock.Anything, userID).Return(nil, nil).Once()
 	problems.EXPECT().GetUnsolved(mock.Anything, userID, defaultMissionProblemLimit).Return(nil, errors.New("unsolved")).Once()
-	_, err = NewMissionService(missions, nil, problems, nil).GetDailyMission(context.Background(), userID)
+	_, err = NewMissionService(missions, nil, problems, nil, nil).GetDailyMission(context.Background(), userID)
 	require.ErrorContains(t, err, "unsolved")
 
 	missions = outmocks.NewMockMissionRepository(t)
 	reviews := outmocks.NewMockReviewRepository(t)
 	missions.EXPECT().GetToday(mock.Anything, userID).Return(nil, nil).Once()
 	reviews.EXPECT().GetDue(mock.Anything, userID).Return(nil, errors.New("reviews")).Once()
-	_, err = NewMissionService(missions, nil, nil, reviews).GetDailyMission(context.Background(), userID)
+	_, err = NewMissionService(missions, nil, nil, reviews, nil).GetDailyMission(context.Background(), userID)
 	require.ErrorContains(t, err, "reviews")
 
 	missions = outmocks.NewMockMissionRepository(t)
 	missions.EXPECT().GetToday(mock.Anything, userID).Return(nil, nil).Once()
 	missions.EXPECT().Save(mock.Anything, mock.Anything).Return(errors.New("save")).Once()
-	_, err = NewMissionService(missions, nil, nil, nil).GetDailyMission(context.Background(), userID)
+	_, err = NewMissionService(missions, nil, nil, nil, nil).GetDailyMission(context.Background(), userID)
 	require.ErrorContains(t, err, "save")
 }

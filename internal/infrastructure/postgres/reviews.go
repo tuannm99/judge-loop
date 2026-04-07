@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	outport "github.com/tuannm99/judge-loop/internal/port/out"
@@ -39,4 +40,22 @@ func (s *ReviewRepositoryImpl) GetDue(ctx context.Context, userID uuid.UUID) ([]
 		return nil, fmt.Errorf("get due reviews: %w", err)
 	}
 	return out, nil
+}
+
+// Reset sets next_review_at to tomorrow and interval_days to 1 for regression recovery.
+// It is a no-op if no review schedule exists for the given problem.
+func (s *ReviewRepositoryImpl) Reset(ctx context.Context, userID, problemID uuid.UUID) error {
+	tomorrow := time.Now().Add(24 * time.Hour)
+	result := s.db.Gorm.WithContext(ctx).
+		Model(&reviewScheduleModel{}).
+		Where("user_id = ? AND problem_id = ?", userID, problemID).
+		Updates(map[string]any{
+			"next_review_at": tomorrow,
+			"interval_days":  1,
+			"updated_at":     time.Now(),
+		})
+	if result.Error != nil {
+		return fmt.Errorf("reset review schedule: %w", result.Error)
+	}
+	return nil
 }

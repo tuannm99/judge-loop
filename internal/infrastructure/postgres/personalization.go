@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -39,9 +40,15 @@ func (s *MissionRepositoryImpl) GetToday(ctx context.Context, userID uuid.UUID) 
 	m.UserID = model.UserID
 	m.Date = model.Date
 	m.GeneratedAt = model.GeneratedAt
-	_ = json.Unmarshal(model.RequiredTasks, &m.RequiredTasks)
-	_ = json.Unmarshal(model.OptionalTasks, &m.OptionalTasks)
-	_ = json.Unmarshal(model.ReviewTasks, &m.ReviewTasks)
+	if err := json.Unmarshal(model.RequiredTasks, &m.RequiredTasks); err != nil {
+		log.Printf("unmarshal required_tasks for mission %s: %v", model.ID, err)
+	}
+	if err := json.Unmarshal(model.OptionalTasks, &m.OptionalTasks); err != nil {
+		log.Printf("unmarshal optional_tasks for mission %s: %v", model.ID, err)
+	}
+	if err := json.Unmarshal(model.ReviewTasks, &m.ReviewTasks); err != nil {
+		log.Printf("unmarshal review_tasks for mission %s: %v", model.ID, err)
+	}
 	return &m, nil
 }
 

@@ -107,6 +107,69 @@ func (_c *MockReviewRepository_GetDue_Call) RunAndReturn(run func(ctx context.Co
 	return _c
 }
 
+// Reset provides a mock function for the type MockReviewRepository
+func (_mock *MockReviewRepository) Reset(ctx context.Context, userID uuid.UUID, problemID uuid.UUID) error {
+	ret := _mock.Called(ctx, userID, problemID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Reset")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, userID, problemID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockReviewRepository_Reset_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Reset'
+type MockReviewRepository_Reset_Call struct {
+	*mock.Call
+}
+
+// Reset is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+//   - problemID uuid.UUID
+func (_e *MockReviewRepository_Expecter) Reset(ctx interface{}, userID interface{}, problemID interface{}) *MockReviewRepository_Reset_Call {
+	return &MockReviewRepository_Reset_Call{Call: _e.mock.On("Reset", ctx, userID, problemID)}
+}
+
+func (_c *MockReviewRepository_Reset_Call) Run(run func(ctx context.Context, userID uuid.UUID, problemID uuid.UUID)) *MockReviewRepository_Reset_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockReviewRepository_Reset_Call) Return(err error) *MockReviewRepository_Reset_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockReviewRepository_Reset_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, problemID uuid.UUID) error) *MockReviewRepository_Reset_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Upsert provides a mock function for the type MockReviewRepository
 func (_mock *MockReviewRepository) Upsert(ctx context.Context, userID uuid.UUID, problemID uuid.UUID) error {
 	ret := _mock.Called(ctx, userID, problemID)

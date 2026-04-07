@@ -53,6 +53,13 @@ func New(cfg config.APIServer) *fx.App {
 				fx.Annotate(application.NewReviewService, fx.As(new(inport.ReviewService))),
 			),
 		),
+		fx.Module("mission",
+			fx.Provide(
+				fx.Annotate(postgres.NewMissionRepositoryImpl, fx.As(new(outport.MissionRepository))),
+				fx.Annotate(postgres.NewPerformanceRepositoryImpl, fx.As(new(outport.PerformanceRepository))),
+				fx.Annotate(application.NewMissionService, fx.As(new(inport.MissionService))),
+			),
+		),
 		fx.Module("registry",
 			fx.Provide(
 				fx.Annotate(postgres.NewRegistryRepositoryImpl, fx.As(new(outport.RegistryRepository))),

@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"encoding/json"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -30,7 +31,9 @@ func (problemModel) TableName() string { return "problems" }
 func (m problemModel) toDomain() domain.Problem {
 	starterCode := map[string]string{}
 	if len(m.StarterCode) > 0 {
-		_ = json.Unmarshal(m.StarterCode, &starterCode)
+		if err := json.Unmarshal(m.StarterCode, &starterCode); err != nil {
+			log.Printf("unmarshal starter_code for problem %s: %v", m.ID, err)
+		}
 	}
 
 	return domain.Problem{

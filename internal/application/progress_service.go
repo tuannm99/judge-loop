@@ -9,13 +9,14 @@ import (
 )
 
 type ProgressService struct {
-	sessions outport.SessionRepository
+	sessions    outport.SessionRepository
+	submissions outport.SubmissionRepository
 }
 
 var _ inport.ProgressService = (*ProgressService)(nil)
 
-func NewProgressService(sessions outport.SessionRepository) *ProgressService {
-	return &ProgressService{sessions: sessions}
+func NewProgressService(sessions outport.SessionRepository, submissions outport.SubmissionRepository) *ProgressService {
+	return &ProgressService{sessions: sessions, submissions: submissions}
 }
 
 func (s *ProgressService) GetProgressToday(ctx context.Context, userID uuid.UUID) (inport.ProgressToday, error) {
@@ -38,4 +39,25 @@ func (s *ProgressService) GetProgressToday(ctx context.Context, userID uuid.UUID
 
 func (s *ProgressService) GetStreak(ctx context.Context, userID uuid.UUID) (outport.StreakInfo, error) {
 	return s.sessions.GetStreak(ctx, userID)
+}
+
+func (s *ProgressService) GetGoalProgress(ctx context.Context, userID uuid.UUID) (inport.GoalProgress, error) {
+	if s.submissions == nil {
+		return inport.GoalProgress{Total: inport.GoalTotal}, nil
+	}
+	solved, err := s.submissions.GetDistinctSolvedCount(ctx, userID)
+	if err != nil {
+		return inport.GoalProgress{}, err
+	}
+	remaining := inport.GoalTotal - solved
+	if remaining < 0 {
+		remaining = 0
+	}
+	pct := float64(solved) / float64(inport.GoalTotal) * 100
+	return inport.GoalProgress{
+		Solved:    solved,
+		Total:     inport.GoalTotal,
+		Remaining: remaining,
+		Percent:   pct,
+	}, nil
 }

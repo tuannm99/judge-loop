@@ -16,6 +16,7 @@ type MissionService struct {
 	performance outport.PerformanceRepository
 	problems    outport.ProblemRepository
 	reviews     outport.ReviewRepository
+	sessions    outport.SessionRepository
 }
 
 var _ inport.MissionService = (*MissionService)(nil)
@@ -25,12 +26,14 @@ func NewMissionService(
 	performance outport.PerformanceRepository,
 	problems outport.ProblemRepository,
 	reviews outport.ReviewRepository,
+	sessions outport.SessionRepository,
 ) *MissionService {
 	return &MissionService{
 		missions:    missions,
 		performance: performance,
 		problems:    problems,
 		reviews:     reviews,
+		sessions:    sessions,
 	}
 }
 
@@ -48,6 +51,13 @@ func (s *MissionService) GetDailyMission(ctx context.Context, userID uuid.UUID) 
 	}
 
 	input := Input{}
+	if s.sessions != nil {
+		streak, err := s.sessions.GetStreak(ctx, userID)
+		if err != nil {
+			return nil, err
+		}
+		input.Streak = streak.Current
+	}
 	if s.performance != nil {
 		scores, err := s.performance.GetPatternScores(ctx, userID)
 		if err != nil {

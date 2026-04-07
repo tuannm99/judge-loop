@@ -40,6 +40,72 @@ func (_m *MockProgressService) EXPECT() *MockProgressService_Expecter {
 	return &MockProgressService_Expecter{mock: &_m.Mock}
 }
 
+// GetGoalProgress provides a mock function for the type MockProgressService
+func (_mock *MockProgressService) GetGoalProgress(ctx context.Context, userID uuid.UUID) (in.GoalProgress, error) {
+	ret := _mock.Called(ctx, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetGoalProgress")
+	}
+
+	var r0 in.GoalProgress
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) (in.GoalProgress, error)); ok {
+		return returnFunc(ctx, userID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) in.GoalProgress); ok {
+		r0 = returnFunc(ctx, userID)
+	} else {
+		r0 = ret.Get(0).(in.GoalProgress)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockProgressService_GetGoalProgress_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetGoalProgress'
+type MockProgressService_GetGoalProgress_Call struct {
+	*mock.Call
+}
+
+// GetGoalProgress is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+func (_e *MockProgressService_Expecter) GetGoalProgress(ctx interface{}, userID interface{}) *MockProgressService_GetGoalProgress_Call {
+	return &MockProgressService_GetGoalProgress_Call{Call: _e.mock.On("GetGoalProgress", ctx, userID)}
+}
+
+func (_c *MockProgressService_GetGoalProgress_Call) Run(run func(ctx context.Context, userID uuid.UUID)) *MockProgressService_GetGoalProgress_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockProgressService_GetGoalProgress_Call) Return(goalProgress in.GoalProgress, err error) *MockProgressService_GetGoalProgress_Call {
+	_c.Call.Return(goalProgress, err)
+	return _c
+}
+
+func (_c *MockProgressService_GetGoalProgress_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID) (in.GoalProgress, error)) *MockProgressService_GetGoalProgress_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetProgressToday provides a mock function for the type MockProgressService
 func (_mock *MockProgressService) GetProgressToday(ctx context.Context, userID uuid.UUID) (in.ProgressToday, error) {
 	ret := _mock.Called(ctx, userID)

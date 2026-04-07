@@ -20,7 +20,7 @@ func TestTimerHandlers(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	userID := uuid.New()
 	service := inmocks.NewMockTimerService(t)
-	api := New(nil, nil, nil, service, nil, nil, userID)
+	api := New(nil, nil, nil, service, nil, nil, nil, userID)
 	problemID := uuid.New()
 	timerID := uuid.New()
 	startedAt := time.Now().Add(-2 * time.Minute)

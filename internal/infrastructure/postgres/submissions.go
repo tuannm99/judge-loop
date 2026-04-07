@@ -120,3 +120,17 @@ func (s *SubmissionRepositoryImpl) ListByUser(
 	}
 	return out, nil
 }
+
+// GetDistinctSolvedCount returns the number of distinct problems the user has accepted.
+func (s *SubmissionRepositoryImpl) GetDistinctSolvedCount(ctx context.Context, userID uuid.UUID) (int, error) {
+	var count int64
+	err := s.db.Gorm.WithContext(ctx).
+		Model(&submissionModel{}).
+		Where("user_id = ? AND status = ?", userID, string(domain.StatusAccepted)).
+		Distinct("problem_id").
+		Count(&count).Error
+	if err != nil {
+		return 0, fmt.Errorf("count solved: %w", err)
+	}
+	return int(count), nil
+}

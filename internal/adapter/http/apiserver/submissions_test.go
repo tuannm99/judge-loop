@@ -19,7 +19,7 @@ func TestSubmissionHandlers(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	userID := uuid.New()
 	service := inmocks.NewMockSubmissionService(t)
-	api := New(nil, service, nil, nil, nil, nil, userID)
+	api := New(nil, service, nil, nil, nil, nil, nil, userID)
 
 	problemID := uuid.New()
 	sessionID := uuid.New()

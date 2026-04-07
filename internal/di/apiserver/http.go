@@ -27,13 +27,14 @@ func provideHTTP(
 	timers inport.TimerService,
 	reviews inport.ReviewService,
 	registry inport.RegistryService,
+	missions inport.MissionService,
 ) (*http.Server, error) {
 	userID, err := uuid.Parse(cfg.UserID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid USER_ID %q: %w", cfg.UserID, err)
 	}
 
-	api := apiserver.New(problems, submissions, progress, timers, reviews, registry, userID)
+	api := apiserver.New(problems, submissions, progress, timers, reviews, registry, missions, userID)
 	router := apiserver.NewRouter(api)
 
 	return &http.Server{
