@@ -10,7 +10,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/tuannm99/judge-loop/internal/domain"
 	"github.com/tuannm99/judge-loop/internal/domain/judge"
-	"github.com/tuannm99/judge-loop/internal/infrastructure/sandbox"
 	inport "github.com/tuannm99/judge-loop/internal/port/in"
 	outport "github.com/tuannm99/judge-loop/internal/port/out"
 )
@@ -69,7 +68,7 @@ func (s *EvaluationService) EvaluateSubmission(
 
 	status, verdict, passed, total, runtimeMS, errMsg := judge.Evaluate(
 		cases,
-		func(input string) (sandbox.RunResult, error) {
+		func(input string) (judge.RunResult, error) {
 			runCtx, cancel := context.WithTimeout(ctx, time.Duration(timeLimitSecs)*time.Second)
 			defer cancel()
 			return s.runner.Run(runCtx, outport.RunRequest{

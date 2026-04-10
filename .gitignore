@@ -1,0 +1,26 @@
+# Go
+/bin/
+/build/
+/dist/
+*.test
+coverage.out
+
+# Frontend
+node_modules/
+dist/
+dist-ssr/
+
+# Local configuration
+.env
+.env.*
+*.local
+
+# Logs
+logs/
+*.log
+
+# Editors and OS files
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json

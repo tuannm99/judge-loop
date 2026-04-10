@@ -14,8 +14,7 @@ Using lazy.nvim:
   config = function()
     require("judge-loop").setup({
       agent_url = "http://localhost:7070",
-      auto_start_agent = true,
-      remind_on_open = true,
+      auto_notify = true,
     })
   end
 }
@@ -23,15 +22,17 @@ Using lazy.nvim:
 
 ## Commands
 
-| Command                      | Description                  |
-| ---------------------------- | ---------------------------- |
-| `:JudgeStatus`               | Show today's practice status |
-| `:JudgeStart [problem_slug]` | Start a timed session        |
-| `:JudgeStop`                 | Stop active timer            |
-| `:JudgeSubmit`               | Submit current buffer        |
-| `:JudgeMission`              | Show daily mission           |
-| `:JudgeProblems`             | Browse problem list          |
-| `:JudgeSync`                 | Sync registry from server    |
+| Command                     | Description                                        |
+| --------------------------- | -------------------------------------------------- |
+| `:JudgeUI`                  | Open the floating judge-loop UI                    |
+| `:JudgeStatus`              | Show today's practice status                       |
+| `:JudgeProblems`            | Browse problem list                                |
+| `:JudgeSuggest`             | Pick a suggested problem                           |
+| `:JudgeLanguage [language]` | Switch the solve buffer language                   |
+| `:JudgeStart [problem_id]`  | Open a problem in the solve panel or start a timer |
+| `:JudgeStop`                | Stop active timer                                  |
+| `:JudgeSubmit`              | Submit current buffer                              |
+| `:JudgeSync`                | Sync registry from server                          |
 
 ## Startup reminder
 
@@ -66,15 +67,33 @@ require("judge-loop").timer_statusline()
 4. POSTs to `/local/submit`
 5. Shows notification with verdict
 
+## Floating UI
+
+`:JudgeUI` opens a dependency-free floating panel for the same core workflow as the web UI:
+
+- check today's status and active timer
+- browse problems
+- accept a suggested problem
+- open a configurable code-only side panel with starter code
+- submit the current buffer
+- stop the active timer
+- sync the local registry
+
+Solve buffers are cached on disk under `~/.judgeloopcache` by default. The first open uses problem starter code; later opens reuse the cached code for that problem and language.
+
+API calls report structured failures in the UI. Network failures, non-2xx responses, and invalid JSON include the local-agent/api-server error message when available.
+
 ## Configuration
 
 ```lua
 require("judge-loop").setup({
-  agent_url = "http://localhost:7070",  -- local agent URL
-  auto_start_agent = true,             -- spawn agent if not running
-  remind_on_open = true,               -- check on VimEnter
-  notify_level = vim.log.levels.WARN,  -- reminder log level
-  statusline = true,                   -- enable timer in statusline
+  agent_url = "http://localhost:7070", -- local agent URL
+  auto_notify = true,                  -- check on VimEnter
+  cache_dir = vim.fn.expand("~/.judgeloopcache"),
+  editor = {
+    side = "left", -- left or right
+    width = 80,
+  },
 })
 ```
 

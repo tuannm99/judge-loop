@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/tuannm99/judge-loop/internal/domain"
-	"github.com/tuannm99/judge-loop/internal/infrastructure/sandbox"
+	"github.com/tuannm99/judge-loop/internal/domain/judge"
 	outport "github.com/tuannm99/judge-loop/internal/port/out"
 	outmocks "github.com/tuannm99/judge-loop/internal/port/out/mocks"
 )
@@ -55,7 +55,7 @@ func TestEvaluationServiceEvaluateSubmission(t *testing.T) {
 		runner.EXPECT().Run(mock.Anything, mock.MatchedBy(func(req any) bool {
 			r, ok := req.(outport.RunRequest)
 			return ok && r.Input == "1" && r.Language == "python"
-		})).Return(sandbox.RunResult{Output: "1", RuntimeMS: 5}, nil)
+		})).Return(judge.RunResult{Output: "1", RuntimeMS: 5}, nil)
 		submissions.EXPECT().
 			UpdateVerdict(mock.Anything, subID, string(domain.StatusAccepted), string(domain.VerdictAccepted), 1, 1, int64(5), "", mock.Anything).
 			Return(nil)
@@ -130,7 +130,7 @@ func TestEvaluationServiceEvaluateSubmission(t *testing.T) {
 		submissions.EXPECT().GetByID(mock.Anything, subID).Return(sub, nil)
 		submissions.EXPECT().TryStartEvaluation(mock.Anything, subID).Return(true, nil)
 		testCases.EXPECT().GetByProblem(mock.Anything, problemID).Return(cases, nil)
-		runner.EXPECT().Run(mock.Anything, mock.Anything).Return(sandbox.RunResult{Output: "1", RuntimeMS: 5}, nil)
+		runner.EXPECT().Run(mock.Anything, mock.Anything).Return(judge.RunResult{Output: "1", RuntimeMS: 5}, nil)
 		submissions.EXPECT().
 			UpdateVerdict(mock.Anything, subID, string(domain.StatusAccepted), string(domain.VerdictAccepted), 1, 1, int64(5), "", mock.Anything).
 			Return(nil)

@@ -22,6 +22,9 @@ func RegisterRoutes(router gin.IRouter, handler *Handler) {
 
 	local := router.Group("/local")
 	local.GET("/status/today", handler.StatusToday)
+	local.GET("/problems", handler.ListProblems)
+	local.GET("/problems/suggest", handler.SuggestProblem)
+	local.GET("/problems/:id", handler.GetProblem)
 	local.GET("/timer/current", handler.CurrentTimer)
 	local.POST("/timer/start", handler.StartTimer)
 	local.POST("/timer/stop", handler.StopTimer)

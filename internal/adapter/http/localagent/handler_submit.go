@@ -31,8 +31,8 @@ func (h *Handler) Submit(c *gin.Context) {
 	}
 
 	// attach active timer session if one is running
-	if active := h.timer.Active(); active != nil {
-		apiReq.SessionID = active.ID.String()
+	if active := h.timer.Active(); active != nil && active.ServerID != nil {
+		apiReq.SessionID = active.ServerID.String()
 	}
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)

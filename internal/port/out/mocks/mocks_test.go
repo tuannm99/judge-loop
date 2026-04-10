@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/tuannm99/judge-loop/internal/domain"
-	"github.com/tuannm99/judge-loop/internal/infrastructure/sandbox"
+	"github.com/tuannm99/judge-loop/internal/domain/judge"
 	outport "github.com/tuannm99/judge-loop/internal/port/out"
 )
 
@@ -30,7 +30,7 @@ func TestRepositoryAndRunnerMocks(t *testing.T) {
 	streak := outport.StreakInfo{Current: 2}
 	registry := &outport.RegistryVersion{Version: "v1"}
 	runReq := outport.RunRequest{Language: "go", Code: "code", Input: "1"}
-	runRes := sandbox.RunResult{Output: "1"}
+	runRes := judge.RunResult{Output: "1"}
 
 	problemRepo := NewMockProblemRepository(t)
 	require.NotNil(t, problemRepo.EXPECT())
@@ -148,6 +148,6 @@ func TestRepositoryAndRunnerMocks(t *testing.T) {
 	require.NotNil(t, runner.EXPECT())
 	runner.EXPECT().Run(mock.Anything, runReq).Run(func(context.Context, outport.RunRequest) {}).Return(runRes, nil)
 	_, _ = runner.Run(ctx, runReq)
-	runner.EXPECT().Run(mock.Anything, runReq).RunAndReturn(func(context.Context, outport.RunRequest) (sandbox.RunResult, error) { return runRes, nil })
+	runner.EXPECT().Run(mock.Anything, runReq).RunAndReturn(func(context.Context, outport.RunRequest) (judge.RunResult, error) { return runRes, nil })
 	_, _ = runner.Run(ctx, runReq)
 }

@@ -1,11 +1,11 @@
 {
-  "version": "1.0.0",
-  "updated_at": "2026-03-30T00:00:00Z",
+  "version": "2026-04-10-leetcode-free",
+  "updated_at": "2026-04-10T00:00:00Z",
   "manifests": [
     {
       "name": "leetcode",
       "path": "providers/leetcode.json",
-      "checksum": "sha256:local"
+      "checksum": "sha256:2d531be4fad8a7b41234a9ce5c2fab96902de7c23ff70da80b78e76a7a6879ac"
     },
     {
       "name": "blind75",

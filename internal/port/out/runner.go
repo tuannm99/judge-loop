@@ -3,9 +3,9 @@ package out
 import (
 	"context"
 
-	"github.com/tuannm99/judge-loop/internal/infrastructure/sandbox"
+	"github.com/tuannm99/judge-loop/internal/domain/judge"
 )
 
 type CodeRunner interface {
-	Run(ctx context.Context, req RunRequest) (sandbox.RunResult, error)
+	Run(ctx context.Context, req RunRequest) (judge.RunResult, error)
 }

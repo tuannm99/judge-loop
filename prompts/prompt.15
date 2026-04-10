@@ -1,0 +1,108 @@
+==================================================
+CURRENT WORK — LeetCode free registry refresh
+Date: 2026-04-10
+==================================================
+
+==================================================
+GOAL
+==================================================
+
+Fix registry sync/content issues caused by the old tiny LeetCode manifest:
+
+1. expand the LeetCode problem pool
+2. include only free LeetCode problems
+3. avoid syncing nil/null starter_code values
+4. keep the registry metadata-only
+5. make the refresh repeatable
+
+==================================================
+WHAT CHANGED
+==================================================
+
+1. LEETCODE PROVIDER MANIFEST
+
+  Updated:
+    registry/providers/leetcode.json
+
+  Source:
+    LeetCode public GraphQL problemset metadata
+
+  Current fetched totals:
+    total questions: 3893
+    free questions: 3131
+    paid questions: 762
+
+  The manifest now contains 3131 free LeetCode problems.
+
+  Each entry includes:
+    provider
+    external_id
+    slug
+    title
+    difficulty
+    tags
+    pattern_tags
+    source_url
+    estimated_time
+    starter_code: {}
+    version
+
+  It does NOT include:
+    problem statements
+    editorials
+    solutions
+    test cases
+    paid-only problem entries
+
+2. REGISTRY INDEX
+
+  Updated:
+    registry/index.json
+
+  New version:
+    2026-04-10-leetcode-free
+
+  LeetCode checksum:
+    sha256:2d531be4fad8a7b41234a9ce5c2fab96902de7c23ff70da80b78e76a7a6879ac
+
+3. STARTER CODE SYNC HARDENING
+
+  Updated:
+    internal/infrastructure/postgres/registry.go
+
+  UpsertFromManifest now converts nil StarterCode maps to an empty map before
+  marshaling, so missing starter_code syncs as {} instead of JSON null.
+
+4. REFRESH SCRIPT
+
+  Added:
+    scripts/update_leetcode_registry.sh
+
+  The script:
+    - pages LeetCode metadata 100 questions at a time
+    - filters paidOnly == false
+    - generates registry/providers/leetcode.json
+    - computes the provider manifest sha256
+    - updates registry/index.json
+
+  Note:
+    The listing endpoint returns both free and paid-only metadata in the paged
+    response. The generated local registry filters out paid-only entries and
+    persists only free problems.
+
+==================================================
+DESIGN DECISIONS
+==================================================
+
+Bulk-imported LeetCode entries use starter_code: {}.
+
+Reason:
+  Fetching exact per-problem starter snippets would require detail requests per
+  problem and is not needed for the current UX. The Neovim plugin already has
+  fallback templates for python and go.
+
+Pattern tags currently mirror LeetCode topic tag slugs.
+
+Reason:
+  This preserves useful metadata now without inventing a lossy mapping layer.
+  A later pass can map topic tags into higher-level training patterns.

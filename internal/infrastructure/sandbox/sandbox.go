@@ -107,7 +107,7 @@ func prepare(language, code, dir string) ([]string, error) {
 		return append(base,
 			"--memory", "256m", "--memory-swap", "256m",
 			"--cpus", "0.5",
-			"golang:1.25-alpine",
+			"golang:1.26.0-alpine",
 			"sh", "-c", "cd /sandbox && go run main.go",
 		), nil
 

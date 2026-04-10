@@ -8,7 +8,7 @@ import (
 	"context"
 
 	mock "github.com/stretchr/testify/mock"
-	"github.com/tuannm99/judge-loop/internal/infrastructure/sandbox"
+	"github.com/tuannm99/judge-loop/internal/domain/judge"
 	"github.com/tuannm99/judge-loop/internal/port/out"
 )
 
@@ -40,22 +40,22 @@ func (_m *MockCodeRunner) EXPECT() *MockCodeRunner_Expecter {
 }
 
 // Run provides a mock function for the type MockCodeRunner
-func (_mock *MockCodeRunner) Run(ctx context.Context, req out.RunRequest) (sandbox.RunResult, error) {
+func (_mock *MockCodeRunner) Run(ctx context.Context, req out.RunRequest) (judge.RunResult, error) {
 	ret := _mock.Called(ctx, req)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Run")
 	}
 
-	var r0 sandbox.RunResult
+	var r0 judge.RunResult
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, out.RunRequest) (sandbox.RunResult, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, out.RunRequest) (judge.RunResult, error)); ok {
 		return returnFunc(ctx, req)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, out.RunRequest) sandbox.RunResult); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, out.RunRequest) judge.RunResult); ok {
 		r0 = returnFunc(ctx, req)
 	} else {
-		r0 = ret.Get(0).(sandbox.RunResult)
+		r0 = ret.Get(0).(judge.RunResult)
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, out.RunRequest) error); ok {
 		r1 = returnFunc(ctx, req)
@@ -95,12 +95,12 @@ func (_c *MockCodeRunner_Run_Call) Run(run func(ctx context.Context, req out.Run
 	return _c
 }
 
-func (_c *MockCodeRunner_Run_Call) Return(runResult sandbox.RunResult, err error) *MockCodeRunner_Run_Call {
+func (_c *MockCodeRunner_Run_Call) Return(runResult judge.RunResult, err error) *MockCodeRunner_Run_Call {
 	_c.Call.Return(runResult, err)
 	return _c
 }
 
-func (_c *MockCodeRunner_Run_Call) RunAndReturn(run func(ctx context.Context, req out.RunRequest) (sandbox.RunResult, error)) *MockCodeRunner_Run_Call {
+func (_c *MockCodeRunner_Run_Call) RunAndReturn(run func(ctx context.Context, req out.RunRequest) (judge.RunResult, error)) *MockCodeRunner_Run_Call {
 	_c.Call.Return(run)
 	return _c
 }

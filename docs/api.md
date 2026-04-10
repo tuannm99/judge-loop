@@ -597,6 +597,45 @@ If no local timer exists and the server is unreachable:
 
 If no local timer exists but the server is reachable, the response is proxied from `GET /api/timers/current`.
 
+### `GET /local/problems`
+
+Proxy problem list from `GET /api/problems`.
+
+Supported query params match the api-server endpoint:
+
+- `difficulty`: `easy` | `medium` | `hard`
+- `tag`: string
+- `pattern`: string
+- `provider`: `leetcode` | `neetcode` | `hackerrank`
+- `limit`: integer > 0
+- `offset`: integer >= 0
+
+Response `200`: same shape as `GET /api/problems`.
+
+Response `502` when the api-server request fails:
+
+```json
+{
+  "error": "api-server GET /api/problems: 500 Internal Server Error"
+}
+```
+
+### `GET /local/problems/:id`
+
+Proxy problem detail from `GET /api/problems/:id`. The `id` may be a UUID or slug, matching api-server behavior.
+
+Response `200`: same shape as `GET /api/problems/:id`.
+
+Response `502` when the api-server request fails.
+
+### `GET /local/problems/suggest`
+
+Proxy a suggested problem from `GET /api/problems/suggest`.
+
+Response `200`: same shape as `GET /api/problems/:id`.
+
+Response `502` when the api-server request fails.
+
 ### `POST /local/timer/start`
 
 Body is optional:

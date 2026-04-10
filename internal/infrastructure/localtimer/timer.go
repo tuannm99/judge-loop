@@ -12,6 +12,7 @@ import (
 // Entry represents a single timed practice session.
 type Entry struct {
 	ID        uuid.UUID
+	ServerID  *uuid.UUID
 	ProblemID *uuid.UUID
 	StartedAt time.Time
 }
@@ -41,6 +42,18 @@ func (t *LocalTimer) Start(problemID *uuid.UUID) Entry {
 	}
 	t.active = &e
 	return e
+}
+
+// SetServerID records the authoritative api-server timer session ID for the
+// active local entry. It is a no-op if the local entry is no longer active.
+func (t *LocalTimer) SetServerID(localID, serverID uuid.UUID) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	if t.active == nil || t.active.ID != localID {
+		return
+	}
+	t.active.ServerID = &serverID
 }
 
 // Stop ends the active timer session.

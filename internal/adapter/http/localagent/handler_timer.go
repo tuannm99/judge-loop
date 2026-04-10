@@ -33,8 +33,18 @@ func (h *Handler) StartTimer(c *gin.Context) {
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
-		if err := h.client.StartTimer(ctx, req.ProblemID); err != nil {
+		resp, err := h.client.StartTimer(ctx, req.ProblemID)
+		if err != nil {
 			log.Printf("timer: sync start to server failed: %v", err)
+			return
+		}
+		if resp.ID != "" {
+			serverID, err := uuid.Parse(resp.ID)
+			if err != nil {
+				log.Printf("timer: server returned invalid timer id %q: %v", resp.ID, err)
+				return
+			}
+			h.timer.SetServerID(entry.ID, serverID)
 		}
 	}()
 
@@ -74,6 +84,7 @@ func (h *Handler) CurrentTimer(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"active":          true,
 			"id":              active.ID,
+			"server_id":       active.ServerID,
 			"started_at":      active.StartedAt,
 			"elapsed_seconds": h.timer.ElapsedSecs(),
 			"problem_id":      active.ProblemID,

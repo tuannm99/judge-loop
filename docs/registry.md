@@ -7,6 +7,8 @@ It is inspired by Mason's registry pattern: a central `index.json` points to pro
 
 **Important:** Problem statements are NOT stored. Only metadata (manifest) is stored. Full problem descriptions remain on the provider's platform.
 
+The bundled LeetCode provider manifest is metadata-only and filters out paid-only problems. It intentionally stores `starter_code: {}` for bulk-imported entries; editor clients provide local fallback templates when provider starter snippets are unavailable.
+
 ## Registry structure
 
 ```
@@ -122,6 +124,18 @@ Fields:
 4. Downloads changed manifests
 5. Upserts problems into local problem bank (SQLite)
 6. Returns sync summary
+
+## Updating LeetCode metadata
+
+Use:
+
+```bash
+scripts/update_leetcode_registry.sh
+```
+
+The updater pages LeetCode public metadata, keeps only entries where `paidOnly` is false, writes `registry/providers/leetcode.json`, and updates the LeetCode checksum in `registry/index.json`.
+
+It does not fetch problem statements, editorials, solutions, or test cases. Paid-only entries returned by the listing endpoint are filtered out and are not written to the local registry.
 
 ## RegistryVersion
 

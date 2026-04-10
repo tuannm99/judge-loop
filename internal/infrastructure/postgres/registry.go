@@ -68,6 +68,10 @@ func (s *RegistryRepositoryImpl) Save(
 // UpsertFromManifest inserts or updates a problem row from a ProblemManifest.
 // The (provider, external_id) unique constraint is the conflict target.
 func (s *ProblemRepositoryImpl) UpsertFromManifest(ctx context.Context, m domain.ProblemManifest) error {
+	if m.StarterCode == nil {
+		m.StarterCode = map[string]string{}
+	}
+
 	starterCode, err := json.Marshal(m.StarterCode)
 	if err != nil {
 		return fmt.Errorf("marshal starter code: %w", err)

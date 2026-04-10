@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/tuannm99/judge-loop/internal/domain"
@@ -40,6 +41,7 @@ type ProgressResponse struct {
 
 // TimerResponse mirrors GET /api/timers/current.
 type TimerResponse struct {
+	ID             string     `json:"id,omitempty"`
 	Active         bool       `json:"active"`
 	StartedAt      *time.Time `json:"started_at,omitempty"`
 	ElapsedSeconds int        `json:"elapsed_seconds,omitempty"`
@@ -81,9 +83,13 @@ func (c *APIClient) ProgressToday(ctx context.Context) (*ProgressResponse, error
 }
 
 // StartTimer notifies the api-server that a timer has started.
-func (c *APIClient) StartTimer(ctx context.Context, problemID string) error {
+func (c *APIClient) StartTimer(ctx context.Context, problemID string) (*TimerResponse, error) {
 	body := map[string]string{"problem_id": problemID}
-	return c.do(ctx, http.MethodPost, "/api/timers/start", body, nil)
+	var resp TimerResponse
+	if err := c.do(ctx, http.MethodPost, "/api/timers/start", body, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }
 
 // StopTimer notifies the api-server that the active timer has stopped.
@@ -116,6 +122,18 @@ func (c *APIClient) GetSubmission(ctx context.Context, id string) (*SubmissionSt
 		return nil, err
 	}
 	return &resp, nil
+}
+
+// ProxyGet fetches a raw JSON response from the api-server.
+func (c *APIClient) ProxyGet(ctx context.Context, path string, query url.Values) (json.RawMessage, error) {
+	if qs := query.Encode(); qs != "" {
+		path += "?" + qs
+	}
+	var raw json.RawMessage
+	if err := c.do(ctx, http.MethodGet, path, nil, &raw); err != nil {
+		return nil, err
+	}
+	return raw, nil
 }
 
 // RegistrySyncRequest is the body for POST /api/registry/sync.

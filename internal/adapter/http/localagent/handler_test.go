@@ -33,7 +33,9 @@ func TestAPIClient(t *testing.T) {
 			switch r.URL.Path {
 			case "/api/progress/today":
 				_ = json.NewEncoder(w).Encode(ProgressResponse{Solved: 2, Streak: 3})
-			case "/api/timers/start", "/api/timers/stop":
+			case "/api/timers/start":
+				_ = json.NewEncoder(w).Encode(TimerResponse{ID: uuid.NewString(), Active: true})
+			case "/api/timers/stop":
 				w.WriteHeader(http.StatusOK)
 			case "/api/timers/current":
 				_ = json.NewEncoder(w).Encode(TimerResponse{Active: true})
@@ -54,7 +56,9 @@ func TestAPIClient(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, 2, progress.Solved)
 
-		require.NoError(t, client.StartTimer(context.Background(), "problem-1"))
+		timerStart, err := client.StartTimer(context.Background(), "problem-1")
+		require.NoError(t, err)
+		require.NotEmpty(t, timerStart.ID)
 		require.NoError(t, client.StopTimer(context.Background()))
 
 		timer, err := client.CurrentTimer(context.Background())
@@ -164,8 +168,10 @@ func TestLocalHandlerStatusAndSubmit(t *testing.T) {
 	})
 
 	t.Run("submit handler", func(t *testing.T) {
+		var submitted SubmitRequest
 		server := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 			require.Equal(t, "/api/submissions", r.URL.Path)
+			require.NoError(t, json.NewDecoder(r.Body).Decode(&submitted))
 			_ = json.NewEncoder(w).Encode(SubmitResponse{SubmissionID: "sub-1", Status: "pending"})
 		})
 		defer server.Close()
@@ -180,6 +186,7 @@ func TestLocalHandlerStatusAndSubmit(t *testing.T) {
 		c.Request.Header.Set("Content-Type", "application/json")
 		h.Submit(c)
 		require.Equal(t, http.StatusCreated, w.Code)
+		require.Empty(t, submitted.SessionID)
 
 		w = httptest.NewRecorder()
 		c, _ = gin.CreateTestContext(w)
@@ -196,6 +203,54 @@ func TestLocalHandlerStatusAndSubmit(t *testing.T) {
 		c.Request.Header.Set("Content-Type", "application/json")
 		h.Submit(c)
 		require.Equal(t, http.StatusBadGateway, w.Code)
+	})
+
+	t.Run("submit attaches server timer id only", func(t *testing.T) {
+		serverTimerID := uuid.New()
+		submitted := make(chan SubmitRequest, 1)
+		server := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/api/timers/start":
+				_ = json.NewEncoder(w).Encode(TimerResponse{ID: serverTimerID.String(), Active: true})
+			case "/api/submissions":
+				var req SubmitRequest
+				require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
+				submitted <- req
+				_ = json.NewEncoder(w).Encode(SubmitResponse{SubmissionID: "sub-1", Status: "pending"})
+			default:
+				http.NotFound(w, r)
+			}
+		})
+		defer server.Close()
+
+		h := NewHandler(NewAPIClient(server.URL, "user-1"), "user-1", "")
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodPost, "/local/timer/start", bytes.NewBufferString(`{}`))
+		c.Request.Header.Set("Content-Type", "application/json")
+		h.StartTimer(c)
+		require.Equal(t, http.StatusOK, w.Code)
+
+		require.Eventually(t, func() bool {
+			active := h.timer.Active()
+			return active != nil && active.ServerID != nil && *active.ServerID == serverTimerID
+		}, time.Second, 10*time.Millisecond)
+
+		body := `{"problem_id":"p1","language":"go","code":"fmt.Println(1)"}`
+		w = httptest.NewRecorder()
+		c, _ = gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodPost, "/local/submit", bytes.NewBufferString(body))
+		c.Request.Header.Set("Content-Type", "application/json")
+		h.Submit(c)
+		require.Equal(t, http.StatusCreated, w.Code)
+
+		select {
+		case req := <-submitted:
+			require.Equal(t, serverTimerID.String(), req.SessionID)
+		case <-time.After(time.Second):
+			t.Fatal("submit request not captured")
+		}
 	})
 
 	t.Run("get submission status", func(t *testing.T) {
@@ -221,6 +276,45 @@ func TestLocalHandlerStatusAndSubmit(t *testing.T) {
 		h.GetSubmissionStatus(c)
 		require.Equal(t, http.StatusBadGateway, w.Code)
 	})
+
+	t.Run("problem proxies", func(t *testing.T) {
+		server := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/api/problems":
+				require.Equal(t, "20", r.URL.Query().Get("limit"))
+				_ = json.NewEncoder(w).Encode(gin.H{"problems": []gin.H{}, "total": 0})
+			case "/api/problems/suggest":
+				_ = json.NewEncoder(w).Encode(gin.H{"id": "p1", "title": "Two Sum"})
+			case "/api/problems/two-sum":
+				_ = json.NewEncoder(w).Encode(gin.H{"id": "p1", "slug": "two-sum"})
+			default:
+				http.NotFound(w, r)
+			}
+		})
+		defer server.Close()
+
+		h := NewHandler(NewAPIClient(server.URL, "user-1"), "user-1", "")
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/local/problems?limit=20", nil)
+		h.ListProblems(c)
+		require.Equal(t, http.StatusOK, w.Code)
+		require.Contains(t, w.Body.String(), `"total":0`)
+
+		w = httptest.NewRecorder()
+		c, _ = gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/local/problems/suggest", nil)
+		h.SuggestProblem(c)
+		require.Equal(t, http.StatusOK, w.Code)
+
+		w = httptest.NewRecorder()
+		c, _ = gin.CreateTestContext(w)
+		c.Params = gin.Params{{Key: "id", Value: "two-sum"}}
+		c.Request = httptest.NewRequest(http.MethodGet, "/local/problems/two-sum", nil)
+		h.GetProblem(c)
+		require.Equal(t, http.StatusOK, w.Code)
+	})
 }
 
 func TestLocalHandlerTimerAndSync(t *testing.T) {
@@ -228,6 +322,10 @@ func TestLocalHandlerTimerAndSync(t *testing.T) {
 
 	t.Run("timer lifecycle", func(t *testing.T) {
 		server := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/api/timers/start" {
+				_ = json.NewEncoder(w).Encode(TimerResponse{ID: uuid.NewString(), Active: true})
+				return
+			}
 			w.WriteHeader(http.StatusOK)
 		})
 		defer server.Close()

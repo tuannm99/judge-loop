@@ -6,11 +6,18 @@ import (
 	"strings"
 
 	"github.com/tuannm99/judge-loop/internal/domain"
-	"github.com/tuannm99/judge-loop/internal/infrastructure/sandbox"
 )
 
+type RunResult struct {
+	Output    string
+	Stderr    string
+	ExitCode  int
+	TimedOut  bool
+	RuntimeMS int64
+}
+
 // RunFn executes code against a single test case input and returns the result.
-type RunFn func(input string) (sandbox.RunResult, error)
+type RunFn func(input string) (RunResult, error)
 
 // Evaluate runs all test cases via runFn and returns the aggregate verdict.
 // If there are no test cases, it returns Accepted (can't judge without test data).

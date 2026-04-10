@@ -1,0 +1,123 @@
+==================================================
+CURRENT WORK — Neovim-first practice workflow
+Date: 2026-04-10
+==================================================
+
+==================================================
+GOAL
+==================================================
+
+Make the Neovim plugin the primary daily-use surface for judge-loop.
+
+The current direction is:
+
+1. keep local-agent as the plugin's single local API boundary
+2. let users browse and start problems directly from Neovim
+3. cache solve buffers locally so work survives editor sessions
+4. make submission errors and polling failures understandable
+5. keep domain judge logic independent from infrastructure sandbox types
+
+==================================================
+CURRENT IMPLEMENTATION WORK
+==================================================
+
+1. LOCAL-AGENT PROBLEM PROXY
+
+  Added local problem routes:
+    GET /local/problems
+    GET /local/problems/suggest
+    GET /local/problems/:id
+
+  These proxy to the api-server equivalents so the plugin does not need to call
+  api-server directly.
+
+2. NEOVIM HTTP CLIENT
+
+  plugins/nvim-judge-loop/lua/judge-loop/agent.lua is being upgraded to:
+    - capture HTTP status codes from curl
+    - capture stderr
+    - decode JSON responses
+    - return structured errors as callback argument 3
+    - expose problem list/detail/suggest calls
+
+3. NEOVIM COMMANDS
+
+  plugins/nvim-judge-loop/lua/judge-loop/commands.lua now includes:
+    :JudgeUI
+    :JudgeProblems
+    :JudgeSuggest
+    :JudgeLanguage [language]
+    :JudgeStart [problem_id]
+    :JudgeStop
+    :JudgeSubmit
+    :JudgeStatus
+    :JudgeSync
+
+  :JudgeStart <problem_id> now loads problem detail and opens a solve buffer.
+  Without a problem id, it still starts a timer directly.
+
+4. NEOVIM FLOATING UI
+
+  plugins/nvim-judge-loop/lua/judge-loop/ui.lua is being expanded into a
+  dependency-free floating workflow panel:
+    - dashboard/status view
+    - problem picker
+    - suggested problem flow
+    - problem detail view
+    - source URL opening
+    - timer stop
+    - registry sync
+    - submit current buffer
+
+5. SOLVE BUFFER CACHE
+
+  Solve buffers are cached under:
+    ~/.judgeloopcache/<problem>/solution.<ext>
+
+  Metadata is cached as:
+    ~/.judgeloopcache/<problem>/problem.json
+
+  The first open uses starter code when available. Later opens reuse the cached
+  solution file. BufLeave saves the current solve buffer back to the cache.
+
+6. LANGUAGE SWITCHING
+
+  :JudgeLanguage can switch the active solve buffer between available starter
+  languages, currently python and go.
+
+7. JUDGE DOMAIN CLEANUP
+
+  internal/domain/judge now owns RunResult.
+
+  The outbound CodeRunner port returns judge.RunResult instead of depending on
+  infrastructure/sandbox.RunResult. The sandbox adapter maps infrastructure
+  output into the domain result type.
+
+8. GO VERSION ALIGNMENT
+
+  go.mod is now Go 1.26.0.
+
+  The Docker sandbox Go image is being aligned to:
+    golang:1.26.0-alpine
+
+==================================================
+DOCS UPDATED
+==================================================
+
+  README.md
+  docs/roadmap.md
+  docs/api.md
+  docs/nvim-plugin.md
+
+The roadmap now marks the implemented backend/local-agent/plugin/worker/registry
+work as done and calls out the current editor-workflow focus.
+
+==================================================
+OPEN FOLLOW-UP
+==================================================
+
+1. Run the Go test suite after the in-progress code changes settle.
+2. Validate the Neovim plugin in headless nvim or a real Neovim session.
+3. Reconcile any remaining docs that still describe old milestone numbering.
+4. Decide whether the web UI remains secondary or should share more workflow
+   behavior with the Neovim floating UI.

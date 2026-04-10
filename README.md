@@ -170,12 +170,17 @@ The dependency rule is simple: outer layers depend inward. `cmd/*` wires the gra
 | --- | ----------------- | ------- |
 | 1   | Bootstrap         | ✅ done |
 | 2   | API server MVP    | ✅ done |
-| 3   | Local agent MVP   | pending |
-| 4   | Neovim plugin MVP | pending |
-| 5   | Vertical slice    | pending |
-| 6   | Judge worker      | pending |
-| 7   | Registry          | pending |
-| 8   | Personalization   | pending |
+| 3   | Architecture pass | ✅ done |
+| 4   | Local agent MVP   | ✅ done |
+| 5   | Neovim plugin MVP | ✅ done |
+| 6   | Vertical slice    | ✅ done |
+| 7   | Judge worker      | ✅ done |
+| 8   | Registry          | ✅ done |
+| 9   | Personalization   | ✅ done |
+
+Current work is focused on making the Neovim plugin the main daily-use surface:
+problem browsing/suggestion, cached solve buffers, language switching, structured
+API errors, and a floating workflow panel.
 
 ## Docs
 

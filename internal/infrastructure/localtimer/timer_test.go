@@ -21,6 +21,18 @@ func TestLocalTimerLifecycle(t *testing.T) {
 	active := timer.Active()
 	require.NotNil(t, active)
 	require.Equal(t, entry.ID, active.ID)
+	require.Nil(t, active.ServerID)
+
+	serverID := uuid.New()
+	timer.SetServerID(entry.ID, serverID)
+	active = timer.Active()
+	require.NotNil(t, active.ServerID)
+	require.Equal(t, serverID, *active.ServerID)
+
+	timer.SetServerID(uuid.New(), uuid.New())
+	active = timer.Active()
+	require.NotNil(t, active.ServerID)
+	require.Equal(t, serverID, *active.ServerID)
 
 	active.StartedAt = active.StartedAt.Add(-3 * time.Second)
 	timer.active = active
