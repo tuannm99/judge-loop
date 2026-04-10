@@ -1,19 +1,26 @@
-.PHONY: help infra infra-down migrate api-server judge-worker local-agent ui ui-build ui-install build test lint
+.PHONY: help infra infra-down dev dev-down migrate api-server judge-worker local-agent ui ui-build ui-install build test lint
 
 DATABASE_URL       ?= postgres://judgeloop:judgeloop@localhost:5432/judgeloop?sslmode=disable
 JUDGE_WORKER_FLAGS ?= -ui -ui-port=8081 -ui-path=/monitoring
 REDIS_URL          ?= localhost:6379
-COMPOSE_FILE        = deploy/compose/docker-compose.yml
+COMPOSE_INFRA_FILE  = deploy/compose/compose-infras.yml
+COMPOSE_DEV_FILE    = deploy/compose/compose-dev.yml
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
 
 infra: ## Start PostgreSQL and Redis via docker-compose
-	docker compose -f $(COMPOSE_FILE) up -d
+	docker compose -f $(COMPOSE_INFRA_FILE) up -d
 
 infra-down: ## Stop and remove infrastructure containers
-	docker compose -f $(COMPOSE_FILE) down
+	docker compose -f $(COMPOSE_INFRA_FILE) down
+
+dev: ## Start hot-reload app services (api, worker, local-agent, ui)
+	docker compose -f $(COMPOSE_DEV_FILE) up --build
+
+dev-down: ## Stop hot-reload app services
+	docker compose -f $(COMPOSE_DEV_FILE) down
 
 migrate: ## Run database migrations
 	DATABASE_URL=$(DATABASE_URL) go run ./cmd/migrate

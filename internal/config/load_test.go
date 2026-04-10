@@ -60,10 +60,20 @@ func TestLoadLocalAgentDefaultsDataDir(t *testing.T) {
 	cfg, err := LoadLocalAgent()
 	require.NoError(t, err)
 	require.Equal(t, "http://localhost:9000", cfg.ServerURL)
+	require.Equal(t, "127.0.0.1", cfg.BindAddress)
 	require.Equal(t, 6060, cfg.Port)
 	require.Equal(t, "22222222-2222-2222-2222-222222222222", cfg.UserID)
 	require.Equal(t, "/tmp/registry", cfg.RegistryPath)
 	require.Equal(t, defaultDataDir(), cfg.DataDir)
+}
+
+func TestLoadLocalAgentBindAddressFromEnv(t *testing.T) {
+	t.Setenv("JUDGE_BIND_ADDRESS", "0.0.0.0")
+
+	resetEnvLoader()
+	cfg, err := LoadLocalAgent()
+	require.NoError(t, err)
+	require.Equal(t, "0.0.0.0", cfg.BindAddress)
 }
 
 func TestLoadLocalAgentKeepsExplicitDataDir(t *testing.T) {

@@ -1,0 +1,18 @@
+root = "."
+tmp_dir = "/tmp/air-local-agent"
+
+[build]
+cmd = "go build -o /tmp/air-local-agent/local-agent ./cmd/local-agent"
+bin = "/tmp/air-local-agent/local-agent"
+delay = 1000
+exclude_dir = [".git", ".devdata", "bin", "deploy", "docs", "node_modules", "plugins", "prompts", "ui"]
+include_ext = ["go", "json", "mod", "sum"]
+kill_delay = "500ms"
+send_interrupt = true
+stop_on_error = true
+
+[log]
+time = true
+
+[misc]
+clean_on_exit = true

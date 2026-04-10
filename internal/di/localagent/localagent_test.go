@@ -18,6 +18,7 @@ func TestNew(t *testing.T) {
 func TestProvideHelpers(t *testing.T) {
 	cfg := config.LocalAgent{
 		ServerURL:    "http://localhost:8080",
+		BindAddress:  "127.0.0.1",
 		Port:         7070,
 		UserID:       uuid.NewString(),
 		RegistryPath: "./registry",

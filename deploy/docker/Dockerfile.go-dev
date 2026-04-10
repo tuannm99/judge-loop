@@ -1,0 +1,11 @@
+FROM golang:1.26.0-alpine
+
+RUN apk add --no-cache ca-certificates docker-cli git tzdata \
+  && go install github.com/air-verse/air@v1.65.0
+
+WORKDIR /workspace
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+CMD ["air"]

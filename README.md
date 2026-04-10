@@ -78,14 +78,26 @@ make api-server     # 3. start API server
 make judge-worker   # 4. start judge worker
 make local-agent    # 5. start local agent
 make ui-install     # 6. install UI dependencies (first time only)
-make ui             # 7. start UI dev server at http://localhost:5173
+make ui             # 7. start UI dev server at http://localhost:3000
 ```
+
+For containerized hot-reload development, run infrastructure and app services in
+separate compose files:
+
+```bash
+make infra
+make dev
+```
+
+`make dev` starts the api-server, judge-worker, local-agent, and UI with bind
+mounts. Go services use Air for rebuild/restart, and the UI uses Vite HMR at
+`http://localhost:3000`.
 
 Or without Make:
 
 ```bash
 # 1. Start infrastructure (PostgreSQL + Redis)
-docker compose -f deploy/compose/docker-compose.yml up -d
+docker compose -f deploy/compose/compose-infras.yml up -d
 
 # 2. Run database migrations (must be done before first start, and after pulling new migrations)
 DATABASE_URL=postgres://judgeloop:judgeloop@localhost:5432/judgeloop?sslmode=disable \

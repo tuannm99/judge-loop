@@ -1,0 +1,13 @@
+.git
+.devdata
+bin
+build
+dist
+logs
+node_modules
+ui/dist
+ui/node_modules
+ui/.vite
+*.log
+*.test
+coverage.out

@@ -19,7 +19,7 @@ var httpModule fx.Option = fx.Module("http",
 
 func provideHTTP(cfg config.LocalAgent, handler *localagent.Handler) *http.Server {
 	return &http.Server{
-		Addr:              fmt.Sprintf("127.0.0.1:%d", cfg.Port),
+		Addr:              fmt.Sprintf("%s:%d", cfg.BindAddress, cfg.Port),
 		Handler:           localagent.NewRouter(handler),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
