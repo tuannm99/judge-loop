@@ -1,7 +1,7 @@
 {
   "name": "neetcode150",
   "title": "NeetCode 150",
-  "description": "150 must-know problems for coding interviews. This subset covers the 25 currently seeded problems.",
+  "description": "NeetCode 150 interview track, limited to entries available in the local free LeetCode registry. Canonical count: 150. Available count: 143. Omitted unavailable slugs: encode-and-decode-strings, walls-and-gates, number-of-connected-components-in-an-undirected-graph, graph-valid-tree, alien-dictionary, meeting-rooms, meeting-rooms-ii.",
   "problems": [
     {
       "provider": "leetcode",
@@ -10,123 +10,713 @@
     },
     {
       "provider": "leetcode",
-      "slug": "two-sum",
+      "slug": "valid-anagram",
       "order": 2
     },
     {
       "provider": "leetcode",
-      "slug": "product-of-array-except-self",
+      "slug": "two-sum",
       "order": 3
     },
     {
       "provider": "leetcode",
-      "slug": "maximum-subarray",
+      "slug": "group-anagrams",
       "order": 4
     },
     {
       "provider": "leetcode",
-      "slug": "best-time-to-buy-and-sell-stock",
+      "slug": "top-k-frequent-elements",
       "order": 5
     },
     {
       "provider": "leetcode",
-      "slug": "valid-palindrome",
+      "slug": "product-of-array-except-self",
       "order": 6
     },
     {
       "provider": "leetcode",
-      "slug": "three-sum",
+      "slug": "valid-sudoku",
       "order": 7
     },
     {
       "provider": "leetcode",
-      "slug": "container-with-most-water",
+      "slug": "longest-consecutive-sequence",
       "order": 8
     },
     {
       "provider": "leetcode",
-      "slug": "longest-substring-without-repeating-characters",
+      "slug": "valid-palindrome",
       "order": 9
     },
     {
       "provider": "leetcode",
-      "slug": "minimum-window-substring",
+      "slug": "two-sum-ii-input-array-is-sorted",
       "order": 10
     },
     {
       "provider": "leetcode",
-      "slug": "valid-parentheses",
+      "slug": "3sum",
       "order": 11
     },
     {
       "provider": "leetcode",
-      "slug": "min-stack",
+      "slug": "container-with-most-water",
       "order": 12
     },
     {
       "provider": "leetcode",
-      "slug": "binary-search",
+      "slug": "trapping-rain-water",
       "order": 13
     },
     {
       "provider": "leetcode",
-      "slug": "find-minimum-in-rotated-sorted-array",
+      "slug": "best-time-to-buy-and-sell-stock",
       "order": 14
     },
     {
       "provider": "leetcode",
-      "slug": "linked-list-cycle",
+      "slug": "longest-substring-without-repeating-characters",
       "order": 15
     },
     {
       "provider": "leetcode",
-      "slug": "merge-two-sorted-lists",
+      "slug": "longest-repeating-character-replacement",
       "order": 16
     },
     {
       "provider": "leetcode",
-      "slug": "reverse-linked-list",
+      "slug": "permutation-in-string",
       "order": 17
     },
     {
       "provider": "leetcode",
-      "slug": "maximum-depth-of-binary-tree",
+      "slug": "minimum-window-substring",
       "order": 18
     },
     {
       "provider": "leetcode",
-      "slug": "invert-binary-tree",
+      "slug": "sliding-window-maximum",
       "order": 19
     },
     {
       "provider": "leetcode",
-      "slug": "lowest-common-ancestor-of-a-binary-search-tree",
+      "slug": "valid-parentheses",
       "order": 20
     },
     {
       "provider": "leetcode",
-      "slug": "climbing-stairs",
+      "slug": "min-stack",
       "order": 21
     },
     {
       "provider": "leetcode",
-      "slug": "coin-change",
+      "slug": "evaluate-reverse-polish-notation",
       "order": 22
     },
     {
       "provider": "leetcode",
-      "slug": "longest-common-subsequence",
+      "slug": "generate-parentheses",
       "order": 23
     },
     {
       "provider": "leetcode",
-      "slug": "number-of-islands",
+      "slug": "daily-temperatures",
       "order": 24
     },
     {
       "provider": "leetcode",
-      "slug": "clone-graph",
+      "slug": "car-fleet",
       "order": 25
+    },
+    {
+      "provider": "leetcode",
+      "slug": "largest-rectangle-in-histogram",
+      "order": 26
+    },
+    {
+      "provider": "leetcode",
+      "slug": "binary-search",
+      "order": 27
+    },
+    {
+      "provider": "leetcode",
+      "slug": "search-a-2d-matrix",
+      "order": 28
+    },
+    {
+      "provider": "leetcode",
+      "slug": "koko-eating-bananas",
+      "order": 29
+    },
+    {
+      "provider": "leetcode",
+      "slug": "find-minimum-in-rotated-sorted-array",
+      "order": 30
+    },
+    {
+      "provider": "leetcode",
+      "slug": "search-in-rotated-sorted-array",
+      "order": 31
+    },
+    {
+      "provider": "leetcode",
+      "slug": "time-based-key-value-store",
+      "order": 32
+    },
+    {
+      "provider": "leetcode",
+      "slug": "median-of-two-sorted-arrays",
+      "order": 33
+    },
+    {
+      "provider": "leetcode",
+      "slug": "reverse-linked-list",
+      "order": 34
+    },
+    {
+      "provider": "leetcode",
+      "slug": "merge-two-sorted-lists",
+      "order": 35
+    },
+    {
+      "provider": "leetcode",
+      "slug": "reorder-list",
+      "order": 36
+    },
+    {
+      "provider": "leetcode",
+      "slug": "remove-nth-node-from-end-of-list",
+      "order": 37
+    },
+    {
+      "provider": "leetcode",
+      "slug": "copy-list-with-random-pointer",
+      "order": 38
+    },
+    {
+      "provider": "leetcode",
+      "slug": "add-two-numbers",
+      "order": 39
+    },
+    {
+      "provider": "leetcode",
+      "slug": "linked-list-cycle",
+      "order": 40
+    },
+    {
+      "provider": "leetcode",
+      "slug": "find-the-duplicate-number",
+      "order": 41
+    },
+    {
+      "provider": "leetcode",
+      "slug": "lru-cache",
+      "order": 42
+    },
+    {
+      "provider": "leetcode",
+      "slug": "merge-k-sorted-lists",
+      "order": 43
+    },
+    {
+      "provider": "leetcode",
+      "slug": "reverse-nodes-in-k-group",
+      "order": 44
+    },
+    {
+      "provider": "leetcode",
+      "slug": "invert-binary-tree",
+      "order": 45
+    },
+    {
+      "provider": "leetcode",
+      "slug": "maximum-depth-of-binary-tree",
+      "order": 46
+    },
+    {
+      "provider": "leetcode",
+      "slug": "diameter-of-binary-tree",
+      "order": 47
+    },
+    {
+      "provider": "leetcode",
+      "slug": "balanced-binary-tree",
+      "order": 48
+    },
+    {
+      "provider": "leetcode",
+      "slug": "same-tree",
+      "order": 49
+    },
+    {
+      "provider": "leetcode",
+      "slug": "subtree-of-another-tree",
+      "order": 50
+    },
+    {
+      "provider": "leetcode",
+      "slug": "lowest-common-ancestor-of-a-binary-search-tree",
+      "order": 51
+    },
+    {
+      "provider": "leetcode",
+      "slug": "binary-tree-level-order-traversal",
+      "order": 52
+    },
+    {
+      "provider": "leetcode",
+      "slug": "binary-tree-right-side-view",
+      "order": 53
+    },
+    {
+      "provider": "leetcode",
+      "slug": "count-good-nodes-in-binary-tree",
+      "order": 54
+    },
+    {
+      "provider": "leetcode",
+      "slug": "validate-binary-search-tree",
+      "order": 55
+    },
+    {
+      "provider": "leetcode",
+      "slug": "kth-smallest-element-in-a-bst",
+      "order": 56
+    },
+    {
+      "provider": "leetcode",
+      "slug": "construct-binary-tree-from-preorder-and-inorder-traversal",
+      "order": 57
+    },
+    {
+      "provider": "leetcode",
+      "slug": "binary-tree-maximum-path-sum",
+      "order": 58
+    },
+    {
+      "provider": "leetcode",
+      "slug": "serialize-and-deserialize-binary-tree",
+      "order": 59
+    },
+    {
+      "provider": "leetcode",
+      "slug": "implement-trie-prefix-tree",
+      "order": 60
+    },
+    {
+      "provider": "leetcode",
+      "slug": "design-add-and-search-words-data-structure",
+      "order": 61
+    },
+    {
+      "provider": "leetcode",
+      "slug": "word-search-ii",
+      "order": 62
+    },
+    {
+      "provider": "leetcode",
+      "slug": "kth-largest-element-in-a-stream",
+      "order": 63
+    },
+    {
+      "provider": "leetcode",
+      "slug": "last-stone-weight",
+      "order": 64
+    },
+    {
+      "provider": "leetcode",
+      "slug": "k-closest-points-to-origin",
+      "order": 65
+    },
+    {
+      "provider": "leetcode",
+      "slug": "kth-largest-element-in-an-array",
+      "order": 66
+    },
+    {
+      "provider": "leetcode",
+      "slug": "task-scheduler",
+      "order": 67
+    },
+    {
+      "provider": "leetcode",
+      "slug": "design-twitter",
+      "order": 68
+    },
+    {
+      "provider": "leetcode",
+      "slug": "find-median-from-data-stream",
+      "order": 69
+    },
+    {
+      "provider": "leetcode",
+      "slug": "subsets",
+      "order": 70
+    },
+    {
+      "provider": "leetcode",
+      "slug": "combination-sum",
+      "order": 71
+    },
+    {
+      "provider": "leetcode",
+      "slug": "permutations",
+      "order": 72
+    },
+    {
+      "provider": "leetcode",
+      "slug": "subsets-ii",
+      "order": 73
+    },
+    {
+      "provider": "leetcode",
+      "slug": "combination-sum-ii",
+      "order": 74
+    },
+    {
+      "provider": "leetcode",
+      "slug": "word-search",
+      "order": 75
+    },
+    {
+      "provider": "leetcode",
+      "slug": "palindrome-partitioning",
+      "order": 76
+    },
+    {
+      "provider": "leetcode",
+      "slug": "letter-combinations-of-a-phone-number",
+      "order": 77
+    },
+    {
+      "provider": "leetcode",
+      "slug": "n-queens",
+      "order": 78
+    },
+    {
+      "provider": "leetcode",
+      "slug": "number-of-islands",
+      "order": 79
+    },
+    {
+      "provider": "leetcode",
+      "slug": "clone-graph",
+      "order": 80
+    },
+    {
+      "provider": "leetcode",
+      "slug": "max-area-of-island",
+      "order": 81
+    },
+    {
+      "provider": "leetcode",
+      "slug": "pacific-atlantic-water-flow",
+      "order": 82
+    },
+    {
+      "provider": "leetcode",
+      "slug": "surrounded-regions",
+      "order": 83
+    },
+    {
+      "provider": "leetcode",
+      "slug": "rotting-oranges",
+      "order": 84
+    },
+    {
+      "provider": "leetcode",
+      "slug": "course-schedule",
+      "order": 85
+    },
+    {
+      "provider": "leetcode",
+      "slug": "course-schedule-ii",
+      "order": 86
+    },
+    {
+      "provider": "leetcode",
+      "slug": "redundant-connection",
+      "order": 87
+    },
+    {
+      "provider": "leetcode",
+      "slug": "word-ladder",
+      "order": 88
+    },
+    {
+      "provider": "leetcode",
+      "slug": "reconstruct-itinerary",
+      "order": 89
+    },
+    {
+      "provider": "leetcode",
+      "slug": "min-cost-to-connect-all-points",
+      "order": 90
+    },
+    {
+      "provider": "leetcode",
+      "slug": "network-delay-time",
+      "order": 91
+    },
+    {
+      "provider": "leetcode",
+      "slug": "swim-in-rising-water",
+      "order": 92
+    },
+    {
+      "provider": "leetcode",
+      "slug": "cheapest-flights-within-k-stops",
+      "order": 93
+    },
+    {
+      "provider": "leetcode",
+      "slug": "climbing-stairs",
+      "order": 94
+    },
+    {
+      "provider": "leetcode",
+      "slug": "min-cost-climbing-stairs",
+      "order": 95
+    },
+    {
+      "provider": "leetcode",
+      "slug": "house-robber",
+      "order": 96
+    },
+    {
+      "provider": "leetcode",
+      "slug": "house-robber-ii",
+      "order": 97
+    },
+    {
+      "provider": "leetcode",
+      "slug": "longest-palindromic-substring",
+      "order": 98
+    },
+    {
+      "provider": "leetcode",
+      "slug": "palindromic-substrings",
+      "order": 99
+    },
+    {
+      "provider": "leetcode",
+      "slug": "decode-ways",
+      "order": 100
+    },
+    {
+      "provider": "leetcode",
+      "slug": "coin-change",
+      "order": 101
+    },
+    {
+      "provider": "leetcode",
+      "slug": "maximum-product-subarray",
+      "order": 102
+    },
+    {
+      "provider": "leetcode",
+      "slug": "word-break",
+      "order": 103
+    },
+    {
+      "provider": "leetcode",
+      "slug": "longest-increasing-subsequence",
+      "order": 104
+    },
+    {
+      "provider": "leetcode",
+      "slug": "partition-equal-subset-sum",
+      "order": 105
+    },
+    {
+      "provider": "leetcode",
+      "slug": "unique-paths",
+      "order": 106
+    },
+    {
+      "provider": "leetcode",
+      "slug": "longest-common-subsequence",
+      "order": 107
+    },
+    {
+      "provider": "leetcode",
+      "slug": "best-time-to-buy-and-sell-stock-with-cooldown",
+      "order": 108
+    },
+    {
+      "provider": "leetcode",
+      "slug": "coin-change-ii",
+      "order": 109
+    },
+    {
+      "provider": "leetcode",
+      "slug": "target-sum",
+      "order": 110
+    },
+    {
+      "provider": "leetcode",
+      "slug": "interleaving-string",
+      "order": 111
+    },
+    {
+      "provider": "leetcode",
+      "slug": "longest-increasing-path-in-a-matrix",
+      "order": 112
+    },
+    {
+      "provider": "leetcode",
+      "slug": "distinct-subsequences",
+      "order": 113
+    },
+    {
+      "provider": "leetcode",
+      "slug": "edit-distance",
+      "order": 114
+    },
+    {
+      "provider": "leetcode",
+      "slug": "burst-balloons",
+      "order": 115
+    },
+    {
+      "provider": "leetcode",
+      "slug": "regular-expression-matching",
+      "order": 116
+    },
+    {
+      "provider": "leetcode",
+      "slug": "maximum-subarray",
+      "order": 117
+    },
+    {
+      "provider": "leetcode",
+      "slug": "jump-game",
+      "order": 118
+    },
+    {
+      "provider": "leetcode",
+      "slug": "jump-game-ii",
+      "order": 119
+    },
+    {
+      "provider": "leetcode",
+      "slug": "gas-station",
+      "order": 120
+    },
+    {
+      "provider": "leetcode",
+      "slug": "hand-of-straights",
+      "order": 121
+    },
+    {
+      "provider": "leetcode",
+      "slug": "merge-triplets-to-form-target-triplet",
+      "order": 122
+    },
+    {
+      "provider": "leetcode",
+      "slug": "partition-labels",
+      "order": 123
+    },
+    {
+      "provider": "leetcode",
+      "slug": "valid-parenthesis-string",
+      "order": 124
+    },
+    {
+      "provider": "leetcode",
+      "slug": "insert-interval",
+      "order": 125
+    },
+    {
+      "provider": "leetcode",
+      "slug": "merge-intervals",
+      "order": 126
+    },
+    {
+      "provider": "leetcode",
+      "slug": "non-overlapping-intervals",
+      "order": 127
+    },
+    {
+      "provider": "leetcode",
+      "slug": "minimum-interval-to-include-each-query",
+      "order": 128
+    },
+    {
+      "provider": "leetcode",
+      "slug": "rotate-image",
+      "order": 129
+    },
+    {
+      "provider": "leetcode",
+      "slug": "spiral-matrix",
+      "order": 130
+    },
+    {
+      "provider": "leetcode",
+      "slug": "set-matrix-zeroes",
+      "order": 131
+    },
+    {
+      "provider": "leetcode",
+      "slug": "happy-number",
+      "order": 132
+    },
+    {
+      "provider": "leetcode",
+      "slug": "plus-one",
+      "order": 133
+    },
+    {
+      "provider": "leetcode",
+      "slug": "powx-n",
+      "order": 134
+    },
+    {
+      "provider": "leetcode",
+      "slug": "multiply-strings",
+      "order": 135
+    },
+    {
+      "provider": "leetcode",
+      "slug": "detect-squares",
+      "order": 136
+    },
+    {
+      "provider": "leetcode",
+      "slug": "single-number",
+      "order": 137
+    },
+    {
+      "provider": "leetcode",
+      "slug": "number-of-1-bits",
+      "order": 138
+    },
+    {
+      "provider": "leetcode",
+      "slug": "counting-bits",
+      "order": 139
+    },
+    {
+      "provider": "leetcode",
+      "slug": "reverse-bits",
+      "order": 140
+    },
+    {
+      "provider": "leetcode",
+      "slug": "missing-number",
+      "order": 141
+    },
+    {
+      "provider": "leetcode",
+      "slug": "sum-of-two-integers",
+      "order": 142
+    },
+    {
+      "provider": "leetcode",
+      "slug": "reverse-integer",
+      "order": 143
     }
   ]
 }

@@ -7,7 +7,7 @@ It is inspired by Mason's registry pattern: a central `index.json` points to pro
 
 **Important:** Problem statements are NOT stored. Only metadata (manifest) is stored. Full problem descriptions remain on the provider's platform.
 
-The bundled LeetCode provider manifest is metadata-only and filters out paid-only problems. It intentionally stores `starter_code: {}` for bulk-imported entries; editor clients provide local fallback templates when provider starter snippets are unavailable.
+The bundled LeetCode provider manifest is metadata-only and filters out paid-only problems. It includes Python and Go starter snippets when LeetCode exposes them; entries without those snippets keep `starter_code: {}` so editor clients can fall back to local templates.
 
 ## Registry structure
 
@@ -133,9 +133,23 @@ Use:
 scripts/update_leetcode_registry.sh
 ```
 
-The updater pages LeetCode public metadata, keeps only entries where `paidOnly` is false, writes `registry/providers/leetcode.json`, and updates the LeetCode checksum in `registry/index.json`.
+The updater pages LeetCode public metadata, keeps only entries where `paidOnly` is false, fetches Python/Go starter snippets in batches, writes `registry/providers/leetcode.json`, and updates the LeetCode checksum in `registry/index.json`.
 
 It does not fetch problem statements, editorials, solutions, or test cases. Paid-only entries returned by the listing endpoint are filtered out and are not written to the local registry.
+
+Test cases are intentionally not bulk-imported from LeetCode. The public detail metadata exposes example inputs, not expected outputs suitable for local judging, and the current sandbox executes whole programs from stdin rather than LeetCode-style function/class snippets. Curated problems can still add local judge cases through `POST /api/problems/contribute`.
+
+## Updating curated tracks
+
+Use:
+
+```bash
+scripts/update_curated_tracks.mjs
+```
+
+The updater writes Blind 75 and NeetCode 150 track manifests from canonical slug lists, filters them against the local free LeetCode provider manifest, and updates track checksums in `registry/index.json`.
+
+Because the provider manifest is free-only, premium-only track entries are omitted instead of creating broken references. Current available counts are Blind 75: 70/75 and NeetCode 150: 143/150.
 
 ## RegistryVersion
 

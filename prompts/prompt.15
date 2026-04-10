@@ -44,7 +44,7 @@ WHAT CHANGED
     pattern_tags
     source_url
     estimated_time
-    starter_code: {}
+    starter_code
     version
 
   It does NOT include:
@@ -63,7 +63,7 @@ WHAT CHANGED
     2026-04-10-leetcode-free
 
   LeetCode checksum:
-    sha256:2d531be4fad8a7b41234a9ce5c2fab96902de7c23ff70da80b78e76a7a6879ac
+    sha256:133b1316260bd22cf0fb843b5e839b9ed84fc42a270ad74113d319e938b352c5
 
 3. STARTER CODE SYNC HARDENING
 
@@ -77,10 +77,12 @@ WHAT CHANGED
 
   Added:
     scripts/update_leetcode_registry.sh
+    scripts/update_leetcode_registry.mjs
 
   The script:
     - pages LeetCode metadata 100 questions at a time
     - filters paidOnly == false
+    - fetches Python/Go starter snippets in GraphQL batches
     - generates registry/providers/leetcode.json
     - computes the provider manifest sha256
     - updates registry/index.json
@@ -91,15 +93,50 @@ WHAT CHANGED
     persists only free problems.
 
 ==================================================
+STARTER CODE STATUS
+==================================================
+
+After adding the starter-code detail fetch:
+
+  free problems: 3131
+  with any Python/Go starter code: 2970
+  with Python starter code: 2970
+  with Go starter code: 2968
+  without Python/Go starter code: 161
+
+The entries without Python/Go starter code are mostly non-algorithm LeetCode
+categories such as Database and Shell, or entries where LeetCode does not expose
+the requested snippets.
+
+==================================================
+TEST CASE STATUS
+==================================================
+
+Bulk LeetCode test cases are still not imported.
+
+Reasons:
+  - LeetCode's public question detail metadata exposes exampleTestcases as
+    example inputs, not expected outputs suitable for local judging.
+  - Fetching/copying full statement examples would turn the registry into more
+    than metadata.
+  - The current sandbox executes whole programs with stdin, while LeetCode
+    starter snippets are function/class templates. A harness layer is needed
+    before LeetCode-style examples can be judged correctly.
+
+Curated local problems can still provide test cases through:
+  POST /api/problems/contribute
+
+==================================================
 DESIGN DECISIONS
 ==================================================
 
-Bulk-imported LeetCode entries use starter_code: {}.
+Bulk-imported LeetCode entries use LeetCode's Python/Go starter snippets when
+available. Entries without Python/Go snippets use starter_code: {}.
 
 Reason:
-  Fetching exact per-problem starter snippets would require detail requests per
-  problem and is not needed for the current UX. The Neovim plugin already has
-  fallback templates for python and go.
+  This gives algorithm problems useful editor buffers while still allowing the
+  Neovim plugin to fall back to local templates for Database/Shell/unsupported
+  entries.
 
 Pattern tags currently mirror LeetCode topic tag slugs.
 

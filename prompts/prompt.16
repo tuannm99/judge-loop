@@ -1,0 +1,98 @@
+==================================================
+CURRENT WORK — Curated track refresh
+Date: 2026-04-11
+==================================================
+
+==================================================
+GOAL
+==================================================
+
+Update the Blind 75 and NeetCode 150 track manifests after expanding the
+LeetCode provider registry.
+
+Keep the provider registry free-only. Do not create track references to problems
+that are unavailable in registry/providers/leetcode.json.
+
+==================================================
+WHAT CHANGED
+==================================================
+
+1. TRACK UPDATER
+
+  Added:
+    scripts/update_curated_tracks.mjs
+
+  The script:
+    - defines canonical Blind 75 and NeetCode 150 slug lists
+    - validates there are no duplicate slugs
+    - filters each list against registry/providers/leetcode.json
+    - writes registry/tracks/blind75.json
+    - writes registry/tracks/neetcode150.json
+    - updates track checksums in registry/index.json
+
+2. BLIND 75 TRACK
+
+  Updated:
+    registry/tracks/blind75.json
+
+  Canonical count:
+    75
+
+  Available in free provider registry:
+    70
+
+  Omitted unavailable slugs:
+    graph-valid-tree
+    number-of-connected-components-in-an-undirected-graph
+    alien-dictionary
+    meeting-rooms
+    meeting-rooms-ii
+
+  Checksum:
+    sha256:4e67f788c5dc2a600a9d2e639eabbbbcdfa4c51b12aae49a5b4a2ce6cb0a4b8d
+
+3. NEETCODE 150 TRACK
+
+  Updated:
+    registry/tracks/neetcode150.json
+
+  Canonical count:
+    150
+
+  Available in free provider registry:
+    143
+
+  Omitted unavailable slugs:
+    encode-and-decode-strings
+    walls-and-gates
+    number-of-connected-components-in-an-undirected-graph
+    graph-valid-tree
+    alien-dictionary
+    meeting-rooms
+    meeting-rooms-ii
+
+  Checksum:
+    sha256:a3ff5b1fd92379ceff97e92150860446359484940847e60816e90a18ab7584ab
+
+==================================================
+VERIFICATION
+==================================================
+
+  jq empty registry/index.json registry/tracks/blind75.json registry/tracks/neetcode150.json
+  node --check scripts/update_curated_tracks.mjs
+
+Reference validation:
+  registry/tracks/blind75.json      count 70, missingRefs 0, badOrders 0, dups 0
+  registry/tracks/neetcode150.json  count 143, missingRefs 0, badOrders 0, dups 0
+
+==================================================
+DESIGN DECISION
+==================================================
+
+Do not add paid-only LeetCode metadata just to make the tracks reach their full
+canonical counts.
+
+Reason:
+  The local provider registry is currently intentionally free-only. A track entry
+  that points at a missing provider problem would break sync/UI behavior, while
+  adding paid-only provider entries would violate the current registry policy.
