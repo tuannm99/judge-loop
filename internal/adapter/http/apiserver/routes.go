@@ -27,6 +27,8 @@ func RegisterRoutes(router gin.IRouter, api *API) {
 		problems.GET("/labels", api.Problems.ListProblemLabels)
 		problems.POST("/contribute", api.Problems.ContributeProblem)
 		problems.GET("/suggest", api.Problems.SuggestProblem)
+		problems.GET("/:id/test-cases", api.Problems.GetProblemTestCases)
+		problems.PUT("/:id", api.Problems.UpdateProblem)
 		problems.GET("/:id", api.Problems.GetProblem)
 
 		problemLabels := v1.Group("/problem-labels")

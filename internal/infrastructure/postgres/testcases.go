@@ -37,6 +37,22 @@ func (s *TestCaseRepositoryImpl) GetByProblem(ctx context.Context, problemID uui
 	return out, nil
 }
 
+func (s *TestCaseRepositoryImpl) GetAllByProblem(ctx context.Context, problemID uuid.UUID) ([]domain.TestCase, error) {
+	var models []testCaseModel
+	if err := s.db.Gorm.WithContext(ctx).
+		Where("problem_id = ?", problemID).
+		Order("order_idx").
+		Find(&models).Error; err != nil {
+		return nil, fmt.Errorf("get all test cases: %w", err)
+	}
+
+	out := make([]domain.TestCase, 0, len(models))
+	for _, model := range models {
+		out = append(out, model.toDomain())
+	}
+	return out, nil
+}
+
 func (s *TestCaseRepositoryImpl) ReplaceForProblem(
 	ctx context.Context,
 	problemID uuid.UUID,

@@ -27,8 +27,12 @@ func TestProblemHandlers(t *testing.T) {
 		diff := domain.DifficultyEasy
 		prov := domain.ProviderLeetCode
 		service.EXPECT().ListProblems(mock.Anything, mock.MatchedBy(func(f outport.ProblemFilter) bool {
-			return f.Tag == "array" &&
-				f.Pattern == "dp" &&
+			return len(f.Tags) == 2 &&
+				f.Tags[0] == "array" &&
+				f.Tags[1] == "hash-table" &&
+				len(f.Patterns) == 2 &&
+				f.Patterns[0] == "dp" &&
+				f.Patterns[1] == "graph" &&
 				*f.Difficulty == diff &&
 				*f.Provider == prov &&
 				f.Limit == 5 &&
@@ -39,7 +43,7 @@ func TestProblemHandlers(t *testing.T) {
 		c, _ := gin.CreateTestContext(w)
 		c.Request = httptest.NewRequest(
 			http.MethodGet,
-			"/?difficulty=easy&tag=array&pattern=dp&provider=leetcode&limit=5&offset=2",
+			"/?difficulty=easy&tag=array&tags=hash-table&pattern=dp&patterns=graph&provider=leetcode&limit=5&offset=2",
 			nil,
 		)
 		api.Problems.ListProblems(c)
@@ -151,6 +155,21 @@ func TestProblemHandlers(t *testing.T) {
 		require.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 
+	t.Run("get problem test cases", func(t *testing.T) {
+		problemID := uuid.New()
+		service.EXPECT().GetProblemTestCases(mock.Anything, problemID).Return([]domain.TestCase{
+			{Input: "1 2", Expected: "3", IsHidden: true},
+		}, nil).Once()
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Params = gin.Params{{Key: "id", Value: problemID.String()}}
+		c.Request = httptest.NewRequest(http.MethodGet, "/api/problems/"+problemID.String()+"/test-cases", nil)
+		api.Problems.GetProblemTestCases(c)
+		require.Equal(t, http.StatusOK, w.Code)
+		require.Contains(t, w.Body.String(), `"test_cases"`)
+	})
+
 	t.Run("suggest problem branches", func(t *testing.T) {
 		service.EXPECT().SuggestProblem(mock.Anything, userID).Return(&domain.Problem{Slug: "x"}, nil).Once()
 		w := httptest.NewRecorder()
@@ -171,6 +190,66 @@ func TestProblemHandlers(t *testing.T) {
 		c, _ = gin.CreateTestContext(w)
 		c.Request = httptest.NewRequest(http.MethodGet, "/api/problems/suggest", nil)
 		api.Problems.SuggestProblem(c)
+		require.Equal(t, http.StatusInternalServerError, w.Code)
+	})
+
+	t.Run("update problem branches", func(t *testing.T) {
+		problemID := uuid.New()
+		body, err := json.Marshal(updateProblemRequest{
+			Provider:      domain.ProviderLeetCode,
+			ExternalID:    "1",
+			Slug:          "two-sum",
+			Title:         "Two Sum",
+			Difficulty:    domain.DifficultyEasy,
+			Tags:          []string{"array"},
+			PatternTags:   []string{"hash-map"},
+			SourceURL:     "https://leetcode.com/problems/two-sum",
+			EstimatedTime: 15,
+			StarterCode: map[string]string{
+				"python": "class Solution:\n    pass\n",
+			},
+			TestCases: []contributeTestCaseRequest{},
+		})
+		require.NoError(t, err)
+
+		service.EXPECT().UpdateProblemWithTestCases(mock.Anything, problemID, domain.ProblemManifest{
+			Provider:      domain.ProviderLeetCode,
+			ExternalID:    "1",
+			Slug:          "two-sum",
+			Title:         "Two Sum",
+			Difficulty:    domain.DifficultyEasy,
+			Tags:          []string{"array"},
+			PatternTags:   []string{"hash-map"},
+			SourceURL:     "https://leetcode.com/problems/two-sum",
+			EstimatedTime: 15,
+			StarterCode: map[string]string{
+				"python": "class Solution:\n    pass\n",
+			},
+		}, []domain.TestCase{}).Return(&domain.Problem{ID: problemID, Slug: "two-sum"}, nil).Once()
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Params = gin.Params{{Key: "id", Value: problemID.String()}}
+		c.Request = httptest.NewRequest(http.MethodPut, "/api/problems/"+problemID.String(), bytes.NewReader(body))
+		c.Request.Header.Set("Content-Type", "application/json")
+		api.Problems.UpdateProblem(c)
+		require.Equal(t, http.StatusOK, w.Code)
+
+		w = httptest.NewRecorder()
+		c, _ = gin.CreateTestContext(w)
+		c.Params = gin.Params{{Key: "id", Value: "bad"}}
+		c.Request = httptest.NewRequest(http.MethodPut, "/api/problems/bad", bytes.NewReader(body))
+		c.Request.Header.Set("Content-Type", "application/json")
+		api.Problems.UpdateProblem(c)
+		require.Equal(t, http.StatusBadRequest, w.Code)
+
+		service.EXPECT().UpdateProblemWithTestCases(mock.Anything, problemID, mock.Anything, []domain.TestCase{}).Return(nil, errors.New("boom")).Once()
+		w = httptest.NewRecorder()
+		c, _ = gin.CreateTestContext(w)
+		c.Params = gin.Params{{Key: "id", Value: problemID.String()}}
+		c.Request = httptest.NewRequest(http.MethodPut, "/api/problems/"+problemID.String(), bytes.NewReader(body))
+		c.Request.Header.Set("Content-Type", "application/json")
+		api.Problems.UpdateProblem(c)
 		require.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 

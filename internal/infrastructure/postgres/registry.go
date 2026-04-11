@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -127,16 +128,38 @@ func (s *ProblemRepositoryImpl) replaceProblemLabels(
 	slugs []string,
 ) error {
 	return s.db.Gorm.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return replaceProblemLabelsWithTx(tx, problemID, kind, slugs)
+	})
+}
+
+func replaceProblemLabelsWithTx(
+	tx *gorm.DB,
+	problemID uuid.UUID,
+	kind string,
+	slugs []string,
+) error {
+	normalized := make([]string, 0, len(slugs))
+	seen := make(map[string]struct{}, len(slugs))
+	for _, slug := range slugs {
+		slug = strings.TrimSpace(slug)
+		if slug == "" {
+			continue
+		}
+		if _, ok := seen[slug]; ok {
+			continue
+		}
+		seen[slug] = struct{}{}
+		normalized = append(normalized, slug)
+	}
+
+	return tx.Transaction(func(tx *gorm.DB) error {
 		subquery := tx.Table("problem_labels").Select("id").Where("kind = ?", kind)
 		if err := tx.Where("problem_id = ? AND problem_label_id IN (?)", problemID, subquery).
 			Delete(&problemLabelLinkModel{}).Error; err != nil {
 			return fmt.Errorf("delete %s labels for problem %s: %w", kind, problemID, err)
 		}
 
-		for _, slug := range slugs {
-			if slug == "" {
-				continue
-			}
+		for _, slug := range normalized {
 			label := problemLabelModel{
 				Kind: kind,
 				Slug: slug,

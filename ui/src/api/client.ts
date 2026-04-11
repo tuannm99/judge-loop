@@ -32,8 +32,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 // Problems
 export interface ListProblemsParams {
   difficulty?: Difficulty
-  tag?: string
-  pattern?: string
+  tags?: string[]
+  patterns?: string[]
   provider?: Provider
   limit?: number
   offset?: number
@@ -42,8 +42,8 @@ export interface ListProblemsParams {
 export function listProblems(params: ListProblemsParams = {}) {
   const q = new URLSearchParams()
   if (params.difficulty) q.set('difficulty', params.difficulty)
-  if (params.tag) q.set('tag', params.tag)
-  if (params.pattern) q.set('pattern', params.pattern)
+  for (const tag of params.tags ?? []) q.append('tag', tag)
+  for (const pattern of params.patterns ?? []) q.append('pattern', pattern)
   if (params.provider) q.set('provider', params.provider)
   if (params.limit) q.set('limit', String(params.limit))
   if (params.offset) q.set('offset', String(params.offset))
@@ -120,6 +120,26 @@ export function contributeProblem(payload: ContributeProblemPayload) {
     method: 'POST',
     body: JSON.stringify(payload)
   })
+}
+
+export function updateProblem(
+  id: string,
+  payload: Omit<ContributeProblemPayload, 'version'>
+) {
+  return request<Problem>(`/problems/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload)
+  })
+}
+
+export function getProblemTestCases(id: string) {
+  return request<{
+    test_cases: Array<{
+      input: string
+      expected: string
+      is_hidden?: boolean
+    }>
+  }>(`/problems/${id}/test-cases`)
 }
 
 // Submissions

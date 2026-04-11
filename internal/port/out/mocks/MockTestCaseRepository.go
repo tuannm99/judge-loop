@@ -107,6 +107,45 @@ func (_c *MockTestCaseRepository_GetByProblem_Call) RunAndReturn(run func(ctx co
 	return _c
 }
 
+// GetAllByProblem provides a mock function for the type MockTestCaseRepository
+func (_mock *MockTestCaseRepository) GetAllByProblem(ctx context.Context, problemID uuid.UUID) ([]domain.TestCase, error) {
+	ret := _mock.Called(ctx, problemID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetAllByProblem")
+	}
+
+	var r0 []domain.TestCase
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]domain.TestCase, error)); ok {
+		return returnFunc(ctx, problemID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []domain.TestCase); ok {
+		r0 = returnFunc(ctx, problemID)
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).([]domain.TestCase)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, problemID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+type MockTestCaseRepository_GetAllByProblem_Call struct {
+	*mock.Call
+}
+
+func (_e *MockTestCaseRepository_Expecter) GetAllByProblem(ctx interface{}, problemID interface{}) *MockTestCaseRepository_GetAllByProblem_Call {
+	return &MockTestCaseRepository_GetAllByProblem_Call{Call: _e.mock.On("GetAllByProblem", ctx, problemID)}
+}
+
+func (_c *MockTestCaseRepository_GetAllByProblem_Call) Return(testCases []domain.TestCase, err error) *MockTestCaseRepository_GetAllByProblem_Call {
+	_c.Call.Return(testCases, err)
+	return _c
+}
+
 // ReplaceForProblem provides a mock function for the type MockTestCaseRepository
 func (_mock *MockTestCaseRepository) ReplaceForProblem(ctx context.Context, problemID uuid.UUID, testCases []domain.TestCase) error {
 	ret := _mock.Called(ctx, problemID, testCases)

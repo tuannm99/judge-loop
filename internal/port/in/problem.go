@@ -16,9 +16,17 @@ type ProblemService interface {
 	UpdateProblemLabel(ctx context.Context, id uuid.UUID, slug, name string) (*domain.ProblemLabel, error)
 	DeleteProblemLabel(ctx context.Context, id uuid.UUID) error
 	GetProblem(ctx context.Context, rawID string) (*domain.Problem, error)
+	GetProblemTestCases(ctx context.Context, id uuid.UUID) ([]domain.TestCase, error)
+	UpdateProblem(ctx context.Context, id uuid.UUID, manifest domain.ProblemManifest) (*domain.Problem, error)
 	SuggestProblem(ctx context.Context, userID uuid.UUID) (*domain.Problem, error)
 	ContributeProblem(
 		ctx context.Context,
+		manifest domain.ProblemManifest,
+		testCases []domain.TestCase,
+	) (*domain.Problem, error)
+	UpdateProblemWithTestCases(
+		ctx context.Context,
+		id uuid.UUID,
 		manifest domain.ProblemManifest,
 		testCases []domain.TestCase,
 	) (*domain.Problem, error)

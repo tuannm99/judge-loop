@@ -104,6 +104,59 @@ func TestProblemServiceGetProblemByID(t *testing.T) {
 	require.Equal(t, want, got)
 }
 
+func TestProblemServiceUpdateProblem(t *testing.T) {
+	problems := outmocks.NewMockProblemRepository(t)
+	testCases := outmocks.NewMockTestCaseRepository(t)
+	service := NewProblemService(problems, testCases)
+
+	ctx := context.Background()
+	problemID := uuid.New()
+	manifest := domain.ProblemManifest{
+		Provider:      domain.ProviderLeetCode,
+		ExternalID:    "1",
+		Slug:          "two-sum",
+		Title:         "Two Sum",
+		Difficulty:    domain.DifficultyEasy,
+		Tags:          []string{"array", "hash-table"},
+		PatternTags:   []string{"two-pointers"},
+		SourceURL:     "https://example.com/two-sum",
+		EstimatedTime: 15,
+		StarterCode:   map[string]string{"python": "class Solution:\n    pass\n"},
+	}
+	want := &domain.Problem{ID: problemID, Slug: "two-sum"}
+	problems.EXPECT().Update(ctx, problemID, manifest).Return(want, nil).Once()
+
+	got, err := service.UpdateProblem(ctx, problemID, manifest)
+	require.NoError(t, err)
+	require.Equal(t, want, got)
+}
+
+func TestProblemServiceUpdateProblemWithTestCases(t *testing.T) {
+	problems := outmocks.NewMockProblemRepository(t)
+	testCases := outmocks.NewMockTestCaseRepository(t)
+	service := NewProblemService(problems, testCases)
+
+	ctx := context.Background()
+	problemID := uuid.New()
+	manifest := domain.ProblemManifest{Slug: "two-sum", Title: "Two Sum"}
+	saved := &domain.Problem{ID: problemID, Slug: "two-sum"}
+	inputCases := []domain.TestCase{
+		{Input: "1 2", Expected: "3"},
+		{Input: "2 3", Expected: "5", IsHidden: true},
+	}
+
+	problems.EXPECT().Update(ctx, problemID, manifest).Return(saved, nil).Once()
+	testCases.EXPECT().ReplaceForProblem(ctx, problemID, []domain.TestCase{
+		{ProblemID: problemID, Input: "1 2", Expected: "3", OrderIdx: 0},
+		{ProblemID: problemID, Input: "2 3", Expected: "5", IsHidden: true, OrderIdx: 1},
+	}).Return(nil).Once()
+	problems.EXPECT().GetByID(ctx, problemID).Return(saved, nil).Once()
+
+	got, err := service.UpdateProblemWithTestCases(ctx, problemID, manifest, inputCases)
+	require.NoError(t, err)
+	require.Equal(t, saved, got)
+}
+
 func TestProblemServiceSuggestProblem(t *testing.T) {
 	problems := outmocks.NewMockProblemRepository(t)
 	testCases := outmocks.NewMockTestCaseRepository(t)

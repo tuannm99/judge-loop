@@ -15,7 +15,12 @@ const theme = createTheme({
 
 const qc = new QueryClient({
   defaultOptions: {
-    queries: { retry: 1, staleTime: 30_000 }
+    queries: {
+      retry: 1,
+      staleTime: 0,
+      refetchOnMount: 'always',
+      refetchOnWindowFocus: true
+    }
   }
 })
 
@@ -32,6 +37,7 @@ export default function App() {
               path="/problems/contribute"
               element={<ContributeProblem />}
             />
+            <Route path="/problems/:slug/edit" element={<ContributeProblem />} />
             <Route path="/problem-labels" element={<ProblemLabelsPage />} />
             <Route path="/dashboard" element={<Dashboard />} />
           </Routes>

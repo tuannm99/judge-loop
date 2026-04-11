@@ -1,18 +1,19 @@
 import { Link, useLocation } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getProgressToday } from '@/api/client'
 import { Group, Text, Anchor } from '@mantine/core'
 import { IconCode, IconFlame } from '@tabler/icons-react'
 
 const links = [
   { to: '/', label: 'Problems' },
-  { to: '/problems/contribute', label: 'Contribute' },
+  { to: '/problems/contribute', label: 'New Problem' },
   { to: '/problem-labels', label: 'Labels' },
   { to: '/dashboard', label: 'Dashboard' }
 ]
 
 export function Navbar() {
   const { pathname } = useLocation()
+  const qc = useQueryClient()
 
   const { data } = useQuery({
     queryKey: ['progress-today'],
@@ -41,6 +42,9 @@ export function Navbar() {
               key={l.to}
               component={Link}
               to={l.to}
+              onClick={() => {
+                void qc.invalidateQueries()
+              }}
               c={pathname === l.to ? 'white' : 'dimmed'}
               size="sm"
               underline="never"

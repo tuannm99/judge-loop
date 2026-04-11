@@ -26,6 +26,20 @@ type contributeProblemRequest struct {
 	TestCases     []contributeTestCaseRequest `json:"test_cases"     binding:"required,min=1"`
 }
 
+type updateProblemRequest struct {
+	Provider      domain.Provider             `json:"provider"       binding:"required"`
+	ExternalID    string                      `json:"external_id"    binding:"required"`
+	Slug          string                      `json:"slug"           binding:"required"`
+	Title         string                      `json:"title"          binding:"required"`
+	Difficulty    domain.Difficulty           `json:"difficulty"     binding:"required"`
+	Tags          []string                    `json:"tags"`
+	PatternTags   []string                    `json:"pattern_tags"`
+	SourceURL     string                      `json:"source_url"     binding:"required"`
+	EstimatedTime int                         `json:"estimated_time"`
+	StarterCode   map[string]string           `json:"starter_code"`
+	TestCases     []contributeTestCaseRequest `json:"test_cases"`
+}
+
 type contributeTestCaseRequest struct {
 	Input    string `json:"input"     binding:"required"`
 	Expected string `json:"expected"  binding:"required"`
@@ -139,8 +153,8 @@ func (h *ProblemsAPI) DeleteProblemLabel(c *gin.Context) {
 // ListProblems handles GET /api/problems
 func (h *ProblemsAPI) ListProblems(c *gin.Context) {
 	f := outport.ProblemFilter{
-		Tag:     c.Query("tag"),
-		Pattern: c.Query("pattern"),
+		Tags:     append(c.QueryArray("tag"), c.QueryArray("tags")...),
+		Patterns: append(c.QueryArray("pattern"), c.QueryArray("patterns")...),
 	}
 
 	if d := c.Query("difficulty"); d != "" {
@@ -180,6 +194,76 @@ func (h *ProblemsAPI) ListProblems(c *gin.Context) {
 // Tries UUID parse first; falls back to slug lookup.
 func (h *ProblemsAPI) GetProblem(c *gin.Context) {
 	problem, err := h.service.GetProblem(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if problem == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "problem not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, problem)
+}
+
+// GetProblemTestCases handles GET /api/problems/:id/test-cases
+func (h *ProblemsAPI) GetProblemTestCases(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid problem id"})
+		return
+	}
+
+	testCases, err := h.service.GetProblemTestCases(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"test_cases": testCases})
+}
+
+// UpdateProblem handles PUT /api/problems/:id
+func (h *ProblemsAPI) UpdateProblem(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid problem id"})
+		return
+	}
+
+	var req updateProblemRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	manifest := domain.ProblemManifest{
+		Provider:      req.Provider,
+		ExternalID:    req.ExternalID,
+		Slug:          req.Slug,
+		Title:         req.Title,
+		Difficulty:    req.Difficulty,
+		Tags:          req.Tags,
+		PatternTags:   req.PatternTags,
+		SourceURL:     req.SourceURL,
+		EstimatedTime: req.EstimatedTime,
+		StarterCode:   req.StarterCode,
+	}
+	testCases := make([]domain.TestCase, 0, len(req.TestCases))
+	for i, tc := range req.TestCases {
+		testCases = append(testCases, domain.TestCase{
+			Input:    tc.Input,
+			Expected: tc.Expected,
+			IsHidden: tc.IsHidden,
+			OrderIdx: i,
+		})
+	}
+
+	var problem *domain.Problem
+	if req.TestCases != nil {
+		problem, err = h.service.UpdateProblemWithTestCases(c.Request.Context(), id, manifest, testCases)
+	} else {
+		problem, err = h.service.UpdateProblem(c.Request.Context(), id, manifest)
+	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

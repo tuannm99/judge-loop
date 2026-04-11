@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -36,11 +37,11 @@ func (s *ProblemRepositoryImpl) List(ctx context.Context, f ProblemFilter) ([]do
 	if f.Provider != nil {
 		baseQuery = baseQuery.Where("provider = ?", string(*f.Provider))
 	}
-	if f.Tag != "" {
-		baseQuery = joinProblemLabelFilter(baseQuery, "tag", f.Tag)
+	if len(f.Tags) > 0 {
+		baseQuery = joinProblemLabelFilter(baseQuery, "tag", f.Tags)
 	}
-	if f.Pattern != "" {
-		baseQuery = joinProblemLabelFilter(baseQuery, "pattern", f.Pattern)
+	if len(f.Patterns) > 0 {
+		baseQuery = joinProblemLabelFilter(baseQuery, "pattern", f.Patterns)
 	}
 
 	var total int64
@@ -175,6 +176,54 @@ func (s *ProblemRepositoryImpl) GetBySlug(ctx context.Context, slug string) (*do
 	return &p, nil
 }
 
+func (s *ProblemRepositoryImpl) Update(
+	ctx context.Context,
+	id uuid.UUID,
+	m domain.ProblemManifest,
+) (*domain.Problem, error) {
+	if m.StarterCode == nil {
+		m.StarterCode = map[string]string{}
+	}
+
+	starterCode, err := json.Marshal(m.StarterCode)
+	if err != nil {
+		return nil, fmt.Errorf("marshal starter code: %w", err)
+	}
+
+	err = s.db.Gorm.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		updates := map[string]any{
+			"slug":           m.Slug,
+			"title":          m.Title,
+			"difficulty":     string(m.Difficulty),
+			"provider":       string(m.Provider),
+			"external_id":    m.ExternalID,
+			"source_url":     m.SourceURL,
+			"estimated_time": m.EstimatedTime,
+			"starter_code":   starterCode,
+			"updated_at":     gorm.Expr("NOW()"),
+		}
+		result := tx.Model(&problemModel{}).Where("id = ?", id).Updates(updates)
+		if result.Error != nil {
+			return fmt.Errorf("update problem %s: %w", id, result.Error)
+		}
+		if result.RowsAffected == 0 {
+			return nil
+		}
+		if err := replaceProblemLabelsWithTx(tx, id, "tag", m.Tags); err != nil {
+			return err
+		}
+		if err := replaceProblemLabelsWithTx(tx, id, "pattern", m.PatternTags); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return s.GetByID(ctx, id)
+}
+
 // Suggest returns a random unsolved problem for the user.
 // If patterns is non-empty, problems matching those patterns are prioritized.
 func (s *ProblemRepositoryImpl) Suggest(
@@ -223,7 +272,7 @@ func (s *ProblemRepositoryImpl) Suggest(
 	return &p, nil
 }
 
-func joinProblemLabelFilter(q *gorm.DB, kind, slug string) *gorm.DB {
+func joinProblemLabelFilter(q *gorm.DB, kind string, slugs []string) *gorm.DB {
 	aliasPrefix := strings.ReplaceAll(kind, "-", "_")
 	linkAlias := aliasPrefix + "_pll"
 	labelAlias := aliasPrefix + "_pl"
@@ -232,9 +281,9 @@ func joinProblemLabelFilter(q *gorm.DB, kind, slug string) *gorm.DB {
 		"JOIN problem_label_links %s ON %s.problem_id = problems.id",
 		linkAlias, linkAlias,
 	)).Joins(fmt.Sprintf(
-		"JOIN problem_labels %s ON %s.id = %s.problem_label_id AND %s.kind = ? AND %s.slug = ?",
+		"JOIN problem_labels %s ON %s.id = %s.problem_label_id AND %s.kind = ? AND %s.slug IN ?",
 		labelAlias, labelAlias, linkAlias, labelAlias, labelAlias,
-	), kind, slug)
+	), kind, slugs)
 }
 
 func (s *ProblemRepositoryImpl) loadProblemLabels(ctx context.Context, models []*problemModel) error {

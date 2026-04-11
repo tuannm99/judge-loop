@@ -82,6 +82,34 @@ func (s *ProblemService) GetProblem(ctx context.Context, rawID string) (*domain.
 	return s.problems.GetBySlug(ctx, rawID)
 }
 
+func (s *ProblemService) GetProblemTestCases(ctx context.Context, id uuid.UUID) ([]domain.TestCase, error) {
+	return s.testCases.GetAllByProblem(ctx, id)
+}
+
+func (s *ProblemService) UpdateProblem(
+	ctx context.Context,
+	id uuid.UUID,
+	manifest domain.ProblemManifest,
+) (*domain.Problem, error) {
+	return s.problems.Update(ctx, id, manifest)
+}
+
+func (s *ProblemService) UpdateProblemWithTestCases(
+	ctx context.Context,
+	id uuid.UUID,
+	manifest domain.ProblemManifest,
+	testCases []domain.TestCase,
+) (*domain.Problem, error) {
+	problem, err := s.problems.Update(ctx, id, manifest)
+	if err != nil || problem == nil {
+		return problem, err
+	}
+	if err := s.testCases.ReplaceForProblem(ctx, id, normalizeTestCases(id, testCases)); err != nil {
+		return nil, err
+	}
+	return s.problems.GetByID(ctx, id)
+}
+
 func (s *ProblemService) SuggestProblem(ctx context.Context, userID uuid.UUID) (*domain.Problem, error) {
 	return s.problems.Suggest(ctx, userID, nil)
 }

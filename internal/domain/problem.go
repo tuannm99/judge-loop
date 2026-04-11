@@ -53,12 +53,12 @@ type ProblemLabel struct {
 
 // TestCase stores input/output for judge evaluation.
 type TestCase struct {
-	ID        uuid.UUID
-	ProblemID uuid.UUID
-	Input     string
-	Expected  string
-	IsHidden  bool // hidden test cases are not shown to the user
-	OrderIdx  int  // display order
+	ID        uuid.UUID `json:"id"`
+	ProblemID uuid.UUID `json:"problem_id"`
+	Input     string    `json:"input"`
+	Expected  string    `json:"expected"`
+	IsHidden  bool      `json:"is_hidden"` // hidden test cases are not shown to the user
+	OrderIdx  int       `json:"order_idx"` // display order
 }
 
 // ProblemPerformance tracks a user's history on a specific problem.

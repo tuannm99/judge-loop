@@ -16,6 +16,7 @@ type ProblemRepository interface {
 	DeleteLabel(ctx context.Context, id uuid.UUID) error
 	GetByID(ctx context.Context, id uuid.UUID) (*domain.Problem, error)
 	GetBySlug(ctx context.Context, slug string) (*domain.Problem, error)
+	Update(ctx context.Context, id uuid.UUID, m domain.ProblemManifest) (*domain.Problem, error)
 	Suggest(ctx context.Context, userID uuid.UUID, patterns []string) (*domain.Problem, error)
 	GetUnsolved(ctx context.Context, userID uuid.UUID, limit int) ([]domain.Problem, error)
 	UpsertFromManifest(ctx context.Context, m domain.ProblemManifest) error

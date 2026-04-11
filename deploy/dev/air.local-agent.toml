@@ -2,7 +2,7 @@ root = "."
 tmp_dir = "/tmp/air-local-agent"
 
 [build]
-cmd = "go build -o /tmp/air-local-agent/local-agent ./cmd/local-agent"
+cmd = "go build -buildvcs=false -o /tmp/air-local-agent/local-agent ./cmd/local-agent"
 bin = "/tmp/air-local-agent/local-agent"
 delay = 1000
 exclude_dir = [".git", ".devdata", "bin", "deploy", "docs", "node_modules", "plugins", "prompts", "ui"]

@@ -2,7 +2,7 @@ root = "."
 tmp_dir = "/tmp/air-api-server"
 
 [build]
-cmd = "go build -o /tmp/air-api-server/api-server ./cmd/api-server"
+cmd = "go build -buildvcs=false -o /tmp/air-api-server/api-server ./cmd/api-server"
 bin = "/tmp/air-api-server/api-server"
 delay = 1000
 exclude_dir = [".git", ".devdata", "bin", "deploy", "docs", "node_modules", "plugins", "prompts", "registry", "ui"]

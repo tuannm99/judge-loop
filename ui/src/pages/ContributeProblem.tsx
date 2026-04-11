@@ -1,7 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
-import { contributeProblem, listProblemLabels } from '@/api/client'
+import { useNavigate, useParams } from 'react-router-dom'
+import {
+  contributeProblem,
+  getProblem,
+  getProblemTestCases,
+  listProblemLabels,
+  updateProblem
+} from '@/api/client'
 import type { Difficulty, Language, Provider } from '@/api/types'
 import {
   Alert,
@@ -32,6 +38,8 @@ const DEFAULT_STARTER_CODE: Record<Language, string> = {
 }
 
 export function ContributeProblem() {
+  const { slug: editSlug } = useParams()
+  const isEditMode = Boolean(editSlug)
   const navigate = useNavigate()
   const qc = useQueryClient()
 
@@ -53,10 +61,81 @@ export function ContributeProblem() {
     { input: '', expected: '', is_hidden: false }
   ])
 
+  const { data: existingProblem } = useQuery({
+    queryKey: ['problem', editSlug],
+    queryFn: () => getProblem(editSlug!),
+    enabled: isEditMode
+  })
+  const { data: existingTestCases } = useQuery({
+    queryKey: ['problem-test-cases', existingProblem?.id],
+    queryFn: () => getProblemTestCases(existingProblem!.id),
+    enabled: !!existingProblem?.id
+  })
+
+  useEffect(() => {
+    if (!existingProblem) return
+    setProvider(existingProblem.provider)
+    setExternalID(existingProblem.external_id)
+    setSlug(existingProblem.slug)
+    setTitle(existingProblem.title)
+    setDifficulty(existingProblem.difficulty)
+    setTags(existingProblem.tags)
+    setPatternTags(existingProblem.pattern_tags)
+    setSourceURL(existingProblem.source_url)
+    setEstimatedTime(existingProblem.estimated_time)
+    setPythonStarter(existingProblem.starter_code.python ?? '')
+    setGoStarter(existingProblem.starter_code.go ?? '')
+  }, [existingProblem])
+
+  useEffect(() => {
+    if (!isEditMode) return
+    setTestCases(
+      existingTestCases?.test_cases?.length
+        ? existingTestCases.test_cases.map((tc) => ({
+            input: tc.input,
+            expected: tc.expected,
+            is_hidden: Boolean(tc.is_hidden)
+          }))
+        : [{ input: '', expected: '', is_hidden: false }]
+    )
+  }, [existingTestCases, isEditMode])
+
   const { mutate, isPending, error, data } = useMutation({
     mutationFn: contributeProblem,
     onSuccess: (problem) => {
       void qc.invalidateQueries({ queryKey: ['problems'] })
+      void qc.invalidateQueries({ queryKey: ['problem', problem.slug] })
+      navigate(`/problems/${problem.slug}`)
+    }
+  })
+  const {
+    mutate: mutateUpdate,
+    isPending: isUpdating,
+    error: updateError,
+    data: updated
+  } = useMutation({
+    mutationFn: ({
+      id,
+      payload
+    }: {
+      id: string
+      payload: {
+        provider: Provider
+        external_id: string
+        slug: string
+        title: string
+        difficulty: Difficulty
+        tags: string[]
+        pattern_tags: string[]
+        source_url: string
+        estimated_time: number
+        starter_code: Partial<Record<Language, string>>
+        test_cases: DraftTestCase[]
+      }
+    }) => updateProblem(id, payload),
+    onSuccess: (problem) => {
+      void qc.invalidateQueries({ queryKey: ['problems'] })
+      void qc.invalidateQueries({ queryKey: ['problem', editSlug] })
       void qc.invalidateQueries({ queryKey: ['problem', problem.slug] })
       navigate(`/problems/${problem.slug}`)
     }
@@ -86,7 +165,7 @@ export function ContributeProblem() {
   }
 
   function handleSubmit() {
-    mutate({
+    const payload = {
       provider,
       external_id: externalID,
       slug,
@@ -100,6 +179,16 @@ export function ContributeProblem() {
         python: pythonStarter,
         go: goStarter
       },
+      test_cases: testCases
+    }
+
+    if (isEditMode && existingProblem) {
+      mutateUpdate({ id: existingProblem.id, payload })
+      return
+    }
+
+    mutate({
+      ...payload,
       version: version || 1,
       test_cases: testCases
     })
@@ -108,21 +197,23 @@ export function ContributeProblem() {
   return (
     <Stack p="lg" gap="lg" maw={960}>
       <div>
-        <Title order={2}>Contribute Problem</Title>
+        <Title order={2}>{isEditMode ? 'Edit Problem' : 'Contribute Problem'}</Title>
         <Text size="sm" c="dimmed">
-          Add a runnable problem with starter code and judge test cases.
+          {isEditMode
+            ? 'Update existing problem metadata and starter code.'
+            : 'Add a runnable problem with starter code and judge test cases.'}
         </Text>
       </div>
 
-      {error && (
+      {(error || updateError) && (
         <Alert color="red" title="Submit failed">
-          {error.message}
+          {(error ?? updateError)?.message}
         </Alert>
       )}
 
-      {data && (
+      {(data || updated) && (
         <Alert color="teal" title="Saved">
-          Problem saved as {data.slug}
+          Problem saved as {(data ?? updated)?.slug}
         </Alert>
       )}
 
@@ -210,12 +301,14 @@ export function ContributeProblem() {
               value={estimatedTime}
               onChange={(value) => setEstimatedTime(Number(value) || 0)}
             />
-            <NumberInput
-              label="Version"
-              min={1}
-              value={version}
-              onChange={(value) => setVersion(Number(value) || 1)}
-            />
+            {!isEditMode && (
+              <NumberInput
+                label="Version"
+                min={1}
+                value={version}
+                onChange={(value) => setVersion(Number(value) || 1)}
+              />
+            )}
           </Group>
         </Stack>
       </Paper>
@@ -299,8 +392,8 @@ export function ContributeProblem() {
       </Paper>
 
       <Group justify="flex-end">
-        <Button loading={isPending} onClick={handleSubmit}>
-          Save Problem
+        <Button loading={isPending || isUpdating} onClick={handleSubmit}>
+          {isEditMode ? 'Update Problem' : 'Save Problem'}
         </Button>
       </Group>
     </Stack>

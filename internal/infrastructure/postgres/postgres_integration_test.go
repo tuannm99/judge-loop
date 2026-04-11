@@ -194,7 +194,7 @@ func TestProblemSubmissionSessionAndPerformanceIntegration(t *testing.T) {
 	require.NoError(t, problemStore.UpsertFromManifest(ctx, problemA))
 	require.NoError(t, problemStore.UpsertFromManifest(ctx, problemB))
 
-	problems, total, err := problemStore.List(ctx, ProblemFilter{Tag: "array", Pattern: "hash-map", Limit: 10})
+	problems, total, err := problemStore.List(ctx, ProblemFilter{Tags: []string{"array"}, Patterns: []string{"hash-map"}, Limit: 10})
 	require.NoError(t, err)
 	require.Equal(t, 1, total)
 	require.Len(t, problems, 1)
