@@ -8,11 +8,23 @@ import type {
   Language,
   Difficulty,
   Provider,
-  ProblemLabels,
   ProblemLabel
 } from './types'
 
 const BASE = '/api'
+
+function asArray<T>(value: T[] | null | undefined): T[] {
+  return Array.isArray(value) ? value : []
+}
+
+function normalizeProblem(problem: Problem): Problem {
+  return {
+    ...problem,
+    tags: asArray(problem.tags),
+    pattern_tags: asArray(problem.pattern_tags),
+    starter_code: problem.starter_code ?? {}
+  }
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
@@ -48,21 +60,33 @@ export function listProblems(params: ListProblemsParams = {}) {
   if (params.limit) q.set('limit', String(params.limit))
   if (params.offset) q.set('offset', String(params.offset))
   const qs = q.toString()
-  return request<{ problems: Problem[]; total: number }>(
+  return request<{ problems: Problem[] | null; total: number }>(
     `/problems${qs ? `?${qs}` : ''}`
-  )
+  ).then((result) => ({
+    total: result.total,
+    problems: asArray(result.problems).map(normalizeProblem)
+  }))
 }
 
 export function getProblem(idOrSlug: string) {
-  return request<Problem>(`/problems/${idOrSlug}`)
+  return request<Problem>(`/problems/${idOrSlug}`).then(normalizeProblem)
 }
 
 export function listProblemLabels() {
-  return request<ProblemLabels>('/problems/labels')
+  return request<{ tags: string[] | null; patterns: string[] | null }>(
+    '/problems/labels'
+  ).then((result) => ({
+    tags: asArray(result.tags),
+    patterns: asArray(result.patterns)
+  }))
 }
 
 export function listProblemLabelRecords(kind: 'tag' | 'pattern') {
-  return request<{ labels: ProblemLabel[] }>(`/problem-labels?kind=${kind}`)
+  return request<{ labels: ProblemLabel[] | null }>(
+    `/problem-labels?kind=${kind}`
+  ).then((result) => ({
+    labels: asArray(result.labels)
+  }))
 }
 
 export function createProblemLabel(payload: {
@@ -93,7 +117,7 @@ export function deleteProblemLabel(id: string) {
 }
 
 export function suggestProblem() {
-  return request<Problem>('/problems/suggest')
+  return request<Problem>('/problems/suggest').then(normalizeProblem)
 }
 
 export interface ContributeProblemPayload {
@@ -119,7 +143,7 @@ export function contributeProblem(payload: ContributeProblemPayload) {
   return request<Problem>('/problems/contribute', {
     method: 'POST',
     body: JSON.stringify(payload)
-  })
+  }).then(normalizeProblem)
 }
 
 export function updateProblem(
@@ -129,17 +153,21 @@ export function updateProblem(
   return request<Problem>(`/problems/${id}`, {
     method: 'PUT',
     body: JSON.stringify(payload)
-  })
+  }).then(normalizeProblem)
 }
 
 export function getProblemTestCases(id: string) {
   return request<{
-    test_cases: Array<{
-      input: string
-      expected: string
-      is_hidden?: boolean
-    }>
-  }>(`/problems/${id}/test-cases`)
+    test_cases:
+      | Array<{
+          input: string
+          expected: string
+          is_hidden?: boolean
+        }>
+      | null
+  }>(`/problems/${id}/test-cases`).then((result) => ({
+    test_cases: asArray(result.test_cases)
+  }))
 }
 
 // Submissions
@@ -161,7 +189,11 @@ export function getSubmission(id: string) {
 
 export function listSubmissions(problemId?: string) {
   const q = problemId ? `?problem_id=${problemId}` : ''
-  return request<{ submissions: Submission[] }>(`/submissions/history${q}`)
+  return request<{ submissions: Submission[] | null }>(
+    `/submissions/history${q}`
+  ).then((result) => ({
+    submissions: asArray(result.submissions)
+  }))
 }
 
 // Progress
@@ -175,7 +207,11 @@ export function getStreak() {
 
 // Reviews
 export function getReviewsToday() {
-  return request<{ reviews: ReviewItem[] }>('/reviews/today')
+  return request<{ reviews: ReviewItem[] | null }>('/reviews/today').then(
+    (result) => ({
+      reviews: asArray(result.reviews)
+    })
+  )
 }
 
 // Timers

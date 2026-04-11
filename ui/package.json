@@ -10,29 +10,19 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@mantine/core": "^7.17.8",
-    "@mantine/hooks": "^7.17.8",
-    "@monaco-editor/react": "^4.7.0",
-    "@tabler/icons-react": "^3.41.1",
-    "@tanstack/react-query": "^5.96.2",
-    "@tanstack/react-table": "^8.21.3",
-    "clsx": "^2.1.1",
-    "lucide-react": "^1.7.0",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "react-resizable-panels": "^4.9.0",
-    "react-router-dom": "^7.14.0"
+    "@builder.io/qwik": "^1.16.0",
+    "@builder.io/qwik-city": "^1.19.2",
+    "flowbite": "^4.0.1",
+    "flowbite-qwik": "^1.1.2",
+    "flowbite-qwik-icons": "^0.1.10"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@tailwindcss/vite": "^4.2.2",
     "@types/node": "^24.12.0",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^9.39.4",
-    "eslint-plugin-react-hooks": "^7.0.1",
-    "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "tailwindcss": "^4.2.2",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.57.0",
     "vite": "^5.4.0"

@@ -1,11 +1,22 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { qwikVite } from '@builder.io/qwik/optimizer'
+import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    tailwindcss(),
+    qwikVite({
+      csr: true,
+      srcDir: 'src/qwik'
+    })
+  ],
   resolve: {
     alias: {
+      '@builder.io/qwik-city': path.resolve(
+        __dirname,
+        './src/qwik/shims/qwik-city.tsx'
+      ),
       '@': path.resolve(__dirname, './src'),
     },
   },
