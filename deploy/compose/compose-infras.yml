@@ -9,12 +9,12 @@ services:
       POSTGRES_PASSWORD: judgeloop
       POSTGRES_DB: judgeloop
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ../../internal/infrastructure/postgres/migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U judgeloop"]
+      test: ['CMD-SHELL', 'pg_isready -U judgeloop']
       interval: 5s
       timeout: 5s
       retries: 10
@@ -25,11 +25,11 @@ services:
     image: redis:7-alpine
     container_name: judge-loop-redis
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       timeout: 3s
       retries: 10

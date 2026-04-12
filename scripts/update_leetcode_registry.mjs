@@ -10,7 +10,8 @@ const indexPath = path.join(rootDir, 'registry/index.json')
 const endpoint = 'https://leetcode.com/graphql/'
 const pageSize = 100
 const detailBatchSize = 25
-const version = process.argv[2] || `${new Date().toISOString().slice(0, 10)}-leetcode-free`
+const version =
+  process.argv[2] || `${new Date().toISOString().slice(0, 10)}-leetcode-free`
 
 const listQuery = `
 query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {
@@ -32,13 +33,15 @@ async function graphql(query, variables) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'User-Agent': 'judge-loop-registry-updater',
+      'User-Agent': 'judge-loop-registry-updater'
     },
-    body: JSON.stringify({ query, variables }),
+    body: JSON.stringify({ query, variables })
   })
 
   if (!response.ok) {
-    throw new Error(`LeetCode GraphQL ${response.status}: ${await response.text()}`)
+    throw new Error(
+      `LeetCode GraphQL ${response.status}: ${await response.text()}`
+    )
   }
 
   const payload = await response.json()
@@ -58,13 +61,15 @@ async function loadQuestions() {
       categorySlug: '',
       skip,
       limit: pageSize,
-      filters: {},
+      filters: {}
     })
     const page = data.problemsetQuestionList
     total = page.total
     questions.push(...page.questions)
     skip += pageSize
-    process.stderr.write(`Fetched ${Math.min(skip, total)}/${total} problem metadata\r`)
+    process.stderr.write(
+      `Fetched ${Math.min(skip, total)}/${total} problem metadata\r`
+    )
   }
   process.stderr.write('\n')
   return questions
@@ -92,7 +97,9 @@ async function loadStarterCodeBySlug(slugs) {
       }
       const starter = {}
       const snippets = item.codeSnippets || []
-      const python = snippets.find((s) => s.langSlug === 'python3') || snippets.find((s) => s.langSlug === 'python')
+      const python =
+        snippets.find((s) => s.langSlug === 'python3') ||
+        snippets.find((s) => s.langSlug === 'python')
       const go = snippets.find((s) => s.langSlug === 'golang')
 
       if (python?.code) {
@@ -103,7 +110,9 @@ async function loadStarterCodeBySlug(slugs) {
       }
       out.set(item.titleSlug, starter)
     }
-    process.stderr.write(`Fetched starter code ${Math.min(i + detailBatchSize, slugs.length)}/${slugs.length}\r`)
+    process.stderr.write(
+      `Fetched starter code ${Math.min(i + detailBatchSize, slugs.length)}/${slugs.length}\r`
+    )
   }
   process.stderr.write('\n')
   return out
@@ -132,7 +141,7 @@ function toManifest(question, starterCodeBySlug) {
     source_url: `https://leetcode.com/problems/${question.titleSlug}/`,
     estimated_time: estimateMinutes(question.difficulty),
     starter_code: starterCodeBySlug.get(question.titleSlug) || {},
-    version: 1,
+    version: 1
   }
 }
 
@@ -153,9 +162,13 @@ const questions = await loadQuestions()
 const freeQuestions = questions
   .filter((question) => question.paidOnly === false)
   .sort((a, b) => Number(a.frontendQuestionId) - Number(b.frontendQuestionId))
-const starterCodeBySlug = await loadStarterCodeBySlug(freeQuestions.map((question) => question.titleSlug))
+const starterCodeBySlug = await loadStarterCodeBySlug(
+  freeQuestions.map((question) => question.titleSlug)
+)
 const manifest = {
-  problems: freeQuestions.map((question) => toManifest(question, starterCodeBySlug)),
+  problems: freeQuestions.map((question) =>
+    toManifest(question, starterCodeBySlug)
+  )
 }
 
 await mkdir(path.dirname(providerPath), { recursive: true })
@@ -165,7 +178,9 @@ await writeFile(providerPath, providerJSON)
 const checksum = createHash('sha256').update(providerJSON).digest('hex')
 await updateIndex(checksum)
 
-const withStarter = manifest.problems.filter((problem) => Object.keys(problem.starter_code).length > 0).length
+const withStarter = manifest.problems.filter(
+  (problem) => Object.keys(problem.starter_code).length > 0
+).length
 console.log(`Updated ${providerPath}`)
 console.log(`Free problems: ${manifest.problems.length}`)
 console.log(`Problems with starter code: ${withStarter}`)

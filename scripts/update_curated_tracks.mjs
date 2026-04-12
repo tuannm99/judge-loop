@@ -87,8 +87,8 @@ const tracks = {
       'number-of-1-bits',
       'counting-bits',
       'missing-number',
-      'reverse-bits',
-    ],
+      'reverse-bits'
+    ]
   },
   neetcode150: {
     title: 'NeetCode 150',
@@ -244,9 +244,9 @@ const tracks = {
       'reverse-bits',
       'missing-number',
       'sum-of-two-integers',
-      'reverse-integer',
-    ],
-  },
+      'reverse-integer'
+    ]
+  }
 }
 
 const provider = JSON.parse(await readFile(providerPath, 'utf8'))
@@ -275,8 +275,8 @@ for (const [name, track] of Object.entries(tracks)) {
     problems: available.map((slug, index) => ({
       provider: 'leetcode',
       slug,
-      order: index + 1,
-    })),
+      order: index + 1
+    }))
   }
 
   const filePath = path.join(rootDir, `registry/tracks/${name}.json`)
@@ -290,7 +290,9 @@ for (const [name, track] of Object.entries(tracks)) {
     }
     return { ...ref, checksum: `sha256:${checksum}` }
   })
-  console.log(`${name}: wrote ${available.length}/${track.slugs.length}, missing ${missing.length}`)
+  console.log(
+    `${name}: wrote ${available.length}/${track.slugs.length}, missing ${missing.length}`
+  )
   if (missing.length > 0) {
     console.log(`  missing: ${missing.join(', ')}`)
   }

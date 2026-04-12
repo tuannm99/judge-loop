@@ -158,13 +158,11 @@ export function updateProblem(
 
 export function getProblemTestCases(id: string) {
   return request<{
-    test_cases:
-      | Array<{
-          input: string
-          expected: string
-          is_hidden?: boolean
-        }>
-      | null
+    test_cases: Array<{
+      input: string
+      expected: string
+      is_hidden?: boolean
+    }> | null
   }>(`/problems/${id}/test-cases`).then((result) => ({
     test_cases: asArray(result.test_cases)
   }))

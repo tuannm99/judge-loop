@@ -6,17 +6,17 @@ services:
       context: ../..
       dockerfile: deploy/docker/Dockerfile.go-dev
     container_name: judge-loop-api-dev
-    command: ["air", "-c", "deploy/dev/air.api-server.toml"]
+    command: ['air', '-c', 'deploy/dev/air.api-server.toml']
     environment:
       DATABASE_URL: postgres://judgeloop:judgeloop@postgres:5432/judgeloop?sslmode=disable
       REDIS_URL: redis:6379
-      PORT: "8080"
+      PORT: '8080'
       USER_ID: 00000000-0000-0000-0000-000000000001
-      TIME_LIMIT_SECS: "10"
+      TIME_LIMIT_SECS: '10'
       GOCACHE: /tmp/go-build
       GOMODCACHE: /go/pkg/mod
     ports:
-      - "8080:8080"
+      - '8080:8080'
     volumes:
       - ../..:/workspace
       - go_mod_cache:/go/pkg/mod
@@ -31,12 +31,12 @@ services:
       context: ../..
       dockerfile: deploy/docker/Dockerfile.go-dev
     container_name: judge-loop-worker-dev
-    command: ["air", "-c", "deploy/dev/air.judge-worker.toml"]
+    command: ['air', '-c', 'deploy/dev/air.judge-worker.toml']
     environment:
       DATABASE_URL: postgres://judgeloop:judgeloop@postgres:5432/judgeloop?sslmode=disable
       REDIS_URL: redis:6379
-      CONCURRENCY: "2"
-      TIME_LIMIT_SECS: "10"
+      CONCURRENCY: '2'
+      TIME_LIMIT_SECS: '10'
       GOCACHE: /tmp/go-build
       GOMODCACHE: /go/pkg/mod
     volumes:
@@ -53,18 +53,18 @@ services:
       context: ../..
       dockerfile: deploy/docker/Dockerfile.go-dev
     container_name: judge-loop-local-agent-dev
-    command: ["air", "-c", "deploy/dev/air.local-agent.toml"]
+    command: ['air', '-c', 'deploy/dev/air.local-agent.toml']
     environment:
       JUDGE_SERVER_URL: http://api-server:8080
       JUDGE_BIND_ADDRESS: 0.0.0.0
-      JUDGE_PORT: "7070"
+      JUDGE_PORT: '7070'
       JUDGE_USER_ID: 00000000-0000-0000-0000-000000000001
       JUDGE_REGISTRY_PATH: /workspace/registry
       JUDGE_DATA_DIR: /workspace/.devdata/local-agent
       GOCACHE: /tmp/go-build
       GOMODCACHE: /go/pkg/mod
     ports:
-      - "7070:7070"
+      - '7070:7070'
     volumes:
       - ../..:/workspace
       - go_mod_cache:/go/pkg/mod
@@ -80,7 +80,7 @@ services:
     environment:
       VITE_API_PROXY_TARGET: http://api-server:8080
     ports:
-      - "3000:3000"
+      - '3000:3000'
     volumes:
       - ../../ui:/workspace/ui
       - ui_node_modules:/workspace/ui/node_modules

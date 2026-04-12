@@ -1,0 +1,24 @@
+FROM node:20-alpine AS builder
+
+WORKDIR /workspace/ui
+
+COPY ui/package*.json ./
+RUN npm ci
+
+COPY ui ./
+RUN npm run build
+
+FROM nginx:1.27-alpine
+
+ENV API_UPSTREAM=http://api-server:8080
+
+COPY deploy/docker/nginx.ui.conf.template /etc/nginx/templates/default.conf.template
+COPY deploy/docker/ui-entrypoint.sh /usr/local/bin/ui-entrypoint.sh
+RUN chmod +x /usr/local/bin/ui-entrypoint.sh
+
+COPY --from=builder /workspace/ui/dist /usr/share/nginx/html
+
+EXPOSE 3000
+
+ENTRYPOINT ["/usr/local/bin/ui-entrypoint.sh"]
+CMD ["nginx", "-g", "daemon off;"]
