@@ -7,15 +7,18 @@ import {
   listProblemLabels,
   updateProblem
 } from '@/api/client'
-import type { Difficulty, Provider } from '@/api/types'
+import type { Difficulty, Language, Provider } from '@/api/types'
 import { ErrorAlert, LoadingBlock, WarningAlert } from '../components/common/Feedback'
 import { PageShell } from '../components/common/PageShell'
 import {
+  Badge,
   Button,
   CheckboxField,
   Card,
+  CodeEditor,
   InputField,
   SelectField,
+  Tabs,
   TextareaField
 } from '../components/common'
 import { SectionLead } from '../components/common/SectionLead'
@@ -26,6 +29,7 @@ import {
   DIFFICULTY_OPTIONS,
   EMPTY_LABELS,
   EMPTY_TEST_CASE,
+  LANGUAGE_OPTIONS,
   PROVIDER_OPTIONS
 } from '../shared/constants'
 import type { DraftTestCase, NavigateFn } from '../shared/types'
@@ -33,6 +37,7 @@ import { formatError, resolveStarterCode, toggleValue } from '../shared/utils'
 
 export function ContributeProblemPage(props: { navigate: NavigateFn; slug?: string }) {
   const isEditMode = () => Boolean(props.slug)
+  const [starterLanguage, setStarterLanguage] = createSignal<Language>('python')
   const [state, setState] = createStore({
     loading: isEditMode(),
     saving: false,
@@ -44,7 +49,6 @@ export function ContributeProblemPage(props: { navigate: NavigateFn; slug?: stri
     slug: '',
     title: '',
     tags: [] as string[],
-    pattern_tags: [] as string[],
     source_url: '',
     estimated_time: 15,
     version: 1,
@@ -107,7 +111,6 @@ export function ContributeProblemPage(props: { navigate: NavigateFn; slug?: stri
             slug: problem.slug,
             title: problem.title,
             tags: [...problem.tags],
-            pattern_tags: [...problem.pattern_tags],
             source_url: problem.source_url,
             estimated_time: problem.estimated_time,
             starter_code: resolveStarterCode(problem.starter_code, DEFAULT_STARTER_CODE),
@@ -122,6 +125,10 @@ export function ContributeProblemPage(props: { navigate: NavigateFn; slug?: stri
           })
           setProvider(problem.provider)
           setDifficulty(problem.difficulty)
+          setStarterLanguage(
+            LANGUAGE_OPTIONS.find(({ value }) => problem.starter_code[value]?.trim())?.value ??
+              'python'
+          )
         }
       } catch (error) {
         if (active) {
@@ -233,7 +240,7 @@ export function ContributeProblemPage(props: { navigate: NavigateFn; slug?: stri
 
             <LabelButtonRow
               title="Tags"
-              helperText="Select every tag that applies to this problem."
+              helperText="Use tags for both topic labels and solving strategies."
               values={state.labels.tags}
               selected={state.tags}
               loading={state.labelsLoading}
@@ -241,39 +248,38 @@ export function ContributeProblemPage(props: { navigate: NavigateFn; slug?: stri
               onToggle={(value) => setState('tags', toggleValue(state.tags, value))}
               onClear={() => setState('tags', [])}
             />
-
-            <LabelButtonRow
-              title="Pattern tags"
-              helperText="Pattern tags are multi-select too."
-              values={state.labels.patterns}
-              selected={state.pattern_tags}
-              loading={state.labelsLoading}
-              activeColor="indigo"
-              onToggle={(value) => setState('pattern_tags', toggleValue(state.pattern_tags, value))}
-              onClear={() => setState('pattern_tags', [])}
-            />
           </Card>
 
           <Card class="space-y-6">
-            <SectionTitle
-              title="Starter code"
-              subtitle="Language drafts are saved with the registry entry."
-            />
-
-            <div class="grid gap-4 xl:grid-cols-2">
-              <TextareaField
-                label="Python"
-                rows={12}
-                value={state.starter_code.python}
-                onInput={(event) => setState('starter_code', 'python', event.currentTarget.value)}
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <SectionTitle
+                title="Starter code"
+                subtitle="Edit one language at a time and keep the form compact."
               />
-              <TextareaField
-                label="Go"
-                rows={12}
-                value={state.starter_code.go}
-                onInput={(event) => setState('starter_code', 'go', event.currentTarget.value)}
+              <Badge
+                content={`${LANGUAGE_OPTIONS.find(({ value }) => value === starterLanguage())?.name ?? starterLanguage()} draft`}
+                color="indigo"
               />
             </div>
+
+            <Tabs
+              value={starterLanguage()}
+              items={LANGUAGE_OPTIONS.map((option) => ({
+                value: option.value,
+                label: option.name
+              }))}
+              onChange={(value) => setStarterLanguage(value as Language)}
+              class="rounded-2xl border border-gray-200 bg-gray-50 p-2"
+            />
+
+            <CodeEditor
+              label={`${LANGUAGE_OPTIONS.find(({ value }) => value === starterLanguage())?.name ?? starterLanguage()} starter`}
+              language={starterLanguage()}
+              rows={18}
+              hint="Switch tabs to update another starter template. Only one editor stays open at a time."
+              value={state.starter_code[starterLanguage()]}
+              onInput={(value) => setState('starter_code', starterLanguage(), value)}
+            />
           </Card>
 
           <Card class="space-y-6">
@@ -360,12 +366,14 @@ export function ContributeProblemPage(props: { navigate: NavigateFn; slug?: stri
                         title: state.title.trim(),
                         difficulty: difficulty(),
                         tags: [...state.tags],
-                        pattern_tags: [...state.pattern_tags],
                         source_url: state.source_url.trim(),
                         estimated_time: state.estimated_time || 0,
                         starter_code: {
                           python: state.starter_code.python,
-                          go: state.starter_code.go
+                          go: state.starter_code.go,
+                          javascript: state.starter_code.javascript,
+                          typescript: state.starter_code.typescript,
+                          rust: state.starter_code.rust
                         },
                         test_cases: state.test_cases.map((testCase) => ({
                           input: testCase.input,

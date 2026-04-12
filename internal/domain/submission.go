@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"errors"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,9 +14,34 @@ type Language string
 const (
 	LanguagePython     Language = "python"
 	LanguageGo         Language = "go"
-	LanguageJava       Language = "java"
 	LanguageJavascript Language = "javascript"
+	LanguageTypescript Language = "typescript"
+	LanguageRust       Language = "rust"
 )
+
+var ErrUnsupportedSubmissionLanguage = errors.New("unsupported submission language")
+
+var supportedSubmissionLanguages = []Language{
+	LanguagePython,
+	LanguageGo,
+	LanguageJavascript,
+	LanguageTypescript,
+	LanguageRust,
+}
+
+func NormalizeSubmissionLanguage(raw string) Language {
+	return Language(strings.ToLower(strings.TrimSpace(raw)))
+}
+
+func IsSupportedSubmissionLanguage(raw string) bool {
+	normalized := NormalizeSubmissionLanguage(raw)
+	for _, language := range supportedSubmissionLanguages {
+		if normalized == language {
+			return true
+		}
+	}
+	return false
+}
 
 // SubmissionStatus represents the lifecycle state of a submission.
 type SubmissionStatus string

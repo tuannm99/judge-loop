@@ -112,10 +112,7 @@ func (s *ProblemRepositoryImpl) UpsertFromManifest(ctx context.Context, m domain
 		return fmt.Errorf("load upserted problem %s/%s: %w", m.Provider, m.Slug, err)
 	}
 
-	if err := s.replaceProblemLabels(ctx, saved.ID, "tag", m.Tags); err != nil {
-		return err
-	}
-	if err := s.replaceProblemLabels(ctx, saved.ID, "pattern", m.PatternTags); err != nil {
+	if err := s.replaceProblemLabels(ctx, saved.ID, m.Tags); err != nil {
 		return err
 	}
 	return nil
@@ -124,18 +121,16 @@ func (s *ProblemRepositoryImpl) UpsertFromManifest(ctx context.Context, m domain
 func (s *ProblemRepositoryImpl) replaceProblemLabels(
 	ctx context.Context,
 	problemID uuid.UUID,
-	kind string,
 	slugs []string,
 ) error {
 	return s.db.Gorm.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		return replaceProblemLabelsWithTx(tx, problemID, kind, slugs)
+		return replaceProblemLabelsWithTx(tx, problemID, slugs)
 	})
 }
 
 func replaceProblemLabelsWithTx(
 	tx *gorm.DB,
 	problemID uuid.UUID,
-	kind string,
 	slugs []string,
 ) error {
 	normalized := make([]string, 0, len(slugs))
@@ -153,27 +148,25 @@ func replaceProblemLabelsWithTx(
 	}
 
 	return tx.Transaction(func(tx *gorm.DB) error {
-		subquery := tx.Table("problem_labels").Select("id").Where("kind = ?", kind)
-		if err := tx.Where("problem_id = ? AND problem_label_id IN (?)", problemID, subquery).
+		if err := tx.Where("problem_id = ?", problemID).
 			Delete(&problemLabelLinkModel{}).Error; err != nil {
-			return fmt.Errorf("delete %s labels for problem %s: %w", kind, problemID, err)
+			return fmt.Errorf("delete labels for problem %s: %w", problemID, err)
 		}
 
 		for _, slug := range normalized {
 			label := problemLabelModel{
-				Kind: kind,
 				Slug: slug,
 				Name: slug,
 			}
 			if err := tx.Clauses(clause.OnConflict{
-				Columns:   []clause.Column{{Name: "kind"}, {Name: "slug"}},
+				Columns:   []clause.Column{{Name: "slug"}},
 				DoUpdates: clause.Assignments(map[string]any{"name": slug, "updated_at": gorm.Expr("NOW()")}),
 			}).Create(&label).Error; err != nil {
-				return fmt.Errorf("upsert %s label %q: %w", kind, slug, err)
+				return fmt.Errorf("upsert label %q: %w", slug, err)
 			}
 
-			if err := tx.Where("kind = ? AND slug = ?", kind, slug).Take(&label).Error; err != nil {
-				return fmt.Errorf("load %s label %q: %w", kind, slug, err)
+			if err := tx.Where("slug = ?", slug).Take(&label).Error; err != nil {
+				return fmt.Errorf("load label %q: %w", slug, err)
 			}
 
 			link := problemLabelLinkModel{
@@ -181,7 +174,7 @@ func replaceProblemLabelsWithTx(
 				ProblemLabelID: label.ID,
 			}
 			if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&link).Error; err != nil {
-				return fmt.Errorf("link %s label %q: %w", kind, slug, err)
+				return fmt.Errorf("link label %q: %w", slug, err)
 			}
 		}
 		return nil

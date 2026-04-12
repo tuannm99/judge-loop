@@ -10,7 +10,6 @@ import (
 type ProblemFilter struct {
 	Difficulty *domain.Difficulty
 	Tags       []string
-	Patterns   []string
 	Provider   *domain.Provider
 	Limit      int
 	Offset     int

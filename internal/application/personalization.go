@@ -73,13 +73,13 @@ func Generate(userID uuid.UUID, in Input) domain.DailyMission {
 	// Identify weak patterns from score map.
 	weak := weakPatterns(in.PatternScores)
 
-	// Required tasks: weak-pattern problems first, then fill with any unsolved.
+	// Required tasks: problems matching weak tags first, then fill with any unsolved.
 	added := make(map[uuid.UUID]bool)
 	for _, p := range in.Unsolved {
 		if len(mission.RequiredTasks) >= goal {
 			break
 		}
-		if match := firstMatch(p.PatternTags, weak); match != "" {
+		if match := firstMatch(p.Tags, weak); match != "" {
 			mission.RequiredTasks = append(mission.RequiredTasks, domain.MissionTask{
 				ProblemID:  p.ID,
 				Slug:       p.Slug,

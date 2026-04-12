@@ -536,7 +536,7 @@ func (_c *MockProblemService_ListProblemLabelRecords_Call) RunAndReturn(run func
 }
 
 // ListProblemLabels provides a mock function for the type MockProblemService
-func (_mock *MockProblemService) ListProblemLabels(ctx context.Context) ([]string, []string, error) {
+func (_mock *MockProblemService) ListProblemLabels(ctx context.Context) ([]string, error) {
 	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
@@ -544,9 +544,8 @@ func (_mock *MockProblemService) ListProblemLabels(ctx context.Context) ([]strin
 	}
 
 	var r0 []string
-	var r1 []string
-	var r2 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]string, []string, error)); ok {
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]string, error)); ok {
 		return returnFunc(ctx)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context) []string); ok {
@@ -556,19 +555,12 @@ func (_mock *MockProblemService) ListProblemLabels(ctx context.Context) ([]strin
 			r0 = ret.Get(0).([]string)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) []string); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
 		r1 = returnFunc(ctx)
 	} else {
-		if ret.Get(1) != nil {
-			r1 = ret.Get(1).([]string)
-		}
+		r1 = ret.Error(1)
 	}
-	if returnFunc, ok := ret.Get(2).(func(context.Context) error); ok {
-		r2 = returnFunc(ctx)
-	} else {
-		r2 = ret.Error(2)
-	}
-	return r0, r1, r2
+	return r0, r1
 }
 
 // MockProblemService_ListProblemLabels_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListProblemLabels'
@@ -595,12 +587,12 @@ func (_c *MockProblemService_ListProblemLabels_Call) Run(run func(ctx context.Co
 	return _c
 }
 
-func (_c *MockProblemService_ListProblemLabels_Call) Return(strings []string, strings1 []string, err error) *MockProblemService_ListProblemLabels_Call {
-	_c.Call.Return(strings, strings1, err)
+func (_c *MockProblemService_ListProblemLabels_Call) Return(strings []string, err error) *MockProblemService_ListProblemLabels_Call {
+	_c.Call.Return(strings, err)
 	return _c
 }
 
-func (_c *MockProblemService_ListProblemLabels_Call) RunAndReturn(run func(ctx context.Context) ([]string, []string, error)) *MockProblemService_ListProblemLabels_Call {
+func (_c *MockProblemService_ListProblemLabels_Call) RunAndReturn(run func(ctx context.Context) ([]string, error)) *MockProblemService_ListProblemLabels_Call {
 	_c.Call.Return(run)
 	return _c
 }

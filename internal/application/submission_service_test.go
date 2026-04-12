@@ -119,3 +119,11 @@ func TestSubmissionServiceCreateSubmissionReturnsCreateError(t *testing.T) {
 	_, err := service.CreateSubmission(ctx, userID, uuid.New(), "go", "code", nil)
 	require.Error(t, err)
 }
+
+func TestSubmissionServiceCreateSubmissionRejectsUnsupportedLanguage(t *testing.T) {
+	submissions := outmocks.NewMockSubmissionRepository(t)
+	service := NewSubmissionService(submissions, nil, nil, 0)
+
+	_, err := service.CreateSubmission(context.Background(), uuid.New(), uuid.New(), "ruby", "puts 1", nil)
+	require.ErrorIs(t, err, domain.ErrUnsupportedSubmissionLanguage)
+}

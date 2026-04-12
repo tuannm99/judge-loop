@@ -1,6 +1,10 @@
 package domain
 
-import "time"
+import (
+	"encoding/json"
+	"strings"
+	"time"
+)
 
 // ProblemManifest is the normalized metadata record for a problem in the registry.
 // Full problem statements are not stored; this is metadata only.
@@ -11,11 +15,62 @@ type ProblemManifest struct {
 	Title         string            `json:"title"`
 	Difficulty    Difficulty        `json:"difficulty"`
 	Tags          []string          `json:"tags"`
-	PatternTags   []string          `json:"pattern_tags"`
 	SourceURL     string            `json:"source_url"`
 	EstimatedTime int               `json:"estimated_time"`
 	StarterCode   map[string]string `json:"starter_code"`
 	Version       int               `json:"version"`
+}
+
+func (m *ProblemManifest) UnmarshalJSON(data []byte) error {
+	type rawProblemManifest struct {
+		Provider          Provider          `json:"provider"`
+		ExternalID        string            `json:"external_id"`
+		Slug              string            `json:"slug"`
+		Title             string            `json:"title"`
+		Difficulty        Difficulty        `json:"difficulty"`
+		Tags              []string          `json:"tags"`
+		LegacyPatternTags []string          `json:"pattern_tags"`
+		SourceURL         string            `json:"source_url"`
+		EstimatedTime     int               `json:"estimated_time"`
+		StarterCode       map[string]string `json:"starter_code"`
+		Version           int               `json:"version"`
+	}
+
+	var raw rawProblemManifest
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	*m = ProblemManifest{
+		Provider:      raw.Provider,
+		ExternalID:    raw.ExternalID,
+		Slug:          raw.Slug,
+		Title:         raw.Title,
+		Difficulty:    raw.Difficulty,
+		Tags:          normalizeManifestTags(append(raw.Tags, raw.LegacyPatternTags...)),
+		SourceURL:     raw.SourceURL,
+		EstimatedTime: raw.EstimatedTime,
+		StarterCode:   raw.StarterCode,
+		Version:       raw.Version,
+	}
+	return nil
+}
+
+func normalizeManifestTags(values []string) []string {
+	seen := make(map[string]struct{}, len(values))
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		out = append(out, value)
+	}
+	return out
 }
 
 // ManifestRef is a pointer to a provider or track manifest in the index.

@@ -1,10 +1,12 @@
 package apiserver
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/tuannm99/judge-loop/internal/domain"
 )
 
 // createSubmissionRequest is the POST /api/submissions request body.
@@ -46,6 +48,10 @@ func (h *SubmissionsAPI) CreateSubmission(c *gin.Context) {
 		sessionID,
 	)
 	if err != nil {
+		if errors.Is(err, domain.ErrUnsupportedSubmissionLanguage) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

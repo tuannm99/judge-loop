@@ -80,5 +80,8 @@ func isCompileError(stderr string) bool {
 		strings.Contains(lower, "nameerror: name") ||
 		strings.Contains(lower, "go build") ||
 		strings.Contains(lower, "syntax error") ||
-		strings.Contains(lower, "undefined:")
+		strings.Contains(lower, "undefined:") ||
+		strings.Contains(lower, "could not be parsed") ||
+		strings.Contains(lower, "type checking failed") ||
+		strings.Contains(lower, "error[")
 }

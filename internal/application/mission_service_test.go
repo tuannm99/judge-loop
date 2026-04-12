@@ -41,8 +41,8 @@ func TestMissionServiceGeneratesAndSavesMission(t *testing.T) {
 	missions.EXPECT().GetToday(mock.Anything, userID).Return(nil, nil).Once()
 	performance.EXPECT().GetPatternScores(mock.Anything, userID).Return(map[string]float64{"dp": 0.2}, nil).Once()
 	problems.EXPECT().GetUnsolved(mock.Anything, userID, defaultMissionProblemLimit).Return([]domain.Problem{
-		{ID: weakID, Slug: "weak", Title: "Weak", Difficulty: domain.DifficultyEasy, PatternTags: []string{"dp"}},
-		{ID: otherID, Slug: "other", Title: "Other", Difficulty: domain.DifficultyMedium, PatternTags: []string{"array"}},
+		{ID: weakID, Slug: "weak", Title: "Weak", Difficulty: domain.DifficultyEasy, Tags: []string{"dp"}},
+		{ID: otherID, Slug: "other", Title: "Other", Difficulty: domain.DifficultyMedium, Tags: []string{"array"}},
 	}, nil).Once()
 	reviews.EXPECT().GetDue(mock.Anything, userID).Return([]outport.DueReview{
 		{ProblemID: reviewID, Slug: "review", Title: "Review", DaysOverdue: 1},

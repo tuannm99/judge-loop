@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -41,11 +42,16 @@ func (s *SubmissionService) CreateSubmission(
 	language, code string,
 	sessionID *uuid.UUID,
 ) (*domain.Submission, error) {
+	normalizedLanguage := domain.NormalizeSubmissionLanguage(language)
+	if !domain.IsSupportedSubmissionLanguage(string(normalizedLanguage)) {
+		return nil, fmt.Errorf("%w: %s", domain.ErrUnsupportedSubmissionLanguage, language)
+	}
+
 	sub := &domain.Submission{
 		UserID:    userID,
 		ProblemID: problemID,
 		SessionID: sessionID,
-		Language:  domain.Language(language),
+		Language:  normalizedLanguage,
 		Code:      code,
 	}
 	if err := s.submissions.Create(ctx, sub); err != nil {

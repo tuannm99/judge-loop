@@ -31,8 +31,7 @@ type Problem struct {
 	Slug          string            `json:"slug"`
 	Title         string            `json:"title"`
 	Difficulty    Difficulty        `json:"difficulty"`
-	Tags          []string          `json:"tags"`         // data structure / algorithm tags
-	PatternTags   []string          `json:"pattern_tags"` // pattern tags (e.g. sliding-window)
+	Tags          []string          `json:"tags"` // combined taxonomy tags
 	Provider      Provider          `json:"provider"`
 	ExternalID    string            `json:"external_id"` // provider's own ID
 	SourceURL     string            `json:"source_url"`

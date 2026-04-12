@@ -44,7 +44,11 @@ registry/
       "path": "providers/neetcode.json",
       "checksum": "sha256:..."
     },
-    {"name": "blind75", "path": "tracks/blind75.json", "checksum": "sha256:..."}
+    {
+      "name": "blind75",
+      "path": "tracks/blind75.json",
+      "checksum": "sha256:..."
+    }
   ]
 }
 ```
@@ -60,8 +64,7 @@ Each entry in a provider manifest:
   "slug": "two-sum",
   "title": "Two Sum",
   "difficulty": "easy",
-  "tags": ["array", "hash-table"],
-  "pattern_tags": ["lookup", "two-pointer"],
+  "tags": ["array", "hash-table", "lookup", "two-pointer"],
   "source_url": "https://leetcode.com/problems/two-sum",
   "estimated_time": 15,
   "version": 1
@@ -75,11 +78,12 @@ Fields:
 - `slug` — URL-safe identifier, unique within provider
 - `title` — display name
 - `difficulty` — easy | medium | hard
-- `tags` — data structure / algorithm tags
-- `pattern_tags` — problem-solving pattern tags (e.g. sliding-window, two-pointer)
+- `tags` — combined topic and problem-solving tags (e.g. array, sliding-window, two-pointer)
 - `source_url` — link to original problem
 - `estimated_time` — minutes, rough estimate
 - `version` — manifest version, incremented on metadata changes
+
+For backward compatibility, registry ingestion still accepts legacy `pattern_tags` and merges them into `tags`.
 
 ## Track manifest
 
@@ -89,7 +93,7 @@ Fields:
   "title": "Blind 75",
   "description": "75 essential interview problems",
   "problems": [
-    {"provider": "leetcode", "slug": "two-sum", "order": 1},
+    { "provider": "leetcode", "slug": "two-sum", "order": 1 },
     {
       "provider": "leetcode",
       "slug": "best-time-to-buy-and-sell-stock",

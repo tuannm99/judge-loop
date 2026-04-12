@@ -1,5 +1,5 @@
 -- Seed data: sample problems for development and testing
--- Run after 001_init.sql
+-- Run after the full Postgres migration set (through 005)
 
 BEGIN;
 
@@ -7,7 +7,18 @@ BEGIN;
 -- PROBLEMS
 -- ============================================================
 
-INSERT INTO problems (slug, title, difficulty, tags, pattern_tags, provider, external_id, source_url, estimated_time) VALUES
+WITH seed_problems (
+  slug,
+  title,
+  difficulty,
+  tags,
+  legacy_tags,
+  provider,
+  external_id,
+  source_url,
+  estimated_time
+) AS (
+VALUES
 
 -- Arrays & Hashing
 ('two-sum',
@@ -241,7 +252,51 @@ INSERT INTO problems (slug, title, difficulty, tags, pattern_tags, provider, ext
  ARRAY['dfs', 'bfs', 'graph'],
  'leetcode', '133',
  'https://leetcode.com/problems/clone-graph/',
- 30);
+ 30)
+),
+inserted_problems AS (
+  INSERT INTO problems (
+    slug,
+    title,
+    difficulty,
+    provider,
+    external_id,
+    source_url,
+    estimated_time
+  )
+  SELECT
+    slug,
+    title,
+    difficulty::difficulty,
+    provider::provider,
+    external_id,
+    source_url,
+    estimated_time
+  FROM seed_problems
+  RETURNING id, slug
+),
+expanded_labels AS (
+  SELECT DISTINCT unnest(tags || legacy_tags) AS slug
+  FROM seed_problems
+),
+inserted_labels AS (
+  INSERT INTO problem_labels (slug, name)
+  SELECT
+    slug,
+    initcap(replace(slug, '-', ' '))
+  FROM expanded_labels
+  ON CONFLICT (slug) DO NOTHING
+  RETURNING id
+)
+INSERT INTO problem_label_links (problem_id, problem_label_id)
+SELECT DISTINCT
+  problem.id,
+  label.id
+FROM inserted_problems AS problem
+JOIN seed_problems AS seed ON seed.slug = problem.slug
+JOIN LATERAL unnest(seed.tags || seed.legacy_tags) AS tag(slug) ON true
+JOIN problem_labels AS label ON label.slug = tag.slug
+ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- TEST CASES (visible samples for seeded problems)

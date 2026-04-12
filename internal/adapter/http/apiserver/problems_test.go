@@ -27,12 +27,11 @@ func TestProblemHandlers(t *testing.T) {
 		diff := domain.DifficultyEasy
 		prov := domain.ProviderLeetCode
 		service.EXPECT().ListProblems(mock.Anything, mock.MatchedBy(func(f outport.ProblemFilter) bool {
-			return len(f.Tags) == 2 &&
+			return len(f.Tags) == 4 &&
 				f.Tags[0] == "array" &&
 				f.Tags[1] == "hash-table" &&
-				len(f.Patterns) == 2 &&
-				f.Patterns[0] == "dp" &&
-				f.Patterns[1] == "graph" &&
+				f.Tags[2] == "dp" &&
+				f.Tags[3] == "graph" &&
 				*f.Difficulty == diff &&
 				*f.Provider == prov &&
 				f.Limit == 5 &&
@@ -64,7 +63,7 @@ func TestProblemHandlers(t *testing.T) {
 	})
 
 	t.Run("list problem labels", func(t *testing.T) {
-		service.EXPECT().ListProblemLabels(mock.Anything).Return([]string{"array"}, []string{"dp"}, nil).Once()
+		service.EXPECT().ListProblemLabels(mock.Anything).Return([]string{"array"}, nil).Once()
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -72,9 +71,8 @@ func TestProblemHandlers(t *testing.T) {
 		api.Problems.ListProblemLabels(c)
 		require.Equal(t, http.StatusOK, w.Code)
 		require.Contains(t, w.Body.String(), `"tags":["array"]`)
-		require.Contains(t, w.Body.String(), `"patterns":["dp"]`)
 
-		service.EXPECT().ListProblemLabels(mock.Anything).Return(nil, nil, errors.New("boom")).Once()
+		service.EXPECT().ListProblemLabels(mock.Anything).Return(nil, errors.New("boom")).Once()
 		w = httptest.NewRecorder()
 		c, _ = gin.CreateTestContext(w)
 		c.Request = httptest.NewRequest(http.MethodGet, "/api/problems/labels", nil)
@@ -99,8 +97,8 @@ func TestProblemHandlers(t *testing.T) {
 
 		body, err := json.Marshal(problemLabelRequest{Kind: "pattern", Slug: "sliding-window", Name: "Sliding Window"})
 		require.NoError(t, err)
-		service.EXPECT().CreateProblemLabel(mock.Anything, "pattern", "sliding-window", "Sliding Window").
-			Return(&domain.ProblemLabel{ID: labelID, Kind: "pattern", Slug: "sliding-window", Name: "Sliding Window"}, nil).Once()
+		service.EXPECT().CreateProblemLabel(mock.Anything, "tag", "sliding-window", "Sliding Window").
+			Return(&domain.ProblemLabel{ID: labelID, Kind: "tag", Slug: "sliding-window", Name: "Sliding Window"}, nil).Once()
 		w = httptest.NewRecorder()
 		c, _ = gin.CreateTestContext(w)
 		c.Request = httptest.NewRequest(http.MethodPost, "/api/problem-labels", bytes.NewReader(body))
@@ -111,7 +109,7 @@ func TestProblemHandlers(t *testing.T) {
 		updateBody, err := json.Marshal(updateProblemLabelRequest{Slug: "two-pointers", Name: "Two Pointers"})
 		require.NoError(t, err)
 		service.EXPECT().UpdateProblemLabel(mock.Anything, labelID, "two-pointers", "Two Pointers").
-			Return(&domain.ProblemLabel{ID: labelID, Kind: "pattern", Slug: "two-pointers", Name: "Two Pointers"}, nil).Once()
+			Return(&domain.ProblemLabel{ID: labelID, Kind: "tag", Slug: "two-pointers", Name: "Two Pointers"}, nil).Once()
 		w = httptest.NewRecorder()
 		c, _ = gin.CreateTestContext(w)
 		c.Params = gin.Params{{Key: "id", Value: labelID.String()}}
@@ -196,15 +194,15 @@ func TestProblemHandlers(t *testing.T) {
 	t.Run("update problem branches", func(t *testing.T) {
 		problemID := uuid.New()
 		body, err := json.Marshal(updateProblemRequest{
-			Provider:      domain.ProviderLeetCode,
-			ExternalID:    "1",
-			Slug:          "two-sum",
-			Title:         "Two Sum",
-			Difficulty:    domain.DifficultyEasy,
-			Tags:          []string{"array"},
-			PatternTags:   []string{"hash-map"},
-			SourceURL:     "https://leetcode.com/problems/two-sum",
-			EstimatedTime: 15,
+			Provider:          domain.ProviderLeetCode,
+			ExternalID:        "1",
+			Slug:              "two-sum",
+			Title:             "Two Sum",
+			Difficulty:        domain.DifficultyEasy,
+			Tags:              []string{"array"},
+			LegacyPatternTags: []string{"hash-map"},
+			SourceURL:         "https://leetcode.com/problems/two-sum",
+			EstimatedTime:     15,
 			StarterCode: map[string]string{
 				"python": "class Solution:\n    pass\n",
 			},
@@ -218,8 +216,7 @@ func TestProblemHandlers(t *testing.T) {
 			Slug:          "two-sum",
 			Title:         "Two Sum",
 			Difficulty:    domain.DifficultyEasy,
-			Tags:          []string{"array"},
-			PatternTags:   []string{"hash-map"},
+			Tags:          []string{"array", "hash-map"},
 			SourceURL:     "https://leetcode.com/problems/two-sum",
 			EstimatedTime: 15,
 			StarterCode: map[string]string{
@@ -255,15 +252,15 @@ func TestProblemHandlers(t *testing.T) {
 
 	t.Run("contribute problem branches", func(t *testing.T) {
 		body, err := json.Marshal(contributeProblemRequest{
-			Provider:      domain.ProviderLeetCode,
-			ExternalID:    "1",
-			Slug:          "two-sum",
-			Title:         "Two Sum",
-			Difficulty:    domain.DifficultyEasy,
-			Tags:          []string{"array"},
-			PatternTags:   []string{"lookup"},
-			SourceURL:     "https://leetcode.com/problems/two-sum",
-			EstimatedTime: 15,
+			Provider:          domain.ProviderLeetCode,
+			ExternalID:        "1",
+			Slug:              "two-sum",
+			Title:             "Two Sum",
+			Difficulty:        domain.DifficultyEasy,
+			Tags:              []string{"array"},
+			LegacyPatternTags: []string{"lookup"},
+			SourceURL:         "https://leetcode.com/problems/two-sum",
+			EstimatedTime:     15,
 			StarterCode: map[string]string{
 				"python": "class Solution:\n    pass\n",
 				"go":     "package main\n\nfunc main() {}\n",
@@ -282,8 +279,7 @@ func TestProblemHandlers(t *testing.T) {
 			Slug:          "two-sum",
 			Title:         "Two Sum",
 			Difficulty:    domain.DifficultyEasy,
-			Tags:          []string{"array"},
-			PatternTags:   []string{"lookup"},
+			Tags:          []string{"array", "lookup"},
 			SourceURL:     "https://leetcode.com/problems/two-sum",
 			EstimatedTime: 15,
 			StarterCode: map[string]string{

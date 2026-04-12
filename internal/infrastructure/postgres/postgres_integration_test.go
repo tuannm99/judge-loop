@@ -78,7 +78,7 @@ func seedUser(t *testing.T, db *DB) uuid.UUID {
 	return id
 }
 
-func seedProblem(t *testing.T, db *DB, slug string, tags, patternTags []string) uuid.UUID {
+func seedProblem(t *testing.T, db *DB, slug string, tags []string) uuid.UUID {
 	t.Helper()
 
 	store := NewProblemRepositoryImpl(db)
@@ -89,7 +89,6 @@ func seedProblem(t *testing.T, db *DB, slug string, tags, patternTags []string) 
 		Title:         "Title " + slug,
 		Difficulty:    domain.DifficultyEasy,
 		Tags:          tags,
-		PatternTags:   patternTags,
 		SourceURL:     "https://example.com/" + slug,
 		EstimatedTime: 15,
 		StarterCode:   map[string]string{},
@@ -169,8 +168,7 @@ func TestProblemSubmissionSessionAndPerformanceIntegration(t *testing.T) {
 		Slug:          "two-sum",
 		Title:         "Two Sum",
 		Difficulty:    domain.DifficultyEasy,
-		Tags:          []string{"array"},
-		PatternTags:   []string{"hash-map"},
+		Tags:          []string{"array", "hash-map"},
 		Provider:      domain.ProviderLeetCode,
 		ExternalID:    "1",
 		SourceURL:     "https://example.com/two-sum",
@@ -184,8 +182,7 @@ func TestProblemSubmissionSessionAndPerformanceIntegration(t *testing.T) {
 		Slug:          "best-time",
 		Title:         "Best Time",
 		Difficulty:    domain.DifficultyEasy,
-		Tags:          []string{"array"},
-		PatternTags:   []string{"sliding-window"},
+		Tags:          []string{"array", "sliding-window"},
 		Provider:      domain.ProviderLeetCode,
 		ExternalID:    "2",
 		SourceURL:     "https://example.com/best-time",
@@ -194,7 +191,7 @@ func TestProblemSubmissionSessionAndPerformanceIntegration(t *testing.T) {
 	require.NoError(t, problemStore.UpsertFromManifest(ctx, problemA))
 	require.NoError(t, problemStore.UpsertFromManifest(ctx, problemB))
 
-	problems, total, err := problemStore.List(ctx, ProblemFilter{Tags: []string{"array"}, Patterns: []string{"hash-map"}, Limit: 10})
+	problems, total, err := problemStore.List(ctx, ProblemFilter{Tags: []string{"array", "hash-map"}, Limit: 10})
 	require.NoError(t, err)
 	require.Equal(t, 1, total)
 	require.Len(t, problems, 1)
@@ -324,7 +321,7 @@ func TestReviewStoreIntegration(t *testing.T) {
 	db := newIntegrationDB(t)
 	ctx := context.Background()
 	userID := seedUser(t, db)
-	problemID := seedProblem(t, db, "review-me", []string{"array"}, []string{"dp"})
+	problemID := seedProblem(t, db, "review-me", []string{"array", "dp"})
 
 	reviewStore := NewReviewRepositoryImpl(db)
 

@@ -22,8 +22,7 @@ type problemModel struct {
 	CreatedAt     time.Time `gorm:"column:created_at"`
 	UpdatedAt     time.Time `gorm:"column:updated_at"`
 
-	Tags        []string `gorm:"-"`
-	PatternTags []string `gorm:"-"`
+	Tags []string `gorm:"-"`
 }
 
 func (problemModel) TableName() string { return "problems" }
@@ -42,7 +41,6 @@ func (m problemModel) toDomain() domain.Problem {
 		Title:         m.Title,
 		Difficulty:    domain.Difficulty(m.Difficulty),
 		Tags:          append([]string(nil), m.Tags...),
-		PatternTags:   append([]string(nil), m.PatternTags...),
 		Provider:      domain.Provider(m.Provider),
 		ExternalID:    m.ExternalID,
 		SourceURL:     m.SourceURL,
@@ -55,7 +53,6 @@ func (m problemModel) toDomain() domain.Problem {
 
 type problemLabelModel struct {
 	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	Kind      string    `gorm:"column:kind"`
 	Slug      string    `gorm:"column:slug"`
 	Name      string    `gorm:"column:name"`
 	CreatedAt time.Time `gorm:"column:created_at"`
@@ -67,7 +64,7 @@ func (problemLabelModel) TableName() string { return "problem_labels" }
 func (m problemLabelModel) toDomain() domain.ProblemLabel {
 	return domain.ProblemLabel{
 		ID:        m.ID,
-		Kind:      m.Kind,
+		Kind:      "tag",
 		Slug:      m.Slug,
 		Name:      m.Name,
 		CreatedAt: m.CreatedAt,

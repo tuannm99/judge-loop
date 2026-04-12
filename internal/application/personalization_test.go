@@ -19,9 +19,9 @@ func TestGenerate(t *testing.T) {
 	mission := Generate(userID, Input{
 		PatternScores: map[string]float64{"dp": 0.2, "array": 0.9},
 		Unsolved: []domain.Problem{
-			{ID: weakID, Slug: "weak", Title: "Weak", Difficulty: domain.DifficultyEasy, PatternTags: []string{"dp"}},
-			{ID: normalID, Slug: "normal", Title: "Normal", Difficulty: domain.DifficultyMedium, PatternTags: []string{"array"}},
-			{ID: optionalID, Slug: "opt", Title: "Optional", Difficulty: domain.DifficultyHard, PatternTags: []string{"graph"}},
+			{ID: weakID, Slug: "weak", Title: "Weak", Difficulty: domain.DifficultyEasy, Tags: []string{"dp"}},
+			{ID: normalID, Slug: "normal", Title: "Normal", Difficulty: domain.DifficultyMedium, Tags: []string{"array"}},
+			{ID: optionalID, Slug: "opt", Title: "Optional", Difficulty: domain.DifficultyHard, Tags: []string{"graph"}},
 		},
 		DueReviews: []outport.DueReview{{ProblemID: reviewID, Slug: "review", Title: "Review", DaysOverdue: 2}},
 	})
@@ -66,7 +66,7 @@ func TestGenerateWithExplicitGoalAndDueReviewReason(t *testing.T) {
 	mission := Generate(userID, Input{
 		DailyGoal: 1,
 		Unsolved: []domain.Problem{
-			{ID: problemID, Slug: "one", Title: "One", PatternTags: []string{"array"}},
+			{ID: problemID, Slug: "one", Title: "One", Tags: []string{"array"}},
 			{ID: uuid.New(), Slug: "two", Title: "Two"},
 		},
 		DueReviews: []outport.DueReview{{ProblemID: uuid.New(), Slug: "review", Title: "Review", DaysOverdue: 0}},

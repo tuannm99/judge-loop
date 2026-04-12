@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/tuannm99/judge-loop/internal/domain"
@@ -38,10 +37,7 @@ func (s *ProblemRepositoryImpl) List(ctx context.Context, f ProblemFilter) ([]do
 		baseQuery = baseQuery.Where("provider = ?", string(*f.Provider))
 	}
 	if len(f.Tags) > 0 {
-		baseQuery = joinProblemLabelFilter(baseQuery, "tag", f.Tags)
-	}
-	if len(f.Patterns) > 0 {
-		baseQuery = joinProblemLabelFilter(baseQuery, "pattern", f.Patterns)
+		baseQuery = joinProblemLabelFilter(baseQuery, f.Tags)
 	}
 
 	var total int64
@@ -77,7 +73,6 @@ func (s *ProblemRepositoryImpl) ListLabels(ctx context.Context, kind string) ([]
 	var labels []string
 	if err := s.db.Gorm.WithContext(ctx).
 		Table("problem_labels").
-		Where("kind = ?", kind).
 		Order("slug ASC").
 		Pluck("slug", &labels).Error; err != nil {
 		return nil, fmt.Errorf("list %s labels: %w", kind, err)
@@ -88,7 +83,6 @@ func (s *ProblemRepositoryImpl) ListLabels(ctx context.Context, kind string) ([]
 func (s *ProblemRepositoryImpl) ListLabelRecords(ctx context.Context, kind string) ([]domain.ProblemLabel, error) {
 	var models []problemLabelModel
 	if err := s.db.Gorm.WithContext(ctx).
-		Where("kind = ?", kind).
 		Order("name ASC, slug ASC").
 		Find(&models).Error; err != nil {
 		return nil, fmt.Errorf("list %s label records: %w", kind, err)
@@ -103,7 +97,6 @@ func (s *ProblemRepositoryImpl) ListLabelRecords(ctx context.Context, kind strin
 
 func (s *ProblemRepositoryImpl) CreateLabel(ctx context.Context, label domain.ProblemLabel) (*domain.ProblemLabel, error) {
 	model := problemLabelModel{
-		Kind: label.Kind,
 		Slug: label.Slug,
 		Name: label.Name,
 	}
@@ -209,10 +202,7 @@ func (s *ProblemRepositoryImpl) Update(
 		if result.RowsAffected == 0 {
 			return nil
 		}
-		if err := replaceProblemLabelsWithTx(tx, id, "tag", m.Tags); err != nil {
-			return err
-		}
-		if err := replaceProblemLabelsWithTx(tx, id, "pattern", m.PatternTags); err != nil {
+		if err := replaceProblemLabelsWithTx(tx, id, m.Tags); err != nil {
 			return err
 		}
 		return nil
@@ -225,14 +215,14 @@ func (s *ProblemRepositoryImpl) Update(
 }
 
 // Suggest returns a random unsolved problem for the user.
-// If patterns is non-empty, problems matching those patterns are prioritized.
+// If tags is non-empty, problems matching those tags are prioritized.
 func (s *ProblemRepositoryImpl) Suggest(
 	ctx context.Context,
 	userID uuid.UUID,
-	patterns []string,
+	tags []string,
 ) (*domain.Problem, error) {
-	if patterns == nil {
-		patterns = []string{}
+	if tags == nil {
+		tags = []string{}
 	}
 
 	q := s.db.Gorm.WithContext(ctx).
@@ -244,17 +234,16 @@ func (s *ProblemRepositoryImpl) Suggest(
 				Where("user_id = ? AND status = ?", userID, string(domain.StatusAccepted)),
 		)
 
-	if len(patterns) > 0 {
+	if len(tags) > 0 {
 		q = q.Order(gorm.Expr(`
-			CASE WHEN EXISTS (
-				SELECT 1
-				FROM problem_label_links pll
-				JOIN problem_labels pl ON pl.id = pll.problem_label_id
-				WHERE pll.problem_id = problems.id
-				  AND pl.kind = ?
-				  AND pl.slug IN ?
-			) THEN 0 ELSE 1 END
-		`, "pattern", patterns))
+				CASE WHEN EXISTS (
+					SELECT 1
+					FROM problem_label_links pll
+					JOIN problem_labels pl ON pl.id = pll.problem_label_id
+					WHERE pll.problem_id = problems.id
+					  AND pl.slug IN ?
+				) THEN 0 ELSE 1 END
+			`, tags))
 	}
 
 	var model problemModel
@@ -272,18 +261,17 @@ func (s *ProblemRepositoryImpl) Suggest(
 	return &p, nil
 }
 
-func joinProblemLabelFilter(q *gorm.DB, kind string, slugs []string) *gorm.DB {
-	aliasPrefix := strings.ReplaceAll(kind, "-", "_")
-	linkAlias := aliasPrefix + "_pll"
-	labelAlias := aliasPrefix + "_pl"
+func joinProblemLabelFilter(q *gorm.DB, slugs []string) *gorm.DB {
+	linkAlias := "tag_pll"
+	labelAlias := "tag_pl"
 
 	return q.Joins(fmt.Sprintf(
 		"JOIN problem_label_links %s ON %s.problem_id = problems.id",
 		linkAlias, linkAlias,
 	)).Joins(fmt.Sprintf(
-		"JOIN problem_labels %s ON %s.id = %s.problem_label_id AND %s.kind = ? AND %s.slug IN ?",
-		labelAlias, labelAlias, linkAlias, labelAlias, labelAlias,
-	), kind, slugs)
+		"JOIN problem_labels %s ON %s.id = %s.problem_label_id AND %s.slug IN ?",
+		labelAlias, labelAlias, linkAlias, labelAlias,
+	), slugs)
 }
 
 func (s *ProblemRepositoryImpl) loadProblemLabels(ctx context.Context, models []*problemModel) error {
@@ -300,17 +288,16 @@ func (s *ProblemRepositoryImpl) loadProblemLabels(ctx context.Context, models []
 
 	type row struct {
 		ProblemID uuid.UUID
-		Kind      string
 		Slug      string
 	}
 
 	var rows []row
 	if err := s.db.Gorm.WithContext(ctx).
 		Table("problem_label_links pll").
-		Select("pll.problem_id, pl.kind, pl.slug").
+		Select("pll.problem_id, pl.slug").
 		Joins("JOIN problem_labels pl ON pl.id = pll.problem_label_id").
 		Where("pll.problem_id IN ?", ids).
-		Order("pl.kind ASC, pl.slug ASC").
+		Order("pl.slug ASC").
 		Scan(&rows).Error; err != nil {
 		return fmt.Errorf("load problem labels: %w", err)
 	}
@@ -320,12 +307,7 @@ func (s *ProblemRepositoryImpl) loadProblemLabels(ctx context.Context, models []
 		if model == nil {
 			continue
 		}
-		switch row.Kind {
-		case "tag":
-			model.Tags = append(model.Tags, row.Slug)
-		case "pattern":
-			model.PatternTags = append(model.PatternTags, row.Slug)
-		}
+		model.Tags = append(model.Tags, row.Slug)
 	}
 	return nil
 }

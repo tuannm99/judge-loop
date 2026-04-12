@@ -16,7 +16,7 @@ func TestLoadIndexAndProblems(t *testing.T) {
 	require.NoError(t, os.Mkdir(filepath.Join(dir, "tracks"), 0o755))
 
 	index := `{"version":"v1","updated_at":"2026-03-31T00:00:00Z","manifests":[{"name":"leet","path":"providers/leet.json"},{"name":"roadmap","path":"tracks/base.json"}]}`
-	provider := `{"problems":[{"slug":"two-sum","title":"Two Sum","difficulty":"easy","provider":"leetcode","external_id":"1","pattern_tags":["hash-map"]}]}`
+	provider := `{"problems":[{"slug":"two-sum","title":"Two Sum","difficulty":"easy","provider":"leetcode","external_id":"1","tags":["array"],"pattern_tags":["hash-map"]}]}`
 	track := `{"name":"base","title":"Base","description":"x","problems":[{"slug":"two-sum","provider":"leetcode"}]}`
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "index.json"), []byte(index), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "providers", "leet.json"), []byte(provider), 0o644))
@@ -31,10 +31,12 @@ func TestLoadIndexAndProblems(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, problems, 1)
 	require.Equal(t, "two-sum", problems[0].Slug)
+	require.ElementsMatch(t, []string{"array", "hash-map"}, problems[0].Tags)
 
 	pm, err := loadProviderManifest(filepath.Join(dir, "providers", "leet.json"))
 	require.NoError(t, err)
 	require.Len(t, pm.Problems, 1)
+	require.ElementsMatch(t, []string{"array", "hash-map"}, pm.Problems[0].Tags)
 }
 
 func TestLoadIndexErrors(t *testing.T) {

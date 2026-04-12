@@ -54,6 +54,18 @@ func TestSubmissionHandlers(t *testing.T) {
 		api.Submissions.CreateSubmission(c)
 		require.Equal(t, http.StatusBadRequest, w.Code)
 
+		service.EXPECT().
+			CreateSubmission(mock.Anything, userID, problemID, "ruby", "puts 1", (*uuid.UUID)(nil)).
+			Return(nil, domain.ErrUnsupportedSubmissionLanguage).
+			Once()
+		body = `{"problem_id":"` + problemID.String() + `","language":"ruby","code":"puts 1"}`
+		w = httptest.NewRecorder()
+		c, _ = gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodPost, "/api/submissions", bytes.NewBufferString(body))
+		c.Request.Header.Set("Content-Type", "application/json")
+		api.Submissions.CreateSubmission(c)
+		require.Equal(t, http.StatusBadRequest, w.Code)
+
 		service.EXPECT().CreateSubmission(mock.Anything, userID, problemID, "go", "x", (*uuid.UUID)(nil)).
 			Return(nil, errors.New("boom")).Once()
 		body = `{"problem_id":"` + problemID.String() + `","language":"go","code":"x","session_id":"bad"}`

@@ -5,11 +5,10 @@ import type { Difficulty, Problem } from '@/api/types'
 import { EmptyBlock, ErrorAlert, LoadingBlock, WarningAlert } from '../components/common/Feedback'
 import { PageShell } from '../components/common/PageShell'
 import { Pagination } from '../components/common/Pagination'
-import { Button, Card, Badge, SelectField } from '../components/common/Primitives'
+import { Badge, Button, Card, SearchInputField, SelectField } from '../components/common/Primitives'
 import { SectionLead } from '../components/common/SectionLead'
 import { SectionTitle } from '../components/common/SectionTitle'
 import { DifficultyBadge } from '../components/problems/Badges'
-import { LabelButtonRow } from '../components/problems/LabelButtonRow'
 import { DIFFICULTY_OPTIONS, EMPTY_LABELS, SORT_OPTIONS } from '../shared/constants'
 import type { NavigateFn, SortMode } from '../shared/types'
 import { formatError, sortProblems, toggleValue } from '../shared/utils'
@@ -24,14 +23,15 @@ export function ProblemListPage(props: { navigate: NavigateFn }) {
     total: 0,
     problems: [] as Problem[],
     labels: EMPTY_LABELS,
-    tags: [] as string[],
-    patterns: [] as string[]
+    tags: [] as string[]
   })
 
   const pageSize = 12
   const [difficulty, setDifficulty] = createSignal('')
   const [sortMode, setSortMode] = createSignal<SortMode>('default')
   const [currentPage, setCurrentPage] = createSignal(1)
+  const [showTags, setShowTags] = createSignal(false)
+  const [tagQuery, setTagQuery] = createSignal('')
 
   onMount(() => {
     let active = true
@@ -66,9 +66,7 @@ export function ProblemListPage(props: { navigate: NavigateFn }) {
     const page = currentPage()
     const selectedDifficulty = difficulty()
     const tagKey = state.tags.join('|')
-    const patternKey = state.patterns.join('|')
     void tagKey
-    void patternKey
 
     let active = true
     setState({ loading: true, error: '' })
@@ -78,7 +76,6 @@ export function ProblemListPage(props: { navigate: NavigateFn }) {
         const result = await listProblems({
           difficulty: (selectedDifficulty as Difficulty | '') || undefined,
           tags: [...state.tags],
-          patterns: [...state.patterns],
           limit: pageSize,
           offset: (page - 1) * pageSize
         })
@@ -111,6 +108,29 @@ export function ProblemListPage(props: { navigate: NavigateFn }) {
 
   const sortedProblems = createMemo(() => sortProblems(state.problems, sortMode()))
   const totalPages = createMemo(() => Math.max(1, Math.ceil(state.total / pageSize)))
+  const filteredTags = createMemo(() => {
+    const selected = new Set(state.tags)
+    const query = tagQuery().trim().toLowerCase()
+
+    return [...state.labels.tags]
+      .filter((tag) => query === '' || tag.toLowerCase().includes(query))
+      .sort((left, right) => {
+        const leftSelected = selected.has(left)
+        const rightSelected = selected.has(right)
+        if (leftSelected !== rightSelected) {
+          return leftSelected ? -1 : 1
+        }
+        return left.localeCompare(right)
+      })
+  })
+  const visibleTags = createMemo(() => {
+    const tags = filteredTags()
+    return showTags() ? tags : tags.slice(0, 14)
+  })
+  const hiddenTagCount = createMemo(() => Math.max(0, filteredTags().length - visibleTags().length))
+  const shouldShowTagPanel = createMemo(
+    () => showTags() || state.tags.length > 0 || tagQuery().trim().length > 0
+  )
 
   return (
     <PageShell>
@@ -118,7 +138,7 @@ export function ProblemListPage(props: { navigate: NavigateFn }) {
         <SectionLead
           eyebrow="Training floor"
           title="Browse problems in Judge Loop"
-          copy="The UI is now rendered by Solid with Flowbite-styled building blocks and the existing API surface."
+          copy="The board stays fast, while the filter bar stays tight even when the tag list gets large."
         />
         <div class="flex flex-wrap gap-2">
           <Badge content={`${state.total} total problems`} color="blue" />
@@ -126,10 +146,34 @@ export function ProblemListPage(props: { navigate: NavigateFn }) {
         </div>
       </Card>
 
-      <Card class="space-y-6">
-        <SectionTitle title="Filters" subtitle="Difficulty and labels still hit the same API." />
+      <Card class="space-y-4">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div class="space-y-1">
+            <div class="text-sm font-semibold text-gray-900">Filters</div>
+            <p class="text-sm text-gray-500">
+              Keep the bar compact, search tags fast, and expand the tray only when needed.
+            </p>
+          </div>
+          <Button
+            pill
+            loading={state.suggesting}
+            onClick={async () => {
+              setState({ suggesting: true, error: '' })
+              try {
+                const problem = await suggestProblem()
+                props.navigate(`/problems/${problem.slug}`)
+              } catch (error) {
+                setState('error', formatError(error))
+              } finally {
+                setState('suggesting', false)
+              }
+            }}
+          >
+            Suggest one
+          </Button>
+        </div>
 
-        <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+        <div class="grid gap-3 lg:grid-cols-[minmax(0,220px)_minmax(0,220px)_minmax(0,1fr)] lg:items-end">
           <SelectField
             label="Difficulty"
             value={difficulty()}
@@ -147,60 +191,106 @@ export function ProblemListPage(props: { navigate: NavigateFn }) {
               setSortMode(event.currentTarget.value as SortMode)
             }}
           />
-          <div class="flex items-end">
-            <Button
-              pill
-              loading={state.suggesting}
-              onClick={async () => {
-                setState({ suggesting: true, error: '' })
-                try {
-                  const problem = await suggestProblem()
-                  props.navigate(`/problems/${problem.slug}`)
-                } catch (error) {
-                  setState('error', formatError(error))
-                } finally {
-                  setState('suggesting', false)
+          <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+            <SearchInputField
+              label="Find tag"
+              value={tagQuery()}
+              placeholder="Search tags"
+              onInput={(event) => {
+                setTagQuery(event.currentTarget.value)
+                if (event.currentTarget.value.trim()) {
+                  setShowTags(true)
                 }
               }}
+            />
+            <Button
+              pill
+              color="light"
+              class="sm:self-end"
+              onClick={() => setShowTags((open) => !open)}
             >
-              Suggest one
+              {showTags() ? 'Hide tags' : 'Browse tags'}
             </Button>
           </div>
         </div>
 
-        <LabelButtonRow
-          title="Tags"
-          helperText="Select multiple tags to combine problem filters."
-          values={state.labels.tags}
-          selected={state.tags}
-          loading={state.labelsLoading}
-          activeColor="blue"
-          onToggle={(value) => {
-            setState('tags', toggleValue(state.tags, value))
-            setCurrentPage(1)
-          }}
-          onClear={() => {
-            setState('tags', [])
-            setCurrentPage(1)
-          }}
-        />
+        <Show when={state.tags.length > 0}>
+          <div class="rounded-2xl border border-blue-100 bg-blue-50/60 px-3 py-3">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
+                Selected tags
+              </span>
+              <For each={state.tags}>
+                {(tag) => (
+                  <Button
+                    pill
+                    size="xs"
+                    color="blue"
+                    onClick={() => {
+                      setState('tags', toggleValue(state.tags, tag))
+                      setCurrentPage(1)
+                    }}
+                  >
+                    {tag} ×
+                  </Button>
+                )}
+              </For>
+              <Button
+                pill
+                size="xs"
+                color="light"
+                onClick={() => {
+                  setState('tags', [])
+                  setCurrentPage(1)
+                }}
+              >
+                Clear all
+              </Button>
+            </div>
+          </div>
+        </Show>
 
-        <LabelButtonRow
-          title="Patterns"
-          helperText="Select multiple patterns to narrow the board further."
-          values={state.labels.patterns}
-          selected={state.patterns}
-          loading={state.labelsLoading}
-          activeColor="indigo"
-          onToggle={(value) => {
-            setState('patterns', toggleValue(state.patterns, value))
-            setCurrentPage(1)
-          }}
-          onClear={() => {
-            setState('patterns', [])
-            setCurrentPage(1)
-          }}
-        />
+        <Show when={!state.labelsLoading} fallback={<LoadingBlock label="Loading tags..." />}>
+          <Show when={shouldShowTagPanel()}>
+            <div class="rounded-2xl border border-gray-200 bg-gray-50/80 p-3">
+              <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div class="text-sm font-medium text-gray-700">Tags</div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <Badge content={`${filteredTags().length} matches`} color="dark" />
+                  <Show when={hiddenTagCount() > 0}>
+                    <Button pill size="xs" color="light" onClick={() => setShowTags(true)}>
+                      Show {hiddenTagCount()} more
+                    </Button>
+                  </Show>
+                </div>
+              </div>
+
+              <Show
+                when={visibleTags().length > 0}
+                fallback={<p class="text-sm text-gray-500">No tags match the current search.</p>}
+              >
+                <div class="flex max-h-44 flex-wrap gap-2 overflow-y-auto pr-1">
+                  <For each={visibleTags()}>
+                    {(tag) => (
+                      <Button
+                        pill
+                        size="xs"
+                        aria-pressed={state.tags.includes(tag)}
+                        color={state.tags.includes(tag) ? 'blue' : 'alternative'}
+                        onClick={() => {
+                          setState('tags', toggleValue(state.tags, tag))
+                          setCurrentPage(1)
+                        }}
+                      >
+                        {state.tags.includes(tag) ? `✓ ${tag}` : tag}
+                      </Button>
+                    )}
+                  </For>
+                </div>
+              </Show>
+            </div>
+          </Show>
+        </Show>
 
         <Show when={state.error}>
           <ErrorAlert>{state.error}</ErrorAlert>
@@ -251,9 +341,6 @@ export function ProblemListPage(props: { navigate: NavigateFn }) {
                       <div class="flex flex-wrap gap-2">
                         <For each={problem.tags}>
                           {(tag) => <Badge content={tag} color="blue" />}
-                        </For>
-                        <For each={problem.pattern_tags}>
-                          {(pattern) => <Badge content={pattern} color="indigo" />}
                         </For>
                       </div>
 

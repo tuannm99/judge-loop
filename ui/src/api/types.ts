@@ -1,6 +1,6 @@
 export type Difficulty = 'easy' | 'medium' | 'hard'
 export type Provider = 'leetcode' | 'neetcode' | 'hackerrank'
-export type Language = 'python' | 'go'
+export type Language = 'python' | 'go' | 'javascript' | 'typescript' | 'rust'
 export type SubmissionStatus =
   | 'pending'
   | 'running'
@@ -16,7 +16,6 @@ export interface Problem {
   title: string
   difficulty: Difficulty
   tags: string[]
-  pattern_tags: string[]
   provider: Provider
   external_id: string
   source_url: string
@@ -72,12 +71,11 @@ export interface Timer {
 
 export interface ProblemLabels {
   tags: string[]
-  patterns: string[]
 }
 
 export interface ProblemLabel {
   id: string
-  kind: 'tag' | 'pattern'
+  kind: 'tag'
   slug: string
   name: string
   created_at: string

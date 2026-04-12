@@ -8,7 +8,8 @@ import type {
   Language,
   Difficulty,
   Provider,
-  ProblemLabel
+  ProblemLabel,
+  ProblemLabels
 } from './types'
 
 const BASE = '/api'
@@ -17,11 +18,11 @@ function asArray<T>(value: T[] | null | undefined): T[] {
   return Array.isArray(value) ? value : []
 }
 
-function normalizeProblem(problem: Problem): Problem {
+function normalizeProblem(problem: Problem & { pattern_tags?: string[] | null }): Problem {
+  const tags = [...new Set([...asArray(problem.tags), ...asArray(problem.pattern_tags)])]
   return {
     ...problem,
-    tags: asArray(problem.tags),
-    pattern_tags: asArray(problem.pattern_tags),
+    tags,
     starter_code: problem.starter_code ?? {}
   }
 }
@@ -45,7 +46,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export interface ListProblemsParams {
   difficulty?: Difficulty
   tags?: string[]
-  patterns?: string[]
   provider?: Provider
   limit?: number
   offset?: number
@@ -55,7 +55,6 @@ export function listProblems(params: ListProblemsParams = {}) {
   const q = new URLSearchParams()
   if (params.difficulty) q.set('difficulty', params.difficulty)
   for (const tag of params.tags ?? []) q.append('tag', tag)
-  for (const pattern of params.patterns ?? []) q.append('pattern', pattern)
   if (params.provider) q.set('provider', params.provider)
   if (params.limit) q.set('limit', String(params.limit))
   if (params.offset) q.set('offset', String(params.offset))
@@ -73,37 +72,30 @@ export function getProblem(idOrSlug: string) {
 }
 
 export function listProblemLabels() {
-  return request<{ tags: string[] | null; patterns: string[] | null }>(
-    '/problems/labels'
-  ).then((result) => ({
-    tags: asArray(result.tags),
-    patterns: asArray(result.patterns)
-  }))
+  return request<{ tags: string[] | null; patterns?: string[] | null }>('/problems/labels').then(
+    (result): ProblemLabels => ({
+      tags: [...new Set([...asArray(result.tags), ...asArray(result.patterns)])]
+    })
+  )
 }
 
-export function listProblemLabelRecords(kind: 'tag' | 'pattern') {
-  return request<{ labels: ProblemLabel[] | null }>(
-    `/problem-labels?kind=${kind}`
-  ).then((result) => ({
+export function listProblemLabelRecords() {
+  return request<{ labels: ProblemLabel[] | null }>('/problem-labels').then((result) => ({
     labels: asArray(result.labels)
   }))
 }
 
-export function createProblemLabel(payload: {
-  kind: 'tag' | 'pattern'
-  slug: string
-  name?: string
-}) {
+export function createProblemLabel(payload: { slug: string; name?: string }) {
   return request<ProblemLabel>('/problem-labels', {
     method: 'POST',
-    body: JSON.stringify(payload)
+    body: JSON.stringify({
+      kind: 'tag',
+      ...payload
+    })
   })
 }
 
-export function updateProblemLabel(
-  id: string,
-  payload: { slug: string; name?: string }
-) {
+export function updateProblemLabel(id: string, payload: { slug: string; name?: string }) {
   return request<ProblemLabel>(`/problem-labels/${id}`, {
     method: 'PUT',
     body: JSON.stringify(payload)
@@ -127,7 +119,6 @@ export interface ContributeProblemPayload {
   title: string
   difficulty: Difficulty
   tags: string[]
-  pattern_tags: string[]
   source_url: string
   estimated_time: number
   starter_code: Partial<Record<Language, string>>
@@ -146,10 +137,7 @@ export function contributeProblem(payload: ContributeProblemPayload) {
   }).then(normalizeProblem)
 }
 
-export function updateProblem(
-  id: string,
-  payload: Omit<ContributeProblemPayload, 'version'>
-) {
+export function updateProblem(id: string, payload: Omit<ContributeProblemPayload, 'version'>) {
   return request<Problem>(`/problems/${id}`, {
     method: 'PUT',
     body: JSON.stringify(payload)
@@ -187,11 +175,11 @@ export function getSubmission(id: string) {
 
 export function listSubmissions(problemId?: string) {
   const q = problemId ? `?problem_id=${problemId}` : ''
-  return request<{ submissions: Submission[] | null }>(
-    `/submissions/history${q}`
-  ).then((result) => ({
-    submissions: asArray(result.submissions)
-  }))
+  return request<{ submissions: Submission[] | null }>(`/submissions/history${q}`).then(
+    (result) => ({
+      submissions: asArray(result.submissions)
+    })
+  )
 }
 
 // Progress
@@ -205,22 +193,17 @@ export function getStreak() {
 
 // Reviews
 export function getReviewsToday() {
-  return request<{ reviews: ReviewItem[] | null }>('/reviews/today').then(
-    (result) => ({
-      reviews: asArray(result.reviews)
-    })
-  )
+  return request<{ reviews: ReviewItem[] | null }>('/reviews/today').then((result) => ({
+    reviews: asArray(result.reviews)
+  }))
 }
 
 // Timers
 export function startTimer(problemId?: string) {
-  return request<{ id: string; started_at: string; problem_id?: string }>(
-    '/timers/start',
-    {
-      method: 'POST',
-      body: JSON.stringify(problemId ? { problem_id: problemId } : {})
-    }
-  )
+  return request<{ id: string; started_at: string; problem_id?: string }>('/timers/start', {
+    method: 'POST',
+    body: JSON.stringify(problemId ? { problem_id: problemId } : {})
+  })
 }
 
 export function stopTimer() {

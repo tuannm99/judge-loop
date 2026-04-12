@@ -17,15 +17,7 @@ import {
   WarningAlert
 } from '../components/common/Feedback'
 import { PageShell } from '../components/common/PageShell'
-import {
-  Badge,
-  Button,
-  Card,
-  CodeBlock,
-  SelectField,
-  Tabs,
-  TextareaField
-} from '../components/common'
+import { Badge, Button, Card, CodeBlock, CodeEditor, SelectField, Tabs } from '../components/common'
 import { DifficultyBadge, StatusBadge } from '../components/problems/Badges'
 import { DEFAULT_CODE, LANGUAGE_OPTIONS } from '../shared/constants'
 import type { NavigateFn, SolveTestCase } from '../shared/types'
@@ -37,6 +29,12 @@ import {
   isPending,
   resolveStarterCode
 } from '../shared/utils'
+
+function preferredLanguage(problem: Problem): Language {
+  return (
+    LANGUAGE_OPTIONS.find(({ value }) => problem.starter_code[value]?.trim())?.value ?? 'python'
+  )
+}
 
 export function SolvePage(props: { navigate: NavigateFn; slug: string }) {
   const [state, setState] = createStore({
@@ -102,6 +100,7 @@ export function SolvePage(props: { navigate: NavigateFn; slug: string }) {
         }
 
         const visibleTestCases = testCases.filter((testCase) => !testCase.is_hidden)
+        const initialLanguage = preferredLanguage(problem)
 
         if (active) {
           setState({
@@ -112,6 +111,7 @@ export function SolvePage(props: { navigate: NavigateFn; slug: string }) {
             hiddenTestCaseCount: testCases.length - visibleTestCases.length,
             selectedSubmissionId: history.submissions[0]?.id ?? ''
           })
+          setLanguage(initialLanguage)
         }
       } catch (error) {
         if (active) {
@@ -398,9 +398,6 @@ export function SolvePage(props: { navigate: NavigateFn; slug: string }) {
                       <For each={problem().tags}>
                         {(tag) => <Badge content={tag} color="blue" />}
                       </For>
-                      <For each={problem().pattern_tags}>
-                        {(pattern) => <Badge content={pattern} color="indigo" />}
-                      </For>
                     </div>
 
                     <div class="grid gap-3 rounded-2xl bg-gray-50 p-4 text-sm text-gray-500 md:grid-cols-3">
@@ -530,11 +527,12 @@ export function SolvePage(props: { navigate: NavigateFn; slug: string }) {
                   </Button>
                 </div>
 
-                <TextareaField
+                <CodeEditor
                   label="Code"
+                  language={language()}
                   rows={24}
                   value={state.codeByLanguage[language()]}
-                  onInput={(event) => {
+                  onInput={(value) => {
                     const selectedLanguage = language()
                     if (!state.timerActive) {
                       setState({
@@ -544,7 +542,7 @@ export function SolvePage(props: { navigate: NavigateFn; slug: string }) {
                       })
                     }
 
-                    setState('codeByLanguage', selectedLanguage, event.currentTarget.value)
+                    setState('codeByLanguage', selectedLanguage, value)
                   }}
                 />
               </Card>

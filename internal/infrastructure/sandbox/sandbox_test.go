@@ -28,6 +28,30 @@ func TestPrepare(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "package main", string(data))
 
+	dir = t.TempDir()
+	args, err = prepare("javascript", "console.log(1)", dir)
+	require.NoError(t, err)
+	require.Contains(t, strings.Join(args, " "), "node /sandbox/solution.js")
+	data, err = os.ReadFile(filepath.Join(dir, "solution.js"))
+	require.NoError(t, err)
+	require.Equal(t, "console.log(1)", string(data))
+
+	dir = t.TempDir()
+	args, err = prepare("typescript", "console.log(1)", dir)
+	require.NoError(t, err)
+	require.Contains(t, strings.Join(args, " "), "deno run --quiet --no-check /sandbox/solution.ts")
+	data, err = os.ReadFile(filepath.Join(dir, "solution.ts"))
+	require.NoError(t, err)
+	require.Equal(t, "console.log(1)", string(data))
+
+	dir = t.TempDir()
+	args, err = prepare("rust", "fn main() {}", dir)
+	require.NoError(t, err)
+	require.Contains(t, strings.Join(args, " "), "rustc -O main.rs -o /tmp/solution && /tmp/solution")
+	data, err = os.ReadFile(filepath.Join(dir, "main.rs"))
+	require.NoError(t, err)
+	require.Equal(t, "fn main() {}", string(data))
+
 	_, err = prepare("ruby", "puts 1", dir)
 	require.Error(t, err)
 }
@@ -103,6 +127,18 @@ func TestPrepareWriteErrors(t *testing.T) {
 	require.Contains(t, err.Error(), "write solution")
 
 	_, err = prepare("go", "package main", missingDir)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "write solution")
+
+	_, err = prepare("javascript", "console.log(1)", missingDir)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "write solution")
+
+	_, err = prepare("typescript", "console.log(1)", missingDir)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "write solution")
+
+	_, err = prepare("rust", "fn main() {}", missingDir)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "write solution")
 }

@@ -1,4 +1,4 @@
-import { For, Show, createSignal, onCleanup, onMount } from 'solid-js'
+import { For, Show, onCleanup, onMount } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import {
   createProblemLabel,
@@ -18,12 +18,11 @@ import {
   TableCell,
   TableHead,
   TableHeaderCell,
-  TableRow,
-  Tabs
+  TableRow
 } from '../components/common'
 import { SectionLead } from '../components/common/SectionLead'
 import { EMPTY_DRAFT_LABEL } from '../shared/constants'
-import type { DraftLabel, LabelKind, NavigateFn } from '../shared/types'
+import type { DraftLabel, NavigateFn } from '../shared/types'
 import { formatDate, formatError } from '../shared/utils'
 
 export function ProblemLabelsPage(props: { navigate: NavigateFn }) {
@@ -33,10 +32,13 @@ export function ProblemLabelsPage(props: { navigate: NavigateFn }) {
     error: '',
     draft: { ...EMPTY_DRAFT_LABEL },
     editing: {} as Record<string, DraftLabel>,
-    tags: [] as ProblemLabel[],
-    patterns: [] as ProblemLabel[]
+    tags: [] as ProblemLabel[]
   })
-  const [activeKind, setActiveKind] = createSignal<LabelKind>('tag')
+
+  const refreshLabels = async () => {
+    const refreshed = await listProblemLabelRecords()
+    setState('tags', refreshed.labels)
+  }
 
   onMount(() => {
     let active = true
@@ -44,14 +46,10 @@ export function ProblemLabelsPage(props: { navigate: NavigateFn }) {
     void (async () => {
       setState('loading', true)
       try {
-        const [tags, patterns] = await Promise.all([
-          listProblemLabelRecords('tag'),
-          listProblemLabelRecords('pattern')
-        ])
+        const tags = await listProblemLabelRecords()
         if (active) {
           setState({
             tags: tags.labels,
-            patterns: patterns.labels,
             error: ''
           })
         }
@@ -71,15 +69,13 @@ export function ProblemLabelsPage(props: { navigate: NavigateFn }) {
     })
   })
 
-  const records = () => (activeKind() === 'tag' ? state.tags : state.patterns)
-
   return (
     <PageShell>
       <Card class="space-y-4">
         <SectionLead
           eyebrow="Shared taxonomy"
-          title="Manage labels in Solid."
-          copy="Tags and patterns still save to the same endpoints, now with a simpler Solid component tree."
+          title="Manage tags in Solid."
+          copy="Tags drive filters, metadata, and solving taxonomy from one shared list."
         />
       </Card>
 
@@ -88,15 +84,6 @@ export function ProblemLabelsPage(props: { navigate: NavigateFn }) {
       </Show>
 
       <Card class="space-y-6">
-        <Tabs
-          value={activeKind()}
-          items={[
-            { value: 'tag', label: 'Tags' },
-            { value: 'pattern', label: 'Patterns' }
-          ]}
-          onChange={(value) => setActiveKind(value as LabelKind)}
-        />
-
         <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
           <InputField
             label="Slug"
@@ -117,17 +104,11 @@ export function ProblemLabelsPage(props: { navigate: NavigateFn }) {
                 setState({ saving: true, error: '' })
                 try {
                   await createProblemLabel({
-                    kind: activeKind(),
                     slug: state.draft.slug.trim(),
                     name: state.draft.name.trim() || state.draft.slug.trim()
                   })
 
-                  const refreshed = await listProblemLabelRecords(activeKind())
-                  if (activeKind() === 'tag') {
-                    setState('tags', refreshed.labels)
-                  } else {
-                    setState('patterns', refreshed.labels)
-                  }
+                  await refreshLabels()
                   setState('draft', { ...EMPTY_DRAFT_LABEL })
                 } catch (error) {
                   setState('error', formatError(error))
@@ -136,17 +117,17 @@ export function ProblemLabelsPage(props: { navigate: NavigateFn }) {
                 }
               }}
             >
-              Add label
+              Add tag
             </Button>
           </div>
         </div>
 
         <Show when={!state.loading} fallback={<LoadingBlock label="Loading label records..." />}>
           <Show
-            when={records().length > 0}
+            when={state.tags.length > 0}
             fallback={
               <EmptyBlock
-                title={`No ${activeKind()}s yet.`}
+                title="No tags yet."
                 copy="Create the first entry and it will become available across the rest of the UI."
               />
             }
@@ -161,7 +142,7 @@ export function ProblemLabelsPage(props: { navigate: NavigateFn }) {
                 </TableRow>
               </TableHead>
               <TableBody>
-                <For each={records()}>
+                <For each={state.tags}>
                   {(label) => {
                     const editing = () => state.editing[label.id]
                     const isEditing = () => Boolean(editing())
@@ -238,12 +219,7 @@ export function ProblemLabelsPage(props: { navigate: NavigateFn }) {
                                         label.name
                                     })
 
-                                    const refreshed = await listProblemLabelRecords(activeKind())
-                                    if (activeKind() === 'tag') {
-                                      setState('tags', refreshed.labels)
-                                    } else {
-                                      setState('patterns', refreshed.labels)
-                                    }
+                                    await refreshLabels()
 
                                     const nextEditing = { ...state.editing }
                                     delete nextEditing[label.id]
@@ -278,12 +254,7 @@ export function ProblemLabelsPage(props: { navigate: NavigateFn }) {
                                 setState({ saving: true, error: '' })
                                 try {
                                   await deleteProblemLabel(label.id)
-                                  const refreshed = await listProblemLabelRecords(activeKind())
-                                  if (activeKind() === 'tag') {
-                                    setState('tags', refreshed.labels)
-                                  } else {
-                                    setState('patterns', refreshed.labels)
-                                  }
+                                  await refreshLabels()
                                 } catch (error) {
                                   setState('error', formatError(error))
                                 } finally {

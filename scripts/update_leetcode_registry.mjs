@@ -137,7 +137,6 @@ function toManifest(question, starterCodeBySlug) {
     title: question.title,
     difficulty: question.difficulty.toLowerCase(),
     tags,
-    pattern_tags: tags,
     source_url: `https://leetcode.com/problems/${question.titleSlug}/`,
     estimated_time: estimateMinutes(question.difficulty),
     starter_code: starterCodeBySlug.get(question.titleSlug) || {},

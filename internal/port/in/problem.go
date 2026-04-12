@@ -10,7 +10,7 @@ import (
 
 type ProblemService interface {
 	ListProblems(ctx context.Context, filter out.ProblemFilter) ([]domain.Problem, int, error)
-	ListProblemLabels(ctx context.Context) ([]string, []string, error)
+	ListProblemLabels(ctx context.Context) ([]string, error)
 	ListProblemLabelRecords(ctx context.Context, kind string) ([]domain.ProblemLabel, error)
 	CreateProblemLabel(ctx context.Context, kind, slug, name string) (*domain.ProblemLabel, error)
 	UpdateProblemLabel(ctx context.Context, id uuid.UUID, slug, name string) (*domain.ProblemLabel, error)

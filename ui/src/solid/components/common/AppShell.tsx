@@ -27,7 +27,7 @@ export function Container(props: ParentProps<{ class?: string; width?: Container
 export function AppShell(props: ParentProps<{ class?: string; containerClass?: string }>) {
   return (
     <div class={classes('min-h-screen bg-gray-50 text-gray-900', props.class)}>
-      <Container class={classes('py-4', props.containerClass)}>{props.children}</Container>
+      <Container class={classes('pb-6 pt-0', props.containerClass)}>{props.children}</Container>
     </div>
   )
 }

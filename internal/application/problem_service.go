@@ -31,16 +31,12 @@ func (s *ProblemService) ListProblems(
 	return s.problems.List(ctx, filter)
 }
 
-func (s *ProblemService) ListProblemLabels(ctx context.Context) ([]string, []string, error) {
+func (s *ProblemService) ListProblemLabels(ctx context.Context) ([]string, error) {
 	tags, err := s.problems.ListLabels(ctx, "tag")
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	patterns, err := s.problems.ListLabels(ctx, "pattern")
-	if err != nil {
-		return nil, nil, err
-	}
-	return tags, patterns, nil
+	return tags, nil
 }
 
 func (s *ProblemService) ListProblemLabelRecords(ctx context.Context, kind string) ([]domain.ProblemLabel, error) {

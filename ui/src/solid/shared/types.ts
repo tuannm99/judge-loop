@@ -1,5 +1,4 @@
 export type NavigateFn = (to: string) => void
-export type LabelKind = 'tag' | 'pattern'
 export type SortMode = 'default' | 'title' | 'difficulty' | 'time-desc' | 'provider'
 
 export type DraftTestCase = {

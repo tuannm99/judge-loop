@@ -39,12 +39,10 @@ func TestProblemServiceListProblemLabels(t *testing.T) {
 
 	ctx := context.Background()
 	problems.EXPECT().ListLabels(ctx, "tag").Return([]string{"array", "graph"}, nil).Once()
-	problems.EXPECT().ListLabels(ctx, "pattern").Return([]string{"dp", "greedy"}, nil).Once()
 
-	tags, patterns, err := service.ListProblemLabels(ctx)
+	tags, err := service.ListProblemLabels(ctx)
 	require.NoError(t, err)
 	require.Equal(t, []string{"array", "graph"}, tags)
-	require.Equal(t, []string{"dp", "greedy"}, patterns)
 }
 
 func TestProblemServiceProblemLabelCRUD(t *testing.T) {
@@ -117,8 +115,7 @@ func TestProblemServiceUpdateProblem(t *testing.T) {
 		Slug:          "two-sum",
 		Title:         "Two Sum",
 		Difficulty:    domain.DifficultyEasy,
-		Tags:          []string{"array", "hash-table"},
-		PatternTags:   []string{"two-pointers"},
+		Tags:          []string{"array", "hash-table", "two-pointers"},
 		SourceURL:     "https://example.com/two-sum",
 		EstimatedTime: 15,
 		StarterCode:   map[string]string{"python": "class Solution:\n    pass\n"},

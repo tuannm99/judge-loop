@@ -12,32 +12,32 @@ import (
 )
 
 type contributeProblemRequest struct {
-	Provider      domain.Provider             `json:"provider"       binding:"required"`
-	ExternalID    string                      `json:"external_id"    binding:"required"`
-	Slug          string                      `json:"slug"           binding:"required"`
-	Title         string                      `json:"title"          binding:"required"`
-	Difficulty    domain.Difficulty           `json:"difficulty"     binding:"required"`
-	Tags          []string                    `json:"tags"`
-	PatternTags   []string                    `json:"pattern_tags"`
-	SourceURL     string                      `json:"source_url"     binding:"required"`
-	EstimatedTime int                         `json:"estimated_time"`
-	StarterCode   map[string]string           `json:"starter_code"`
-	Version       int                         `json:"version"`
-	TestCases     []contributeTestCaseRequest `json:"test_cases"     binding:"required,min=1"`
+	Provider          domain.Provider             `json:"provider"       binding:"required"`
+	ExternalID        string                      `json:"external_id"    binding:"required"`
+	Slug              string                      `json:"slug"           binding:"required"`
+	Title             string                      `json:"title"          binding:"required"`
+	Difficulty        domain.Difficulty           `json:"difficulty"     binding:"required"`
+	Tags              []string                    `json:"tags"`
+	LegacyPatternTags []string                    `json:"pattern_tags"`
+	SourceURL         string                      `json:"source_url"     binding:"required"`
+	EstimatedTime     int                         `json:"estimated_time"`
+	StarterCode       map[string]string           `json:"starter_code"`
+	Version           int                         `json:"version"`
+	TestCases         []contributeTestCaseRequest `json:"test_cases"     binding:"required,min=1"`
 }
 
 type updateProblemRequest struct {
-	Provider      domain.Provider             `json:"provider"       binding:"required"`
-	ExternalID    string                      `json:"external_id"    binding:"required"`
-	Slug          string                      `json:"slug"           binding:"required"`
-	Title         string                      `json:"title"          binding:"required"`
-	Difficulty    domain.Difficulty           `json:"difficulty"     binding:"required"`
-	Tags          []string                    `json:"tags"`
-	PatternTags   []string                    `json:"pattern_tags"`
-	SourceURL     string                      `json:"source_url"     binding:"required"`
-	EstimatedTime int                         `json:"estimated_time"`
-	StarterCode   map[string]string           `json:"starter_code"`
-	TestCases     []contributeTestCaseRequest `json:"test_cases"`
+	Provider          domain.Provider             `json:"provider"       binding:"required"`
+	ExternalID        string                      `json:"external_id"    binding:"required"`
+	Slug              string                      `json:"slug"           binding:"required"`
+	Title             string                      `json:"title"          binding:"required"`
+	Difficulty        domain.Difficulty           `json:"difficulty"     binding:"required"`
+	Tags              []string                    `json:"tags"`
+	LegacyPatternTags []string                    `json:"pattern_tags"`
+	SourceURL         string                      `json:"source_url"     binding:"required"`
+	EstimatedTime     int                         `json:"estimated_time"`
+	StarterCode       map[string]string           `json:"starter_code"`
+	TestCases         []contributeTestCaseRequest `json:"test_cases"`
 }
 
 type contributeTestCaseRequest struct {
@@ -59,19 +59,18 @@ type updateProblemLabelRequest struct {
 
 // ListProblemLabels handles GET /api/problems/labels.
 func (h *ProblemsAPI) ListProblemLabels(c *gin.Context) {
-	tags, patterns, err := h.service.ListProblemLabels(c.Request.Context())
+	tags, err := h.service.ListProblemLabels(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"tags":     tags,
-		"patterns": patterns,
+		"tags": tags,
 	})
 }
 
-// ListProblemLabelRecords handles GET /api/problem-labels?kind=tag|pattern.
+// ListProblemLabelRecords handles GET /api/problem-labels.
 func (h *ProblemsAPI) ListProblemLabelRecords(c *gin.Context) {
 	kind := normalizeProblemLabelKind(c.Query("kind"))
 	if kind == "" {
@@ -152,9 +151,12 @@ func (h *ProblemsAPI) DeleteProblemLabel(c *gin.Context) {
 
 // ListProblems handles GET /api/problems
 func (h *ProblemsAPI) ListProblems(c *gin.Context) {
+	tags := append(c.QueryArray("tag"), c.QueryArray("tags")...)
+	tags = append(tags, c.QueryArray("pattern")...)
+	tags = append(tags, c.QueryArray("patterns")...)
+
 	f := outport.ProblemFilter{
-		Tags:     append(c.QueryArray("tag"), c.QueryArray("tags")...),
-		Patterns: append(c.QueryArray("pattern"), c.QueryArray("patterns")...),
+		Tags: tags,
 	}
 
 	if d := c.Query("difficulty"); d != "" {
@@ -242,8 +244,7 @@ func (h *ProblemsAPI) UpdateProblem(c *gin.Context) {
 		Slug:          req.Slug,
 		Title:         req.Title,
 		Difficulty:    req.Difficulty,
-		Tags:          req.Tags,
-		PatternTags:   req.PatternTags,
+		Tags:          mergeProblemTags(req.Tags, req.LegacyPatternTags),
 		SourceURL:     req.SourceURL,
 		EstimatedTime: req.EstimatedTime,
 		StarterCode:   req.StarterCode,
@@ -276,9 +277,8 @@ func (h *ProblemsAPI) UpdateProblem(c *gin.Context) {
 	c.JSON(http.StatusOK, problem)
 }
 
-// SuggestProblem handles GET /api/problems/suggest
-// Returns a random unsolved problem, preferring weak patterns from the user profile.
-// In Milestone 2, no profile is consulted — patterns list is empty.
+// SuggestProblem handles GET /api/problems/suggest.
+// Returns a random unsolved problem. Later personalization can use weak tags to bias selection.
 func (h *ProblemsAPI) SuggestProblem(c *gin.Context) {
 	problem, err := h.service.SuggestProblem(c.Request.Context(), h.userID)
 	if err != nil {
@@ -316,8 +316,7 @@ func (h *ProblemsAPI) ContributeProblem(c *gin.Context) {
 		Slug:          req.Slug,
 		Title:         req.Title,
 		Difficulty:    req.Difficulty,
-		Tags:          req.Tags,
-		PatternTags:   req.PatternTags,
+		Tags:          mergeProblemTags(req.Tags, req.LegacyPatternTags),
 		SourceURL:     req.SourceURL,
 		EstimatedTime: req.EstimatedTime,
 		StarterCode:   req.StarterCode,
@@ -337,11 +336,28 @@ func (h *ProblemsAPI) ContributeProblem(c *gin.Context) {
 
 func normalizeProblemLabelKind(kind string) string {
 	switch strings.TrimSpace(kind) {
-	case "tag":
+	case "", "tag", "pattern":
 		return "tag"
-	case "pattern":
-		return "pattern"
 	default:
 		return ""
 	}
+}
+
+func mergeProblemTags(groups ...[]string) []string {
+	seen := make(map[string]struct{})
+	out := make([]string, 0)
+	for _, group := range groups {
+		for _, value := range group {
+			value = strings.TrimSpace(value)
+			if value == "" {
+				continue
+			}
+			if _, ok := seen[value]; ok {
+				continue
+			}
+			seen[value] = struct{}{}
+			out = append(out, value)
+		}
+	}
+	return out
 }

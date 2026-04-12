@@ -17,7 +17,7 @@ import (
 
 // RunRequest describes a single code execution.
 type RunRequest struct {
-	Language string // "python" or "go"
+	Language string // "python", "go", "javascript", "typescript", or "rust"
 	Code     string // source code
 	Input    string // stdin fed to the program
 }
@@ -109,6 +109,39 @@ func prepare(language, code, dir string) ([]string, error) {
 			"--cpus", "0.5",
 			"golang:1.26.0-alpine",
 			"sh", "-c", "cd /sandbox && go run main.go",
+		), nil
+
+	case "javascript":
+		if err := os.WriteFile(filepath.Join(dir, "solution.js"), []byte(code), 0o644); err != nil {
+			return nil, fmt.Errorf("write solution: %w", err)
+		}
+		return append(base,
+			"--memory", "96m", "--memory-swap", "96m",
+			"--cpus", "0.5",
+			"node:22-alpine",
+			"node", "/sandbox/solution.js",
+		), nil
+
+	case "typescript":
+		if err := os.WriteFile(filepath.Join(dir, "solution.ts"), []byte(code), 0o644); err != nil {
+			return nil, fmt.Errorf("write solution: %w", err)
+		}
+		return append(base,
+			"--memory", "128m", "--memory-swap", "128m",
+			"--cpus", "0.5",
+			"denoland/deno:2.3.7",
+			"deno", "run", "--quiet", "--no-check", "/sandbox/solution.ts",
+		), nil
+
+	case "rust":
+		if err := os.WriteFile(filepath.Join(dir, "main.rs"), []byte(code), 0o644); err != nil {
+			return nil, fmt.Errorf("write solution: %w", err)
+		}
+		return append(base,
+			"--memory", "256m", "--memory-swap", "256m",
+			"--cpus", "0.5",
+			"rust:1-alpine",
+			"sh", "-c", "cd /sandbox && rustc -O main.rs -o /tmp/solution && /tmp/solution",
 		), nil
 
 	default:

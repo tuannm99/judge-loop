@@ -37,7 +37,10 @@ export function resolveStarterCode(
 ) {
   return {
     python: starterCode?.python || fallback.python,
-    go: starterCode?.go || fallback.go
+    go: starterCode?.go || fallback.go,
+    javascript: starterCode?.javascript || fallback.javascript,
+    typescript: starterCode?.typescript || fallback.typescript,
+    rust: starterCode?.rust || fallback.rust
   }
 }
 
