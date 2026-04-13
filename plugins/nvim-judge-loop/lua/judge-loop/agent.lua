@@ -1,8 +1,14 @@
 -- HTTP client for local-agent (127.0.0.1:7070).
 -- Uses curl via vim.fn.jobstart (async, no UI blocking).
+-- Public requests remain callback-based, with coroutine-friendly *_await helpers.
 -- No external dependencies required.
 
 local M = {}
+local async = require("judge-loop.async")
+local pack = table.pack or function(...)
+	return { n = select("#", ...), ... }
+end
+local unpack = table.unpack or unpack
 
 local function get_url()
 	return require("judge-loop").config.agent_url
@@ -185,6 +191,32 @@ end
 -- Poll verdict for a submission by ID.
 function M.submission_get(id, callback)
 	curl_async("GET", "/local/submissions/" .. id, nil, callback)
+end
+
+local function await_call(fn, ...)
+	local args = pack(...)
+	return async.await(function(callback)
+		args.n = args.n + 1
+		args[args.n] = callback
+		fn(unpack(args, 1, args.n))
+	end)
+end
+
+for _, name in ipairs({
+	"status_today",
+	"problems",
+	"problem_get",
+	"problem_suggest",
+	"timer_current",
+	"timer_start",
+	"timer_stop",
+	"submit",
+	"sync",
+	"submission_get",
+}) do
+	M[name .. "_await"] = function(...)
+		return await_call(M[name], ...)
+	end
 end
 
 return M

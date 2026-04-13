@@ -4,6 +4,8 @@
 
 `nvim-judge-loop` is a Lua plugin for Neovim that integrates with the local agent to enforce daily practice.
 
+Internally, async HTTP and picker flows use Lua coroutines with small `*_await()` helpers, so plugin code can stay sequential without adding dependencies.
+
 ## Installation
 
 Using lazy.nvim:
@@ -106,6 +108,7 @@ nvim-judge-loop/
   lua/
     judge-loop/
       init.lua           -- setup() function
+      async.lua          -- coroutine helpers for await-style flows
       agent.lua          -- HTTP client for local agent
       commands.lua       -- command definitions
       statusline.lua     -- timer statusline component

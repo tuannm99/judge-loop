@@ -11,6 +11,8 @@
 --   set statusline+=%{luaeval('require("judge-loop.statusline").timer_statusline()')}
 
 local M = {}
+local async = require("judge-loop.async")
+local agent = require("judge-loop.agent")
 
 -- Simple TTL cache: avoids firing a curl job on every statusline redraw.
 local _cache = { text = "", updated_at = 0, pending = false }
@@ -23,7 +25,8 @@ function M.timer_statusline()
 	end
 
 	_cache.pending = true
-	require("judge-loop.agent").timer_current(function(ok, data)
+	async.run(function()
+		local ok, data = agent.timer_current_await()
 		_cache.pending = false
 		_cache.updated_at = os.time()
 		if not ok or not data or not data.active then

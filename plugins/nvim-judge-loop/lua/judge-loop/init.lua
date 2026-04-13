@@ -1,4 +1,5 @@
 local M = {}
+local async = require("judge-loop.async")
 
 M.config = {
 	agent_url = "http://127.0.0.1:7070",
@@ -32,7 +33,8 @@ function M.setup(opts)
 			end
 			-- Defer so other plugins finish loading first.
 			vim.defer_fn(function()
-				require("judge-loop.agent").status_today(function(ok, data, err)
+				async.run(function()
+					local ok, data, err = require("judge-loop.agent").status_today_await()
 					if ok and not data.practiced then
 						require("judge-loop.ui").warn(data.message or "No practice yet today. Start a session!")
 					elseif not ok and err and err.message and err.message ~= "" then
