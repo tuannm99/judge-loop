@@ -194,15 +194,16 @@ func TestProblemHandlers(t *testing.T) {
 	t.Run("update problem branches", func(t *testing.T) {
 		problemID := uuid.New()
 		body, err := json.Marshal(updateProblemRequest{
-			Provider:          domain.ProviderLeetCode,
-			ExternalID:        "1",
-			Slug:              "two-sum",
-			Title:             "Two Sum",
-			Difficulty:        domain.DifficultyEasy,
-			Tags:              []string{"array"},
-			LegacyPatternTags: []string{"hash-map"},
-			SourceURL:         "https://leetcode.com/problems/two-sum",
-			EstimatedTime:     15,
+			Provider:            domain.ProviderLeetCode,
+			ExternalID:          "1",
+			Slug:                "two-sum",
+			Title:               "Two Sum",
+			Difficulty:          domain.DifficultyEasy,
+			Tags:                []string{"array"},
+			LegacyPatternTags:   []string{"hash-map"},
+			SourceURL:           "https://leetcode.com/problems/two-sum",
+			EstimatedTime:       15,
+			DescriptionMarkdown: "## Two Sum\n\nReturn the matching pair.",
 			StarterCode: map[string]string{
 				"python": "class Solution:\n    pass\n",
 			},
@@ -211,14 +212,15 @@ func TestProblemHandlers(t *testing.T) {
 		require.NoError(t, err)
 
 		service.EXPECT().UpdateProblemWithTestCases(mock.Anything, problemID, domain.ProblemManifest{
-			Provider:      domain.ProviderLeetCode,
-			ExternalID:    "1",
-			Slug:          "two-sum",
-			Title:         "Two Sum",
-			Difficulty:    domain.DifficultyEasy,
-			Tags:          []string{"array", "hash-map"},
-			SourceURL:     "https://leetcode.com/problems/two-sum",
-			EstimatedTime: 15,
+			Provider:            domain.ProviderLeetCode,
+			ExternalID:          "1",
+			Slug:                "two-sum",
+			Title:               "Two Sum",
+			Difficulty:          domain.DifficultyEasy,
+			Tags:                []string{"array", "hash-map"},
+			SourceURL:           "https://leetcode.com/problems/two-sum",
+			EstimatedTime:       15,
+			DescriptionMarkdown: "## Two Sum\n\nReturn the matching pair.",
 			StarterCode: map[string]string{
 				"python": "class Solution:\n    pass\n",
 			},
@@ -252,15 +254,16 @@ func TestProblemHandlers(t *testing.T) {
 
 	t.Run("contribute problem branches", func(t *testing.T) {
 		body, err := json.Marshal(contributeProblemRequest{
-			Provider:          domain.ProviderLeetCode,
-			ExternalID:        "1",
-			Slug:              "two-sum",
-			Title:             "Two Sum",
-			Difficulty:        domain.DifficultyEasy,
-			Tags:              []string{"array"},
-			LegacyPatternTags: []string{"lookup"},
-			SourceURL:         "https://leetcode.com/problems/two-sum",
-			EstimatedTime:     15,
+			Provider:            domain.ProviderLeetCode,
+			ExternalID:          "1",
+			Slug:                "two-sum",
+			Title:               "Two Sum",
+			Difficulty:          domain.DifficultyEasy,
+			Tags:                []string{"array"},
+			LegacyPatternTags:   []string{"lookup"},
+			SourceURL:           "https://leetcode.com/problems/two-sum",
+			EstimatedTime:       15,
+			DescriptionMarkdown: "## Two Sum\n\nReturn the matching pair.",
 			StarterCode: map[string]string{
 				"python": "class Solution:\n    pass\n",
 				"go":     "package main\n\nfunc main() {}\n",
@@ -274,14 +277,15 @@ func TestProblemHandlers(t *testing.T) {
 		require.NoError(t, err)
 
 		service.EXPECT().ContributeProblem(mock.Anything, domain.ProblemManifest{
-			Provider:      domain.ProviderLeetCode,
-			ExternalID:    "1",
-			Slug:          "two-sum",
-			Title:         "Two Sum",
-			Difficulty:    domain.DifficultyEasy,
-			Tags:          []string{"array", "lookup"},
-			SourceURL:     "https://leetcode.com/problems/two-sum",
-			EstimatedTime: 15,
+			Provider:            domain.ProviderLeetCode,
+			ExternalID:          "1",
+			Slug:                "two-sum",
+			Title:               "Two Sum",
+			Difficulty:          domain.DifficultyEasy,
+			Tags:                []string{"array", "lookup"},
+			SourceURL:           "https://leetcode.com/problems/two-sum",
+			EstimatedTime:       15,
+			DescriptionMarkdown: "## Two Sum\n\nReturn the matching pair.",
 			StarterCode: map[string]string{
 				"python": "class Solution:\n    pass\n",
 				"go":     "package main\n\nfunc main() {}\n",

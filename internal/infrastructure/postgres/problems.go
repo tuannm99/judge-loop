@@ -185,15 +185,16 @@ func (s *ProblemRepositoryImpl) Update(
 
 	err = s.db.Gorm.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		updates := map[string]any{
-			"slug":           m.Slug,
-			"title":          m.Title,
-			"difficulty":     string(m.Difficulty),
-			"provider":       string(m.Provider),
-			"external_id":    m.ExternalID,
-			"source_url":     m.SourceURL,
-			"estimated_time": m.EstimatedTime,
-			"starter_code":   starterCode,
-			"updated_at":     gorm.Expr("NOW()"),
+			"slug":                 m.Slug,
+			"title":                m.Title,
+			"difficulty":           string(m.Difficulty),
+			"provider":             string(m.Provider),
+			"external_id":          m.ExternalID,
+			"source_url":           m.SourceURL,
+			"estimated_time":       m.EstimatedTime,
+			"description_markdown": m.DescriptionMarkdown,
+			"starter_code":         starterCode,
+			"updated_at":           gorm.Expr("NOW()"),
 		}
 		result := tx.Model(&problemModel{}).Where("id = ?", id).Updates(updates)
 		if result.Error != nil {

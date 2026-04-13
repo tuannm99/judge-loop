@@ -17,6 +17,7 @@ import {
   Card,
   CodeEditor,
   InputField,
+  RichTextEditor,
   SelectField,
   Tabs,
   TextareaField
@@ -51,6 +52,7 @@ export function ContributeProblemPage(props: { navigate: NavigateFn; slug?: stri
     tags: [] as string[],
     source_url: '',
     estimated_time: 15,
+    description_markdown: '',
     version: 1,
     starter_code: { ...DEFAULT_STARTER_CODE },
     test_cases: [{ ...EMPTY_TEST_CASE }] as DraftTestCase[],
@@ -113,6 +115,7 @@ export function ContributeProblemPage(props: { navigate: NavigateFn; slug?: stri
             tags: [...problem.tags],
             source_url: problem.source_url,
             estimated_time: problem.estimated_time,
+            description_markdown: problem.description_markdown,
             starter_code: resolveStarterCode(problem.starter_code, DEFAULT_STARTER_CODE),
             test_cases:
               testCases.test_cases.length > 0
@@ -253,6 +256,34 @@ export function ContributeProblemPage(props: { navigate: NavigateFn; slug?: stri
           <Card class="space-y-6">
             <div class="flex flex-wrap items-start justify-between gap-3">
               <SectionTitle
+                title="Problem description"
+                subtitle="Author in WYSIWYG or raw Markdown. The stored source remains Markdown for portability and diffability."
+              />
+              <div class="flex flex-wrap items-center gap-2">
+                <Badge content="WYSIWYG + Markdown" color="blue" />
+                <Badge
+                  content={
+                    state.description_markdown.trim() ? 'Statement ready' : 'Statement empty'
+                  }
+                  color={state.description_markdown.trim() ? 'green' : 'dark'}
+                />
+              </div>
+            </div>
+
+            <RichTextEditor
+              label="Statement editor"
+              height="620px"
+              minHeight="460px"
+              placeholder="Describe the problem like a polished interview prompt: summary, examples, constraints, notes, and follow-up hints."
+              hint="Use the built-in Markdown and WYSIWYG tabs in the editor below. Saving still persists Markdown to the backend."
+              value={state.description_markdown}
+              onInput={(value) => setState('description_markdown', value)}
+            />
+          </Card>
+
+          <Card class="space-y-6">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <SectionTitle
                 title="Starter code"
                 subtitle="Edit one language at a time and keep the form compact."
               />
@@ -368,6 +399,7 @@ export function ContributeProblemPage(props: { navigate: NavigateFn; slug?: stri
                         tags: [...state.tags],
                         source_url: state.source_url.trim(),
                         estimated_time: state.estimated_time || 0,
+                        description_markdown: state.description_markdown,
                         starter_code: {
                           python: state.starter_code.python,
                           go: state.starter_code.go,

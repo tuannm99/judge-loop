@@ -25,20 +25,21 @@ const (
 )
 
 // Problem is a practice problem stored in the local bank.
-// Full problem statements are NOT stored — only metadata.
+// It stores metadata and may include an optional author-written Markdown description.
 type Problem struct {
-	ID            uuid.UUID         `json:"id"`
-	Slug          string            `json:"slug"`
-	Title         string            `json:"title"`
-	Difficulty    Difficulty        `json:"difficulty"`
-	Tags          []string          `json:"tags"` // combined taxonomy tags
-	Provider      Provider          `json:"provider"`
-	ExternalID    string            `json:"external_id"` // provider's own ID
-	SourceURL     string            `json:"source_url"`
-	EstimatedTime int               `json:"estimated_time"` // minutes
-	StarterCode   map[string]string `json:"starter_code"`
-	CreatedAt     time.Time         `json:"created_at"`
-	UpdatedAt     time.Time         `json:"updated_at"`
+	ID                  uuid.UUID         `json:"id"`
+	Slug                string            `json:"slug"`
+	Title               string            `json:"title"`
+	Difficulty          Difficulty        `json:"difficulty"`
+	Tags                []string          `json:"tags"` // combined taxonomy tags
+	Provider            Provider          `json:"provider"`
+	ExternalID          string            `json:"external_id"` // provider's own ID
+	SourceURL           string            `json:"source_url"`
+	EstimatedTime       int               `json:"estimated_time"` // minutes
+	DescriptionMarkdown string            `json:"description_markdown"`
+	StarterCode         map[string]string `json:"starter_code"`
+	CreatedAt           time.Time         `json:"created_at"`
+	UpdatedAt           time.Time         `json:"updated_at"`
 }
 
 type ProblemLabel struct {

@@ -5,9 +5,9 @@
 The problem registry is a versioned index of problem metadata from multiple providers.
 It is inspired by Mason's registry pattern: a central `index.json` points to provider and track manifests.
 
-**Important:** Problem statements are NOT stored. Only metadata (manifest) is stored. Full problem descriptions remain on the provider's platform.
+**Important:** Provider statements are not fetched automatically. The registry stays metadata-first, but a problem may include an optional local `description_markdown` field for an author-written prompt.
 
-The bundled LeetCode provider manifest is metadata-only and filters out paid-only problems. It includes Python and Go starter snippets when LeetCode exposes them; entries without those snippets keep `starter_code: {}` so editor clients can fall back to local templates.
+The bundled LeetCode provider manifest is still metadata-first and filters out paid-only problems. It includes Python and Go starter snippets when LeetCode exposes them; entries without those snippets keep `starter_code: {}` so editor clients can fall back to local templates. Optional `description_markdown` content is intended for locally authored prompts, not scraped provider statements.
 
 ## Registry structure
 
@@ -67,6 +67,7 @@ Each entry in a provider manifest:
   "tags": ["array", "hash-table", "lookup", "two-pointer"],
   "source_url": "https://leetcode.com/problems/two-sum",
   "estimated_time": 15,
+  "description_markdown": "## Two Sum\n\nReturn indices for the pair that adds to target.",
   "version": 1
 }
 ```
@@ -81,6 +82,7 @@ Fields:
 - `tags` — combined topic and problem-solving tags (e.g. array, sliding-window, two-pointer)
 - `source_url` — link to original problem
 - `estimated_time` — minutes, rough estimate
+- `description_markdown` — optional local Markdown prompt authored in judge-loop
 - `version` — manifest version, incremented on metadata changes
 
 For backward compatibility, registry ingestion still accepts legacy `pattern_tags` and merges them into `tags`.

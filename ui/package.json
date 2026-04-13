@@ -16,6 +16,7 @@
     "@codemirror/lang-rust": "^6.0.2",
     "@replit/codemirror-vim": "^6.3.0",
     "@tanstack/solid-router": "^1.168.17",
+    "@toast-ui/editor": "^3.2.2",
     "codemirror": "^6.0.2",
     "flowbite": "^4.0.1",
     "qrcode": "^1.5.4",

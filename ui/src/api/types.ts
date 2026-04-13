@@ -20,6 +20,7 @@ export interface Problem {
   external_id: string
   source_url: string
   estimated_time: number
+  description_markdown: string
   starter_code: Partial<Record<Language, string>>
 }
 

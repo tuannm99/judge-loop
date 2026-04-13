@@ -10,17 +10,18 @@ import (
 )
 
 type problemModel struct {
-	ID            uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	Slug          string    `gorm:"column:slug"`
-	Title         string    `gorm:"column:title"`
-	Difficulty    string    `gorm:"column:difficulty"`
-	Provider      string    `gorm:"column:provider"`
-	ExternalID    string    `gorm:"column:external_id"`
-	SourceURL     string    `gorm:"column:source_url"`
-	EstimatedTime int       `gorm:"column:estimated_time"`
-	StarterCode   []byte    `gorm:"column:starter_code"`
-	CreatedAt     time.Time `gorm:"column:created_at"`
-	UpdatedAt     time.Time `gorm:"column:updated_at"`
+	ID                  uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	Slug                string    `gorm:"column:slug"`
+	Title               string    `gorm:"column:title"`
+	Difficulty          string    `gorm:"column:difficulty"`
+	Provider            string    `gorm:"column:provider"`
+	ExternalID          string    `gorm:"column:external_id"`
+	SourceURL           string    `gorm:"column:source_url"`
+	EstimatedTime       int       `gorm:"column:estimated_time"`
+	DescriptionMarkdown string    `gorm:"column:description_markdown"`
+	StarterCode         []byte    `gorm:"column:starter_code"`
+	CreatedAt           time.Time `gorm:"column:created_at"`
+	UpdatedAt           time.Time `gorm:"column:updated_at"`
 
 	Tags []string `gorm:"-"`
 }
@@ -36,18 +37,19 @@ func (m problemModel) toDomain() domain.Problem {
 	}
 
 	return domain.Problem{
-		ID:            m.ID,
-		Slug:          m.Slug,
-		Title:         m.Title,
-		Difficulty:    domain.Difficulty(m.Difficulty),
-		Tags:          append([]string(nil), m.Tags...),
-		Provider:      domain.Provider(m.Provider),
-		ExternalID:    m.ExternalID,
-		SourceURL:     m.SourceURL,
-		EstimatedTime: m.EstimatedTime,
-		StarterCode:   starterCode,
-		CreatedAt:     m.CreatedAt,
-		UpdatedAt:     m.UpdatedAt,
+		ID:                  m.ID,
+		Slug:                m.Slug,
+		Title:               m.Title,
+		Difficulty:          domain.Difficulty(m.Difficulty),
+		Tags:                append([]string(nil), m.Tags...),
+		Provider:            domain.Provider(m.Provider),
+		ExternalID:          m.ExternalID,
+		SourceURL:           m.SourceURL,
+		EstimatedTime:       m.EstimatedTime,
+		DescriptionMarkdown: m.DescriptionMarkdown,
+		StarterCode:         starterCode,
+		CreatedAt:           m.CreatedAt,
+		UpdatedAt:           m.UpdatedAt,
 	}
 }
 

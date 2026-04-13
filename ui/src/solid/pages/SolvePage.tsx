@@ -17,7 +17,16 @@ import {
   WarningAlert
 } from '../components/common/Feedback'
 import { PageShell } from '../components/common/PageShell'
-import { Badge, Button, Card, CodeBlock, CodeEditor, SelectField, Tabs } from '../components/common'
+import {
+  Badge,
+  Button,
+  Card,
+  CodeBlock,
+  CodeEditor,
+  MarkdownPreview,
+  SelectField,
+  Tabs
+} from '../components/common'
 import { DifficultyBadge, StatusBadge } from '../components/problems/Badges'
 import { DEFAULT_CODE, LANGUAGE_OPTIONS } from '../shared/constants'
 import type { NavigateFn, SolveTestCase } from '../shared/types'
@@ -406,12 +415,47 @@ export function SolvePage(props: { navigate: NavigateFn; slug: string }) {
                       <span>estimate: {problem().estimated_time} min</span>
                     </div>
 
+                    <Show
+                      when={problem().description_markdown.trim()}
+                      fallback={
+                        <Card class="space-y-4 border">
+                          <div class="space-y-2">
+                            <h3 class="text-lg font-semibold text-gray-900">Problem description</h3>
+                            <p class="text-sm text-gray-500">
+                              No local Markdown description has been written for this problem yet.
+                              Open the provider prompt or add one from the problem editor.
+                            </p>
+                          </div>
+
+                          <div class="flex flex-wrap items-center gap-2">
+                            <Show
+                              when={problem().source_url}
+                              fallback={<Badge content="No source link saved" color="dark" />}
+                            >
+                              <Button
+                                pill
+                                size="sm"
+                                color="blue"
+                                href={problem().source_url}
+                                target="_blank"
+                              >
+                                Read full prompt
+                              </Button>
+                            </Show>
+                            <Badge content="Markdown description missing" color="dark" />
+                          </div>
+                        </Card>
+                      }
+                    >
+                      <MarkdownPreview source={problem().description_markdown} />
+                    </Show>
+
                     <Card class="space-y-4 border">
                       <div class="space-y-2">
-                        <h3 class="text-lg font-semibold text-gray-900">Problem details</h3>
+                        <h3 class="text-lg font-semibold text-gray-900">Examples and judge data</h3>
                         <p class="text-sm text-gray-500">
-                          Full statements are not stored in the local bank yet. Use the provider
-                          prompt for the full description and solve from the examples below.
+                          Stored examples are shown below so you can rehearse against the same
+                          public cases without leaving the solve screen.
                         </p>
                       </div>
 
@@ -423,11 +467,11 @@ export function SolvePage(props: { navigate: NavigateFn; slug: string }) {
                           <Button
                             pill
                             size="sm"
-                            color="blue"
+                            color="light"
                             href={problem().source_url}
                             target="_blank"
                           >
-                            Read full prompt
+                            Open provider page
                           </Button>
                         </Show>
                         <Show when={state.hiddenTestCaseCount > 0}>

@@ -23,6 +23,7 @@ function normalizeProblem(problem: Problem & { pattern_tags?: string[] | null })
   return {
     ...problem,
     tags,
+    description_markdown: problem.description_markdown ?? '',
     starter_code: problem.starter_code ?? {}
   }
 }
@@ -121,6 +122,7 @@ export interface ContributeProblemPayload {
   tags: string[]
   source_url: string
   estimated_time: number
+  description_markdown: string
   starter_code: Partial<Record<Language, string>>
   version: number
   test_cases: Array<{

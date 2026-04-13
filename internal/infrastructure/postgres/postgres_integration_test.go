@@ -165,14 +165,15 @@ func TestProblemSubmissionSessionAndPerformanceIntegration(t *testing.T) {
 	performanceStore := NewPerformanceRepositoryImpl(db)
 
 	problemA := domain.ProblemManifest{
-		Slug:          "two-sum",
-		Title:         "Two Sum",
-		Difficulty:    domain.DifficultyEasy,
-		Tags:          []string{"array", "hash-map"},
-		Provider:      domain.ProviderLeetCode,
-		ExternalID:    "1",
-		SourceURL:     "https://example.com/two-sum",
-		EstimatedTime: 15,
+		Slug:                "two-sum",
+		Title:               "Two Sum",
+		Difficulty:          domain.DifficultyEasy,
+		Tags:                []string{"array", "hash-map"},
+		Provider:            domain.ProviderLeetCode,
+		ExternalID:          "1",
+		SourceURL:           "https://example.com/two-sum",
+		EstimatedTime:       15,
+		DescriptionMarkdown: "## Two Sum\n\nReturn indices for the matching pair.",
 		StarterCode: map[string]string{
 			"python": "class Solution:\n    pass\n",
 			"go":     "package main\n\nfunc main() {}\n",
@@ -206,6 +207,7 @@ func TestProblemSubmissionSessionAndPerformanceIntegration(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, bySlug)
 	require.Equal(t, "two-sum", bySlug.Slug)
+	require.Equal(t, "## Two Sum\n\nReturn indices for the matching pair.", bySlug.DescriptionMarkdown)
 	require.Equal(t, "class Solution:\n    pass\n", bySlug.StarterCode["python"])
 	require.Equal(t, "package main\n\nfunc main() {}\n", bySlug.StarterCode["go"])
 

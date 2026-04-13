@@ -6,34 +6,37 @@ import (
 	"time"
 )
 
-// ProblemManifest is the normalized metadata record for a problem in the registry.
-// Full problem statements are not stored; this is metadata only.
+// ProblemManifest is the normalized record for a problem in the registry.
+// Provider statements are not fetched automatically, but an optional
+// author-written Markdown description can be stored locally.
 type ProblemManifest struct {
-	Provider      Provider          `json:"provider"`
-	ExternalID    string            `json:"external_id"`
-	Slug          string            `json:"slug"`
-	Title         string            `json:"title"`
-	Difficulty    Difficulty        `json:"difficulty"`
-	Tags          []string          `json:"tags"`
-	SourceURL     string            `json:"source_url"`
-	EstimatedTime int               `json:"estimated_time"`
-	StarterCode   map[string]string `json:"starter_code"`
-	Version       int               `json:"version"`
+	Provider            Provider          `json:"provider"`
+	ExternalID          string            `json:"external_id"`
+	Slug                string            `json:"slug"`
+	Title               string            `json:"title"`
+	Difficulty          Difficulty        `json:"difficulty"`
+	Tags                []string          `json:"tags"`
+	SourceURL           string            `json:"source_url"`
+	EstimatedTime       int               `json:"estimated_time"`
+	DescriptionMarkdown string            `json:"description_markdown"`
+	StarterCode         map[string]string `json:"starter_code"`
+	Version             int               `json:"version"`
 }
 
 func (m *ProblemManifest) UnmarshalJSON(data []byte) error {
 	type rawProblemManifest struct {
-		Provider          Provider          `json:"provider"`
-		ExternalID        string            `json:"external_id"`
-		Slug              string            `json:"slug"`
-		Title             string            `json:"title"`
-		Difficulty        Difficulty        `json:"difficulty"`
-		Tags              []string          `json:"tags"`
-		LegacyPatternTags []string          `json:"pattern_tags"`
-		SourceURL         string            `json:"source_url"`
-		EstimatedTime     int               `json:"estimated_time"`
-		StarterCode       map[string]string `json:"starter_code"`
-		Version           int               `json:"version"`
+		Provider            Provider          `json:"provider"`
+		ExternalID          string            `json:"external_id"`
+		Slug                string            `json:"slug"`
+		Title               string            `json:"title"`
+		Difficulty          Difficulty        `json:"difficulty"`
+		Tags                []string          `json:"tags"`
+		LegacyPatternTags   []string          `json:"pattern_tags"`
+		SourceURL           string            `json:"source_url"`
+		EstimatedTime       int               `json:"estimated_time"`
+		DescriptionMarkdown string            `json:"description_markdown"`
+		StarterCode         map[string]string `json:"starter_code"`
+		Version             int               `json:"version"`
 	}
 
 	var raw rawProblemManifest
@@ -42,16 +45,17 @@ func (m *ProblemManifest) UnmarshalJSON(data []byte) error {
 	}
 
 	*m = ProblemManifest{
-		Provider:      raw.Provider,
-		ExternalID:    raw.ExternalID,
-		Slug:          raw.Slug,
-		Title:         raw.Title,
-		Difficulty:    raw.Difficulty,
-		Tags:          normalizeManifestTags(append(raw.Tags, raw.LegacyPatternTags...)),
-		SourceURL:     raw.SourceURL,
-		EstimatedTime: raw.EstimatedTime,
-		StarterCode:   raw.StarterCode,
-		Version:       raw.Version,
+		Provider:            raw.Provider,
+		ExternalID:          raw.ExternalID,
+		Slug:                raw.Slug,
+		Title:               raw.Title,
+		Difficulty:          raw.Difficulty,
+		Tags:                normalizeManifestTags(append(raw.Tags, raw.LegacyPatternTags...)),
+		SourceURL:           raw.SourceURL,
+		EstimatedTime:       raw.EstimatedTime,
+		DescriptionMarkdown: raw.DescriptionMarkdown,
+		StarterCode:         raw.StarterCode,
+		Version:             raw.Version,
 	}
 	return nil
 }

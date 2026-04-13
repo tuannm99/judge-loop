@@ -12,32 +12,34 @@ import (
 )
 
 type contributeProblemRequest struct {
-	Provider          domain.Provider             `json:"provider"       binding:"required"`
-	ExternalID        string                      `json:"external_id"    binding:"required"`
-	Slug              string                      `json:"slug"           binding:"required"`
-	Title             string                      `json:"title"          binding:"required"`
-	Difficulty        domain.Difficulty           `json:"difficulty"     binding:"required"`
-	Tags              []string                    `json:"tags"`
-	LegacyPatternTags []string                    `json:"pattern_tags"`
-	SourceURL         string                      `json:"source_url"     binding:"required"`
-	EstimatedTime     int                         `json:"estimated_time"`
-	StarterCode       map[string]string           `json:"starter_code"`
-	Version           int                         `json:"version"`
-	TestCases         []contributeTestCaseRequest `json:"test_cases"     binding:"required,min=1"`
+	Provider            domain.Provider             `json:"provider"       binding:"required"`
+	ExternalID          string                      `json:"external_id"    binding:"required"`
+	Slug                string                      `json:"slug"           binding:"required"`
+	Title               string                      `json:"title"          binding:"required"`
+	Difficulty          domain.Difficulty           `json:"difficulty"     binding:"required"`
+	Tags                []string                    `json:"tags"`
+	LegacyPatternTags   []string                    `json:"pattern_tags"`
+	SourceURL           string                      `json:"source_url"     binding:"required"`
+	EstimatedTime       int                         `json:"estimated_time"`
+	DescriptionMarkdown string                      `json:"description_markdown"`
+	StarterCode         map[string]string           `json:"starter_code"`
+	Version             int                         `json:"version"`
+	TestCases           []contributeTestCaseRequest `json:"test_cases"     binding:"required,min=1"`
 }
 
 type updateProblemRequest struct {
-	Provider          domain.Provider             `json:"provider"       binding:"required"`
-	ExternalID        string                      `json:"external_id"    binding:"required"`
-	Slug              string                      `json:"slug"           binding:"required"`
-	Title             string                      `json:"title"          binding:"required"`
-	Difficulty        domain.Difficulty           `json:"difficulty"     binding:"required"`
-	Tags              []string                    `json:"tags"`
-	LegacyPatternTags []string                    `json:"pattern_tags"`
-	SourceURL         string                      `json:"source_url"     binding:"required"`
-	EstimatedTime     int                         `json:"estimated_time"`
-	StarterCode       map[string]string           `json:"starter_code"`
-	TestCases         []contributeTestCaseRequest `json:"test_cases"`
+	Provider            domain.Provider             `json:"provider"       binding:"required"`
+	ExternalID          string                      `json:"external_id"    binding:"required"`
+	Slug                string                      `json:"slug"           binding:"required"`
+	Title               string                      `json:"title"          binding:"required"`
+	Difficulty          domain.Difficulty           `json:"difficulty"     binding:"required"`
+	Tags                []string                    `json:"tags"`
+	LegacyPatternTags   []string                    `json:"pattern_tags"`
+	SourceURL           string                      `json:"source_url"     binding:"required"`
+	EstimatedTime       int                         `json:"estimated_time"`
+	DescriptionMarkdown string                      `json:"description_markdown"`
+	StarterCode         map[string]string           `json:"starter_code"`
+	TestCases           []contributeTestCaseRequest `json:"test_cases"`
 }
 
 type contributeTestCaseRequest struct {
@@ -239,15 +241,16 @@ func (h *ProblemsAPI) UpdateProblem(c *gin.Context) {
 	}
 
 	manifest := domain.ProblemManifest{
-		Provider:      req.Provider,
-		ExternalID:    req.ExternalID,
-		Slug:          req.Slug,
-		Title:         req.Title,
-		Difficulty:    req.Difficulty,
-		Tags:          mergeProblemTags(req.Tags, req.LegacyPatternTags),
-		SourceURL:     req.SourceURL,
-		EstimatedTime: req.EstimatedTime,
-		StarterCode:   req.StarterCode,
+		Provider:            req.Provider,
+		ExternalID:          req.ExternalID,
+		Slug:                req.Slug,
+		Title:               req.Title,
+		Difficulty:          req.Difficulty,
+		Tags:                mergeProblemTags(req.Tags, req.LegacyPatternTags),
+		SourceURL:           req.SourceURL,
+		EstimatedTime:       req.EstimatedTime,
+		DescriptionMarkdown: req.DescriptionMarkdown,
+		StarterCode:         req.StarterCode,
 	}
 	testCases := make([]domain.TestCase, 0, len(req.TestCases))
 	for i, tc := range req.TestCases {
@@ -311,16 +314,17 @@ func (h *ProblemsAPI) ContributeProblem(c *gin.Context) {
 	}
 
 	problem, err := h.service.ContributeProblem(c.Request.Context(), domain.ProblemManifest{
-		Provider:      req.Provider,
-		ExternalID:    req.ExternalID,
-		Slug:          req.Slug,
-		Title:         req.Title,
-		Difficulty:    req.Difficulty,
-		Tags:          mergeProblemTags(req.Tags, req.LegacyPatternTags),
-		SourceURL:     req.SourceURL,
-		EstimatedTime: req.EstimatedTime,
-		StarterCode:   req.StarterCode,
-		Version:       req.Version,
+		Provider:            req.Provider,
+		ExternalID:          req.ExternalID,
+		Slug:                req.Slug,
+		Title:               req.Title,
+		Difficulty:          req.Difficulty,
+		Tags:                mergeProblemTags(req.Tags, req.LegacyPatternTags),
+		SourceURL:           req.SourceURL,
+		EstimatedTime:       req.EstimatedTime,
+		DescriptionMarkdown: req.DescriptionMarkdown,
+		StarterCode:         req.StarterCode,
+		Version:             req.Version,
 	}, testCases)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

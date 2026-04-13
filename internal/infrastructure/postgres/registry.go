@@ -79,26 +79,28 @@ func (s *ProblemRepositoryImpl) UpsertFromManifest(ctx context.Context, m domain
 	}
 
 	model := problemModel{
-		Slug:          m.Slug,
-		Title:         m.Title,
-		Difficulty:    string(m.Difficulty),
-		Provider:      string(m.Provider),
-		ExternalID:    m.ExternalID,
-		SourceURL:     m.SourceURL,
-		EstimatedTime: m.EstimatedTime,
-		StarterCode:   starterCode,
+		Slug:                m.Slug,
+		Title:               m.Title,
+		Difficulty:          string(m.Difficulty),
+		Provider:            string(m.Provider),
+		ExternalID:          m.ExternalID,
+		SourceURL:           m.SourceURL,
+		EstimatedTime:       m.EstimatedTime,
+		DescriptionMarkdown: m.DescriptionMarkdown,
+		StarterCode:         starterCode,
 	}
 
 	err = s.db.Gorm.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns: []clause.Column{{Name: "provider"}, {Name: "external_id"}},
 		DoUpdates: clause.Assignments(map[string]any{
-			"slug":           model.Slug,
-			"title":          model.Title,
-			"difficulty":     model.Difficulty,
-			"source_url":     model.SourceURL,
-			"estimated_time": model.EstimatedTime,
-			"starter_code":   model.StarterCode,
-			"updated_at":     gorm.Expr("NOW()"),
+			"slug":                 model.Slug,
+			"title":                model.Title,
+			"difficulty":           model.Difficulty,
+			"source_url":           model.SourceURL,
+			"estimated_time":       model.EstimatedTime,
+			"description_markdown": model.DescriptionMarkdown,
+			"starter_code":         model.StarterCode,
+			"updated_at":           gorm.Expr("NOW()"),
 		}),
 	}).Create(&model).Error
 	if err != nil {

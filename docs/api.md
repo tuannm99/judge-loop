@@ -24,6 +24,7 @@ Purpose:
 
 - There is no runtime auth yet; `api-server` uses `USER_ID` from server config.
 - All JSON bodies should use `Content-Type: application/json`.
+- Problem payloads may include optional `description_markdown` for a locally authored Markdown statement.
 - Validation and parse errors usually return:
 
 ```json
@@ -75,6 +76,7 @@ Response `200`:
       "external_id": "1",
       "source_url": "https://leetcode.com/problems/two-sum",
       "estimated_time": 15,
+      "description_markdown": "## Two Sum\n\nReturn the matching pair.",
       "starter_code": {
         "python": "class Solution:\n    pass\n",
         "go": "package main\n\nfunc main() {}\n"
@@ -108,6 +110,7 @@ Response `200`:
   "external_id": "1",
   "source_url": "https://leetcode.com/problems/two-sum",
   "estimated_time": 15,
+  "description_markdown": "## Two Sum\n\nReturn the matching pair.",
   "starter_code": {
     "python": "class Solution:\n    pass\n",
     "go": "package main\n\nfunc main() {}\n"
@@ -153,6 +156,7 @@ Request body:
   "tags": ["array", "hash-table", "lookup"],
   "source_url": "https://leetcode.com/problems/two-sum",
   "estimated_time": 15,
+  "description_markdown": "## Two Sum\n\nReturn the matching pair.",
   "starter_code": {
     "python": "class Solution:\n    pass\n",
     "go": "package main\n\nfunc main() {}\n"
@@ -185,6 +189,7 @@ Response `201`:
   "external_id": "1",
   "source_url": "https://leetcode.com/problems/two-sum",
   "estimated_time": 15,
+  "description_markdown": "## Two Sum\n\nReturn the matching pair.",
   "starter_code": {
     "python": "class Solution:\n    pass\n",
     "go": "package main\n\nfunc main() {}\n"
