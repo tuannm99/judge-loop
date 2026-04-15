@@ -2,7 +2,9 @@
 package judge
 
 import (
+	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/tuannm99/judge-loop/internal/domain"
@@ -57,9 +59,9 @@ func Evaluate(cases []domain.TestCase, runFn RunFn) (
 				passed, total, maxRuntimeMS, result.Stderr
 		}
 
-		got := strings.TrimSpace(result.Output)
-		exp := strings.TrimSpace(tc.Expected)
-		if got == exp {
+		got := normalizeOutput(result.Output)
+		exp := normalizeOutput(tc.Expected)
+		if outputsEqual(got, exp) {
 			passed++
 		} else {
 			msg := fmt.Sprintf("case %d: expected %q, got %q", i+1, exp, got)
@@ -69,6 +71,26 @@ func Evaluate(cases []domain.TestCase, runFn RunFn) (
 	}
 
 	return domain.StatusAccepted, domain.VerdictAccepted, passed, total, maxRuntimeMS, ""
+}
+
+func normalizeOutput(value string) string {
+	return strings.TrimSpace(value)
+}
+
+func outputsEqual(got, expected string) bool {
+	if got == expected {
+		return true
+	}
+
+	var gotJSON any
+	var expectedJSON any
+	if json.Unmarshal([]byte(got), &gotJSON) != nil {
+		return false
+	}
+	if json.Unmarshal([]byte(expected), &expectedJSON) != nil {
+		return false
+	}
+	return reflect.DeepEqual(gotJSON, expectedJSON)
 }
 
 // isCompileError heuristically checks if stderr looks like a compile/syntax error

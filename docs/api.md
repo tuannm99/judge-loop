@@ -493,7 +493,7 @@ Request body:
     {
       "kind": "provider",
       "name": "leetcode",
-      "path": "providers/leetcode.json"
+      "path": "providers/leetcode/free/problems.json"
     }
   ]
 }

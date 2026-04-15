@@ -58,12 +58,12 @@ func (s *EvaluationService) EvaluateSubmission(
 		return nil
 	}
 
-	cases, err := s.testCases.GetByProblem(ctx, sub.ProblemID)
+	cases, err := s.testCases.GetAllByProblem(ctx, sub.ProblemID)
 	if err != nil {
 		return s.failSubmission(ctx, submissionID, fmt.Sprintf("load test cases: %v", err))
 	}
 	if len(cases) == 0 {
-		return s.failSubmission(ctx, submissionID, "no visible test cases configured for problem")
+		return s.failSubmission(ctx, submissionID, "no test cases configured for problem")
 	}
 
 	status, verdict, passed, total, runtimeMS, errMsg := judge.Evaluate(

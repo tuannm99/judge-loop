@@ -10,33 +10,41 @@ import (
 // Provider statements are not fetched automatically, but an optional
 // author-written Markdown description can be stored locally.
 type ProblemManifest struct {
-	Provider            Provider          `json:"provider"`
-	ExternalID          string            `json:"external_id"`
-	Slug                string            `json:"slug"`
-	Title               string            `json:"title"`
-	Difficulty          Difficulty        `json:"difficulty"`
-	Tags                []string          `json:"tags"`
-	SourceURL           string            `json:"source_url"`
-	EstimatedTime       int               `json:"estimated_time"`
-	DescriptionMarkdown string            `json:"description_markdown"`
-	StarterCode         map[string]string `json:"starter_code"`
-	Version             int               `json:"version"`
+	Provider            Provider           `json:"provider"`
+	ExternalID          string             `json:"external_id"`
+	Slug                string             `json:"slug"`
+	Title               string             `json:"title"`
+	Difficulty          Difficulty         `json:"difficulty"`
+	Tags                []string           `json:"tags"`
+	SourceURL           string             `json:"source_url"`
+	EstimatedTime       int                `json:"estimated_time"`
+	DescriptionMarkdown string             `json:"description_markdown"`
+	StarterCode         map[string]string  `json:"starter_code"`
+	TestCases           []TestCaseManifest `json:"test_cases"`
+	Version             int                `json:"version"`
+}
+
+type TestCaseManifest struct {
+	Input    string `json:"input"`
+	Expected string `json:"expected"`
+	IsHidden bool   `json:"is_hidden"`
 }
 
 func (m *ProblemManifest) UnmarshalJSON(data []byte) error {
 	type rawProblemManifest struct {
-		Provider            Provider          `json:"provider"`
-		ExternalID          string            `json:"external_id"`
-		Slug                string            `json:"slug"`
-		Title               string            `json:"title"`
-		Difficulty          Difficulty        `json:"difficulty"`
-		Tags                []string          `json:"tags"`
-		LegacyPatternTags   []string          `json:"pattern_tags"`
-		SourceURL           string            `json:"source_url"`
-		EstimatedTime       int               `json:"estimated_time"`
-		DescriptionMarkdown string            `json:"description_markdown"`
-		StarterCode         map[string]string `json:"starter_code"`
-		Version             int               `json:"version"`
+		Provider            Provider           `json:"provider"`
+		ExternalID          string             `json:"external_id"`
+		Slug                string             `json:"slug"`
+		Title               string             `json:"title"`
+		Difficulty          Difficulty         `json:"difficulty"`
+		Tags                []string           `json:"tags"`
+		LegacyPatternTags   []string           `json:"pattern_tags"`
+		SourceURL           string             `json:"source_url"`
+		EstimatedTime       int                `json:"estimated_time"`
+		DescriptionMarkdown string             `json:"description_markdown"`
+		StarterCode         map[string]string  `json:"starter_code"`
+		TestCases           []TestCaseManifest `json:"test_cases"`
+		Version             int                `json:"version"`
 	}
 
 	var raw rawProblemManifest
@@ -55,6 +63,7 @@ func (m *ProblemManifest) UnmarshalJSON(data []byte) error {
 		EstimatedTime:       raw.EstimatedTime,
 		DescriptionMarkdown: raw.DescriptionMarkdown,
 		StarterCode:         raw.StarterCode,
+		TestCases:           raw.TestCases,
 		Version:             raw.Version,
 	}
 	return nil

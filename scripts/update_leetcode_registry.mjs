@@ -5,11 +5,16 @@ import path from 'node:path'
 import process from 'node:process'
 
 const rootDir = path.resolve(import.meta.dirname, '..')
-const providerPath = path.join(rootDir, 'registry/providers/leetcode.json')
+const providerRoot = path.join(rootDir, 'registry/providers/leetcode')
+const freeProviderPath = path.join(providerRoot, 'free/problems.json')
+const premiumProviderPath = path.join(providerRoot, 'premium/problems.json')
 const indexPath = path.join(rootDir, 'registry/index.json')
 const endpoint = 'https://leetcode.com/graphql/'
 const pageSize = 100
-const detailBatchSize = 25
+const detailBatchSize = Number(process.env.LEETCODE_DETAIL_BATCH_SIZE || 10)
+const listDelayMS = Number(process.env.LEETCODE_LIST_DELAY_MS || 500)
+const detailDelayMS = Number(process.env.LEETCODE_DETAIL_DELAY_MS || 1200)
+const maxDetailProblems = Number(process.env.LEETCODE_MAX_DETAIL_PROBLEMS || 0)
 const version =
   process.argv[2] || `${new Date().toISOString().slice(0, 10)}-leetcode-free`
 
@@ -28,7 +33,13 @@ query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $fi
   }
 }`
 
-async function graphql(query, variables) {
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}
+
+async function graphql(query, variables, attempt = 1) {
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
@@ -39,9 +50,16 @@ async function graphql(query, variables) {
   })
 
   if (!response.ok) {
-    throw new Error(
-      `LeetCode GraphQL ${response.status}: ${await response.text()}`
-    )
+    const body = await response.text()
+    if (attempt < 4 && [429, 500, 502, 503, 504].includes(response.status)) {
+      const wait = 2000 * attempt
+      process.stderr.write(
+        `LeetCode GraphQL ${response.status}; retrying in ${wait}ms\n`
+      )
+      await sleep(wait)
+      return graphql(query, variables, attempt + 1)
+    }
+    throw new Error(`LeetCode GraphQL ${response.status}: ${body}`)
   }
 
   const payload = await response.json()
@@ -70,6 +88,9 @@ async function loadQuestions() {
     process.stderr.write(
       `Fetched ${Math.min(skip, total)}/${total} problem metadata\r`
     )
+    if (skip < total) {
+      await sleep(listDelayMS)
+    }
   }
   process.stderr.write('\n')
   return questions
@@ -81,9 +102,11 @@ function quoteGraphQLString(value) {
 
 async function loadStarterCodeBySlug(slugs) {
   const out = new Map()
+  const detailSlugs =
+    maxDetailProblems > 0 ? slugs.slice(0, maxDetailProblems) : slugs
 
-  for (let i = 0; i < slugs.length; i += detailBatchSize) {
-    const batch = slugs.slice(i, i + detailBatchSize)
+  for (let i = 0; i < detailSlugs.length; i += detailBatchSize) {
+    const batch = detailSlugs.slice(i, i + detailBatchSize)
     const fields = batch
       .map((slug, idx) => {
         return `q${idx}: question(titleSlug: ${quoteGraphQLString(slug)}) { titleSlug isPaidOnly codeSnippets { langSlug code } }`
@@ -97,22 +120,28 @@ async function loadStarterCodeBySlug(slugs) {
       }
       const starter = {}
       const snippets = item.codeSnippets || []
-      const python =
-        snippets.find((s) => s.langSlug === 'python3') ||
-        snippets.find((s) => s.langSlug === 'python')
-      const go = snippets.find((s) => s.langSlug === 'golang')
-
-      if (python?.code) {
-        starter.python = python.code
+      const languageMap = {
+        python: ['python3', 'python'],
+        go: ['golang'],
+        javascript: ['javascript'],
+        typescript: ['typescript'],
+        rust: ['rust']
       }
-      if (go?.code) {
-        starter.go = go.code
+
+      for (const [language, langSlugs] of Object.entries(languageMap)) {
+        const snippet = snippets.find((s) => langSlugs.includes(s.langSlug))
+        if (snippet?.code) {
+          starter[language] = snippet.code
+        }
       }
       out.set(item.titleSlug, starter)
     }
     process.stderr.write(
-      `Fetched starter code ${Math.min(i + detailBatchSize, slugs.length)}/${slugs.length}\r`
+      `Fetched starter code ${Math.min(i + detailBatchSize, detailSlugs.length)}/${detailSlugs.length}\r`
     )
+    if (i + detailBatchSize < detailSlugs.length) {
+      await sleep(detailDelayMS)
+    }
   }
   process.stderr.write('\n')
   return out
@@ -128,6 +157,13 @@ function estimateMinutes(difficulty) {
   return 45
 }
 
+function compareQuestionID(a, b) {
+  return String(a.frontendQuestionId).localeCompare(String(b.frontendQuestionId), undefined, {
+    numeric: true,
+    sensitivity: 'base'
+  })
+}
+
 function toManifest(question, starterCodeBySlug) {
   const tags = (question.topicTags || []).map((tag) => tag.slug).filter(Boolean)
   return {
@@ -137,9 +173,30 @@ function toManifest(question, starterCodeBySlug) {
     title: question.title,
     difficulty: question.difficulty.toLowerCase(),
     tags,
+    pattern_tags: tags,
     source_url: `https://leetcode.com/problems/${question.titleSlug}/`,
     estimated_time: estimateMinutes(question.difficulty),
+    description_markdown: '',
     starter_code: starterCodeBySlug.get(question.titleSlug) || {},
+    version: 1
+  }
+}
+
+function toPremiumManifest(question) {
+  const tags = (question.topicTags || []).map((tag) => tag.slug).filter(Boolean)
+  return {
+    provider: 'leetcode',
+    external_id: question.frontendQuestionId,
+    slug: question.titleSlug,
+    title: question.title,
+    difficulty: question.difficulty.toLowerCase(),
+    tags,
+    pattern_tags: tags,
+    paid_only: true,
+    source_url: `https://leetcode.com/problems/${question.titleSlug}/`,
+    estimated_time: estimateMinutes(question.difficulty),
+    description_markdown: '',
+    starter_code: {},
     version: 1
   }
 }
@@ -152,7 +209,11 @@ async function updateIndex(checksum) {
     if (manifest.name !== 'leetcode') {
       return manifest
     }
-    return { ...manifest, checksum: `sha256:${checksum}` }
+    return {
+      ...manifest,
+      path: 'providers/leetcode/free/problems.json',
+      checksum: `sha256:${checksum}`
+    }
   })
   await writeFile(indexPath, `${JSON.stringify(index, null, 2)}\n`)
 }
@@ -160,28 +221,57 @@ async function updateIndex(checksum) {
 const questions = await loadQuestions()
 const freeQuestions = questions
   .filter((question) => question.paidOnly === false)
-  .sort((a, b) => Number(a.frontendQuestionId) - Number(b.frontendQuestionId))
+  .sort(compareQuestionID)
+const premiumQuestions = questions
+  .filter((question) => question.paidOnly === true)
+  .sort(compareQuestionID)
 const starterCodeBySlug = await loadStarterCodeBySlug(
   freeQuestions.map((question) => question.titleSlug)
 )
-const manifest = {
+const now = new Date().toISOString()
+const freeManifest = {
+  provider: 'leetcode',
+  kind: 'free',
+  updated_at: now,
   problems: freeQuestions.map((question) =>
     toManifest(question, starterCodeBySlug)
   )
 }
+const premiumManifest = {
+  provider: 'leetcode',
+  kind: 'premium',
+  updated_at: now,
+  problems: premiumQuestions.map(toPremiumManifest)
+}
 
-await mkdir(path.dirname(providerPath), { recursive: true })
-const providerJSON = `${JSON.stringify(manifest, null, 2)}\n`
-await writeFile(providerPath, providerJSON)
+await mkdir(path.dirname(freeProviderPath), { recursive: true })
+await mkdir(path.dirname(premiumProviderPath), { recursive: true })
+const freeProviderJSON = `${JSON.stringify(freeManifest, null, 2)}\n`
+const premiumProviderJSON = `${JSON.stringify(premiumManifest, null, 2)}\n`
+await writeFile(freeProviderPath, freeProviderJSON)
+await writeFile(premiumProviderPath, premiumProviderJSON)
 
-const checksum = createHash('sha256').update(providerJSON).digest('hex')
+const checksum = createHash('sha256').update(freeProviderJSON).digest('hex')
+const premiumChecksum = createHash('sha256').update(premiumProviderJSON).digest('hex')
 await updateIndex(checksum)
 
-const withStarter = manifest.problems.filter(
+const languageCounts = ['python', 'go', 'javascript', 'typescript', 'rust'].map(
+  (language) => [
+    language,
+    freeManifest.problems.filter((problem) => problem.starter_code[language]).length
+  ]
+)
+const withStarter = freeManifest.problems.filter(
   (problem) => Object.keys(problem.starter_code).length > 0
 ).length
-console.log(`Updated ${providerPath}`)
-console.log(`Free problems: ${manifest.problems.length}`)
+console.log(`Updated ${freeProviderPath}`)
+console.log(`Updated ${premiumProviderPath}`)
+console.log(`Free problems: ${freeManifest.problems.length}`)
+console.log(`Premium problems: ${premiumManifest.problems.length}`)
 console.log(`Problems with starter code: ${withStarter}`)
+for (const [language, count] of languageCounts) {
+  console.log(`${language} starter code: ${count}`)
+}
 console.log(`Index version: ${version}`)
 console.log(`Checksum: sha256:${checksum}`)
+console.log(`Premium checksum: sha256:${premiumChecksum}`)

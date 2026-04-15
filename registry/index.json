@@ -1,11 +1,11 @@
 {
-  "version": "2026-04-10-leetcode-free",
-  "updated_at": "2026-04-10T17:02:07.850Z",
+  "version": "2026-04-16-leetcode-free",
+  "updated_at": "2026-04-15T18:03:35.502Z",
   "manifests": [
     {
       "name": "leetcode",
-      "path": "providers/leetcode.json",
-      "checksum": "sha256:133b1316260bd22cf0fb843b5e839b9ed84fc42a270ad74113d319e938b352c5"
+      "path": "providers/leetcode/free/problems.json",
+      "checksum": "sha256:0faab3465291aec9c8cc87db82d1117cabd04042c90cecb4ccda71341e049e39"
     },
     {
       "name": "blind75",
@@ -16,6 +16,11 @@
       "name": "neetcode150",
       "path": "tracks/neetcode150.json",
       "checksum": "sha256:a3ff5b1fd92379ceff97e92150860446359484940847e60816e90a18ab7584ab"
+    },
+    {
+      "name": "judge-ready-blind75",
+      "path": "providers/judge-ready/blind75.json",
+      "checksum": "sha256:1db941024ac634e95c871b0965b2794fe700200e3f4d52ffbdae24a2a805ade9"
     }
   ]
 }

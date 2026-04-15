@@ -40,7 +40,9 @@ The current agent keeps only in-memory timer state plus configured access to a l
 registry/        # local manifest source used by POST /local/sync
   index.json
   providers/
-    leetcode.json
+    leetcode/
+      free/problems.json
+      premium/problems.json
     neetcode.json
 ```
 

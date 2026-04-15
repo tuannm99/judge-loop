@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/tuannm99/judge-loop/internal/domain"
@@ -50,8 +51,8 @@ func LoadIndex(registryPath string) (*Index, error) {
 func LoadAllProblems(registryPath string, idx *Index) ([]domain.ProblemManifest, error) {
 	var out []domain.ProblemManifest
 	for _, ref := range idx.Manifests {
-		dir := filepath.Dir(ref.Path)
-		if dir != "providers" {
+		cleanPath := filepath.ToSlash(filepath.Clean(ref.Path))
+		if !strings.HasPrefix(cleanPath, "providers/") {
 			continue // tracks and roadmaps don't contain problem metadata
 		}
 		pm, err := loadProviderManifest(filepath.Join(registryPath, ref.Path))

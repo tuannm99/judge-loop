@@ -7,7 +7,7 @@ It is inspired by Mason's registry pattern: a central `index.json` points to pro
 
 **Important:** Provider statements are not fetched automatically. The registry stays metadata-first, but a problem may include an optional local `description_markdown` field for an author-written prompt.
 
-The bundled LeetCode provider manifest is still metadata-first and filters out paid-only problems. It includes Python and Go starter snippets when LeetCode exposes them; entries without those snippets keep `starter_code: {}` so editor clients can fall back to local templates. Optional `description_markdown` content is intended for locally authored prompts, not scraped provider statements.
+The bundled LeetCode provider data is still metadata-first and split into free and premium manifests. The free manifest is the bank imported by sync; the premium manifest is retained as metadata only. Free entries include Python, Go, JavaScript, TypeScript, and Rust starter snippets when LeetCode exposes them; entries without snippets keep `starter_code: {}` so editor clients can fall back to local templates. Optional `description_markdown` content is intended for locally authored prompts, not scraped provider statements.
 
 ## Registry structure
 
@@ -15,7 +15,11 @@ The bundled LeetCode provider manifest is still metadata-first and filters out p
 registry/
   index.json              # versioned list of manifests
   providers/
-    leetcode.json          # LeetCode problem manifests
+    leetcode/
+      free/problems.json   # Free LeetCode problem manifests used as the bank
+      premium/problems.json # Premium LeetCode metadata, not imported into the bank
+    judge-ready/
+      blind75.json          # Local authored runnable overlays with test cases
     neetcode.json          # NeetCode curated list
     hackerrank.json        # HackerRank problem manifests
   tracks/
@@ -36,7 +40,7 @@ registry/
   "manifests": [
     {
       "name": "leetcode",
-      "path": "providers/leetcode.json",
+      "path": "providers/leetcode/free/problems.json",
       "checksum": "sha256:..."
     },
     {
@@ -68,6 +72,20 @@ Each entry in a provider manifest:
   "source_url": "https://leetcode.com/problems/two-sum",
   "estimated_time": 15,
   "description_markdown": "## Two Sum\n\nReturn indices for the pair that adds to target.",
+  "starter_code": {
+    "python": "import json\nimport sys\n\n..."
+  },
+  "test_cases": [
+    {
+      "input": "{\"nums\":[2,7,11,15],\"target\":9}",
+      "expected": "[0,1]"
+    },
+    {
+      "input": "{\"nums\":[3,2,4],\"target\":6}",
+      "expected": "[1,2]",
+      "is_hidden": true
+    }
+  ],
   "version": 1
 }
 ```
@@ -83,9 +101,13 @@ Fields:
 - `source_url` — link to original problem
 - `estimated_time` — minutes, rough estimate
 - `description_markdown` — optional local Markdown prompt authored in judge-loop
+- `starter_code` — optional language-specific starter code
+- `test_cases` — optional locally authored stdin/stdout cases imported into the judge store during registry sync
 - `version` — manifest version, incremented on metadata changes
 
 For backward compatibility, registry ingestion still accepts legacy `pattern_tags` and merges them into `tags`.
+
+For judge-ready simple-mode problems, prefer JSON strings in `test_cases.input` and `test_cases.expected`. The starter program reads JSON from stdin and prints JSON to stdout; the judge compares valid JSON semantically.
 
 ## Track manifest
 
@@ -139,9 +161,9 @@ Use:
 scripts/update_leetcode_registry.sh
 ```
 
-The updater pages LeetCode public metadata, keeps only entries where `paidOnly` is false, fetches Python/Go starter snippets in batches, writes `registry/providers/leetcode.json`, and updates the LeetCode checksum in `registry/index.json`.
+The updater pages LeetCode public metadata, splits free and premium entries, fetches starter snippets for Python, Go, JavaScript, TypeScript, and Rust for free entries in slow batches, writes `registry/providers/leetcode/free/problems.json` and `registry/providers/leetcode/premium/problems.json`, and updates the LeetCode checksum in `registry/index.json` for the free bank manifest.
 
-It does not fetch problem statements, editorials, solutions, or test cases. Paid-only entries returned by the listing endpoint are filtered out and are not written to the local registry.
+It does not fetch problem statements, editorials, solutions, or test cases. Paid-only entries returned by the listing endpoint are written to the premium metadata manifest only; that premium manifest is not referenced by `registry/index.json`, so local registry sync does not import those problems into the bank.
 
 Test cases are intentionally not bulk-imported from LeetCode. The public detail metadata exposes example inputs, not expected outputs suitable for local judging, and the current sandbox executes whole programs from stdin rather than LeetCode-style function/class snippets. Curated problems can still add local judge cases through `POST /api/problems/contribute`.
 
@@ -156,6 +178,19 @@ scripts/update_curated_tracks.mjs
 The updater writes Blind 75 and NeetCode 150 track manifests from canonical slug lists, filters them against the local free LeetCode provider manifest, and updates track checksums in `registry/index.json`.
 
 Because the provider manifest is free-only, premium-only track entries are omitted instead of creating broken references. Current available counts are Blind 75: 70/75 and NeetCode 150: 143/150.
+
+## Judge-ready overlays
+
+Use:
+
+```bash
+node scripts/update_judge_ready_seed.mjs
+node scripts/validate_judge_ready.mjs
+```
+
+`update_judge_ready_seed.mjs` writes the local authored Blind 75 overlay under `registry/providers/judge-ready/blind75.json` and adds it to `registry/index.json` after the free LeetCode bank. During sync, later overlay entries upsert the same LeetCode `(provider, external_id)` rows and import their local `test_cases`.
+
+`validate_judge_ready.mjs` checks that every judge-ready overlay references a free LeetCode slug, includes all supported starter languages, and stores valid JSON strings in every test case input and expected output.
 
 ## RegistryVersion
 

@@ -104,6 +104,40 @@ func TestEvaluate(t *testing.T) {
 		require.EqualValues(t, 5, runtimeMS)
 		require.Empty(t, errMsg)
 	})
+
+	t.Run("accepts semantically equal json", func(t *testing.T) {
+		cases := []domain.TestCase{
+			{Input: "array", Expected: "[1,2,3]"},
+			{Input: "object", Expected: `{"answer":[1,2],"ok":true}`},
+		}
+		idx := 0
+		status, verdict, passed, total, _, errMsg := Evaluate(cases, func(string) (RunResult, error) {
+			idx++
+			if idx == 1 {
+				return RunResult{Output: "[1, 2, 3]"}, nil
+			}
+			return RunResult{Output: `{"ok":true,"answer":[1,2]}`}, nil
+		})
+		require.Equal(t, domain.StatusAccepted, status)
+		require.Equal(t, domain.VerdictAccepted, verdict)
+		require.Equal(t, 2, passed)
+		require.Equal(t, 2, total)
+		require.Empty(t, errMsg)
+	})
+
+	t.Run("falls back to string comparison for non json", func(t *testing.T) {
+		status, verdict, passed, total, _, errMsg := Evaluate(
+			[]domain.TestCase{{Input: "plain", Expected: "hello"}},
+			func(string) (RunResult, error) {
+				return RunResult{Output: "hello world"}, nil
+			},
+		)
+		require.Equal(t, domain.StatusWrongAnswer, status)
+		require.Equal(t, domain.VerdictWrongAnswer, verdict)
+		require.Zero(t, passed)
+		require.Equal(t, 1, total)
+		require.Contains(t, errMsg, `expected "hello", got "hello world"`)
+	})
 }
 
 func TestIsCompileError(t *testing.T) {

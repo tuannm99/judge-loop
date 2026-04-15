@@ -51,13 +51,53 @@ func TestEvaluationServiceEvaluateSubmission(t *testing.T) {
 
 		submissions.EXPECT().GetByID(mock.Anything, subID).Return(sub, nil)
 		submissions.EXPECT().TryStartEvaluation(mock.Anything, subID).Return(true, nil)
-		testCases.EXPECT().GetByProblem(mock.Anything, problemID).Return(cases, nil)
+		testCases.EXPECT().GetAllByProblem(mock.Anything, problemID).Return(cases, nil)
 		runner.EXPECT().Run(mock.Anything, mock.MatchedBy(func(req any) bool {
 			r, ok := req.(outport.RunRequest)
 			return ok && r.Input == "1" && r.Language == "python"
 		})).Return(judge.RunResult{Output: "1", RuntimeMS: 5}, nil)
 		submissions.EXPECT().
 			UpdateVerdict(mock.Anything, subID, string(domain.StatusAccepted), string(domain.VerdictAccepted), 1, 1, int64(5), "", mock.Anything).
+			Return(nil)
+		reviews.EXPECT().Upsert(mock.Anything, userID, problemID).Return(nil)
+		sessions.EXPECT().RecordSubmission(mock.Anything, userID, true).Return(nil)
+
+		svc := NewEvaluationService(submissions, testCases, reviews, sessions, runner)
+		require.NoError(t, svc.EvaluateSubmission(context.Background(), subID, userID, 1))
+	})
+
+	t.Run("evaluates hidden test cases", func(t *testing.T) {
+		submissions := outmocks.NewMockSubmissionRepository(t)
+		testCases := outmocks.NewMockTestCaseRepository(t)
+		reviews := outmocks.NewMockReviewRepository(t)
+		sessions := outmocks.NewMockSessionRepository(t)
+		runner := outmocks.NewMockCodeRunner(t)
+
+		subID := uuid.New()
+		userID := uuid.New()
+		problemID := uuid.New()
+		sub := &domain.Submission{
+			ID:        subID,
+			UserID:    userID,
+			ProblemID: problemID,
+			Language:  domain.LanguagePython,
+			Code:      "print(input())",
+		}
+		cases := []domain.TestCase{
+			{ProblemID: problemID, Input: "public", Expected: "public"},
+			{ProblemID: problemID, Input: "hidden", Expected: "hidden", IsHidden: true},
+		}
+
+		submissions.EXPECT().GetByID(mock.Anything, subID).Return(sub, nil)
+		submissions.EXPECT().TryStartEvaluation(mock.Anything, subID).Return(true, nil)
+		testCases.EXPECT().GetAllByProblem(mock.Anything, problemID).Return(cases, nil)
+		runner.EXPECT().
+			Run(mock.Anything, mock.Anything).
+			RunAndReturn(func(_ context.Context, req outport.RunRequest) (judge.RunResult, error) {
+				return judge.RunResult{Output: req.Input, RuntimeMS: 5}, nil
+			})
+		submissions.EXPECT().
+			UpdateVerdict(mock.Anything, subID, string(domain.StatusAccepted), string(domain.VerdictAccepted), 2, 2, int64(5), "", mock.Anything).
 			Return(nil)
 		reviews.EXPECT().Upsert(mock.Anything, userID, problemID).Return(nil)
 		sessions.EXPECT().RecordSubmission(mock.Anything, userID, true).Return(nil)
@@ -76,7 +116,7 @@ func TestEvaluationServiceEvaluateSubmission(t *testing.T) {
 
 		submissions.EXPECT().GetByID(mock.Anything, subID).Return(sub, nil)
 		submissions.EXPECT().TryStartEvaluation(mock.Anything, subID).Return(true, nil)
-		testCases.EXPECT().GetByProblem(mock.Anything, problemID).Return(nil, errors.New("no cases"))
+		testCases.EXPECT().GetAllByProblem(mock.Anything, problemID).Return(nil, errors.New("no cases"))
 		submissions.EXPECT().
 			UpdateVerdict(mock.Anything, subID, string(domain.StatusRuntimeError), string(domain.VerdictRuntimeError), 0, 0, int64(0), "load test cases: no cases", mock.Anything).
 			Return(nil)
@@ -87,7 +127,7 @@ func TestEvaluationServiceEvaluateSubmission(t *testing.T) {
 		require.Contains(t, err.Error(), "load test cases")
 	})
 
-	t.Run("fails closed when no visible test cases exist", func(t *testing.T) {
+	t.Run("fails closed when no test cases exist", func(t *testing.T) {
 		submissions := outmocks.NewMockSubmissionRepository(t)
 		testCases := outmocks.NewMockTestCaseRepository(t)
 
@@ -97,15 +137,15 @@ func TestEvaluationServiceEvaluateSubmission(t *testing.T) {
 
 		submissions.EXPECT().GetByID(mock.Anything, subID).Return(sub, nil)
 		submissions.EXPECT().TryStartEvaluation(mock.Anything, subID).Return(true, nil)
-		testCases.EXPECT().GetByProblem(mock.Anything, problemID).Return([]domain.TestCase{}, nil)
+		testCases.EXPECT().GetAllByProblem(mock.Anything, problemID).Return([]domain.TestCase{}, nil)
 		submissions.EXPECT().
-			UpdateVerdict(mock.Anything, subID, string(domain.StatusRuntimeError), string(domain.VerdictRuntimeError), 0, 0, int64(0), "no visible test cases configured for problem", mock.Anything).
+			UpdateVerdict(mock.Anything, subID, string(domain.StatusRuntimeError), string(domain.VerdictRuntimeError), 0, 0, int64(0), "no test cases configured for problem", mock.Anything).
 			Return(nil)
 
 		svc := NewEvaluationService(submissions, testCases, nil, nil, nil)
 		err := svc.EvaluateSubmission(context.Background(), subID, uuid.New(), 1)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "no visible test cases")
+		require.Contains(t, err.Error(), "no test cases")
 	})
 
 	t.Run("returns review update error", func(t *testing.T) {
@@ -129,7 +169,7 @@ func TestEvaluationServiceEvaluateSubmission(t *testing.T) {
 
 		submissions.EXPECT().GetByID(mock.Anything, subID).Return(sub, nil)
 		submissions.EXPECT().TryStartEvaluation(mock.Anything, subID).Return(true, nil)
-		testCases.EXPECT().GetByProblem(mock.Anything, problemID).Return(cases, nil)
+		testCases.EXPECT().GetAllByProblem(mock.Anything, problemID).Return(cases, nil)
 		runner.EXPECT().Run(mock.Anything, mock.Anything).Return(judge.RunResult{Output: "1", RuntimeMS: 5}, nil)
 		submissions.EXPECT().
 			UpdateVerdict(mock.Anything, subID, string(domain.StatusAccepted), string(domain.VerdictAccepted), 1, 1, int64(5), "", mock.Anything).

@@ -1,0 +1,93 @@
+{
+  "provider": "judge-loop",
+  "kind": "judge-ready",
+  "track": "blind75",
+  "updated_at": "2026-04-15T18:03:35.492Z",
+  "problems": [
+    {
+      "provider": "leetcode",
+      "external_id": "1",
+      "slug": "two-sum",
+      "title": "Two Sum",
+      "difficulty": "easy",
+      "tags": [
+        "array",
+        "hash-table"
+      ],
+      "source_url": "https://leetcode.com/problems/two-sum/",
+      "estimated_time": 15,
+      "description_markdown": "Given an array of integers and a target value, return the indices of two distinct elements whose values sum to the target. Return the pair in ascending index order for deterministic local judging.",
+      "starter_code": {
+        "python": "import json\nimport sys\n\ndef two_sum(nums, target):\n    return []\n\ndef main():\n    case = json.loads(sys.stdin.read())\n    result = two_sum(case[\"nums\"], case[\"target\"])\n    print(json.dumps(result, separators=(\",\", \":\")))\n\nif __name__ == \"__main__\":\n    main()\n",
+        "go": "package main\n\nimport (\n\t\"encoding/json\"\n\t\"os\"\n)\n\ntype Case struct {\n\tNums   []int `json:\"nums\"`\n\tTarget int   `json:\"target\"`\n}\n\nfunc twoSum(nums []int, target int) []int {\n\treturn []int{}\n}\n\nfunc main() {\n\tvar c Case\n\t_ = json.NewDecoder(os.Stdin).Decode(&c)\n\t_ = json.NewEncoder(os.Stdout).Encode(twoSum(c.Nums, c.Target))\n}\n",
+        "javascript": "const fs = require('node:fs')\n\nfunction twoSum(nums, target) {\n  return []\n}\n\nconst input = fs.readFileSync(0, 'utf8')\nconst testCase = JSON.parse(input)\nprocess.stdout.write(JSON.stringify(twoSum(testCase.nums, testCase.target)))\n",
+        "typescript": "function twoSum(nums: number[], target: number): number[] {\n  return []\n}\n\nconst input = await new Response(Deno.stdin.readable).text()\nconst testCase = JSON.parse(input) as { nums: number[]; target: number }\nawait Deno.stdout.write(\n  new TextEncoder().encode(JSON.stringify(twoSum(testCase.nums, testCase.target)))\n)\n",
+        "rust": "use std::io::{self, Read};\n\nfn extract_ints(input: &str) -> Vec<i32> {\n    let mut values = Vec::new();\n    let mut current = String::new();\n    for ch in input.chars() {\n        if ch == '-' || ch.is_ascii_digit() {\n            current.push(ch);\n        } else if !current.is_empty() && current != \"-\" {\n            if let Ok(value) = current.parse::<i32>() {\n                values.push(value);\n            }\n            current.clear();\n        } else {\n            current.clear();\n        }\n    }\n    if !current.is_empty() && current != \"-\" {\n        if let Ok(value) = current.parse::<i32>() {\n            values.push(value);\n        }\n    }\n    values\n}\n\nfn two_sum(nums: &[i32], target: i32) -> Vec<usize> {\n    Vec::new()\n}\n\nfn main() {\n    let mut input = String::new();\n    io::stdin().read_to_string(&mut input).unwrap();\n    let values = extract_ints(&input);\n    if values.is_empty() {\n        print!(\"[]\");\n        return;\n    }\n    let target = *values.last().unwrap();\n    let nums = &values[..values.len() - 1];\n    let result = two_sum(nums, target);\n    let body = result\n        .iter()\n        .map(|value| value.to_string())\n        .collect::<Vec<_>>()\n        .join(\",\");\n    print!(\"[{}]\", body);\n}\n"
+      },
+      "test_cases": [
+        {
+          "input": "{\"nums\":[2,7,11,15],\"target\":9}",
+          "expected": "[0,1]"
+        },
+        {
+          "input": "{\"nums\":[3,2,4],\"target\":6}",
+          "expected": "[1,2]"
+        },
+        {
+          "input": "{\"nums\":[3,3],\"target\":6}",
+          "expected": "[0,1]",
+          "is_hidden": true
+        },
+        {
+          "input": "{\"nums\":[-1,-2,-3,-4,-5],\"target\":-8}",
+          "expected": "[2,4]",
+          "is_hidden": true
+        }
+      ],
+      "version": 1
+    },
+    {
+      "provider": "leetcode",
+      "external_id": "217",
+      "slug": "contains-duplicate",
+      "title": "Contains Duplicate",
+      "difficulty": "easy",
+      "tags": [
+        "array",
+        "hash-table",
+        "sorting"
+      ],
+      "source_url": "https://leetcode.com/problems/contains-duplicate/",
+      "estimated_time": 15,
+      "description_markdown": "Given an integer array, return true when any value appears at least twice. Return false when every value appears exactly once.",
+      "starter_code": {
+        "python": "import json\nimport sys\n\ndef contains_duplicate(nums):\n    return False\n\ndef main():\n    case = json.loads(sys.stdin.read())\n    print(json.dumps(contains_duplicate(case[\"nums\"]), separators=(\",\", \":\")))\n\nif __name__ == \"__main__\":\n    main()\n",
+        "go": "package main\n\nimport (\n\t\"encoding/json\"\n\t\"os\"\n)\n\ntype Case struct {\n\tNums []int `json:\"nums\"`\n}\n\nfunc containsDuplicate(nums []int) bool {\n\treturn false\n}\n\nfunc main() {\n\tvar c Case\n\t_ = json.NewDecoder(os.Stdin).Decode(&c)\n\t_ = json.NewEncoder(os.Stdout).Encode(containsDuplicate(c.Nums))\n}\n",
+        "javascript": "const fs = require('node:fs')\n\nfunction containsDuplicate(nums) {\n  return false\n}\n\nconst input = fs.readFileSync(0, 'utf8')\nconst testCase = JSON.parse(input)\nprocess.stdout.write(JSON.stringify(containsDuplicate(testCase.nums)))\n",
+        "typescript": "function containsDuplicate(nums: number[]): boolean {\n  return false\n}\n\nconst input = await new Response(Deno.stdin.readable).text()\nconst testCase = JSON.parse(input) as { nums: number[] }\nawait Deno.stdout.write(\n  new TextEncoder().encode(JSON.stringify(containsDuplicate(testCase.nums)))\n)\n",
+        "rust": "use std::io::{self, Read};\n\nfn extract_ints(input: &str) -> Vec<i32> {\n    let mut values = Vec::new();\n    let mut current = String::new();\n    for ch in input.chars() {\n        if ch == '-' || ch.is_ascii_digit() {\n            current.push(ch);\n        } else if !current.is_empty() && current != \"-\" {\n            if let Ok(value) = current.parse::<i32>() {\n                values.push(value);\n            }\n            current.clear();\n        } else {\n            current.clear();\n        }\n    }\n    if !current.is_empty() && current != \"-\" {\n        if let Ok(value) = current.parse::<i32>() {\n            values.push(value);\n        }\n    }\n    values\n}\n\nfn contains_duplicate(nums: &[i32]) -> bool {\n    false\n}\n\nfn main() {\n    let mut input = String::new();\n    io::stdin().read_to_string(&mut input).unwrap();\n    let nums = extract_ints(&input);\n    print!(\"{}\", if contains_duplicate(&nums) { \"true\" } else { \"false\" });\n}\n"
+      },
+      "test_cases": [
+        {
+          "input": "{\"nums\":[1,2,3,1]}",
+          "expected": "true"
+        },
+        {
+          "input": "{\"nums\":[1,2,3,4]}",
+          "expected": "false"
+        },
+        {
+          "input": "{\"nums\":[1,1,1,3,3,4,3,2,4,2]}",
+          "expected": "true",
+          "is_hidden": true
+        },
+        {
+          "input": "{\"nums\":[]}",
+          "expected": "false",
+          "is_hidden": true
+        }
+      ],
+      "version": 1
+    }
+  ]
+}

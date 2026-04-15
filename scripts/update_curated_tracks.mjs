@@ -4,7 +4,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 const rootDir = path.resolve(import.meta.dirname, '..')
-const providerPath = path.join(rootDir, 'registry/providers/leetcode.json')
+const providerPath = path.join(rootDir, 'registry/providers/leetcode/free/problems.json')
 const indexPath = path.join(rootDir, 'registry/index.json')
 
 const tracks = {
