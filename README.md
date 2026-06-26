@@ -28,7 +28,7 @@ A discipline-driven coding practice system for algorithm and interview training.
 | Backend    | Go, Gin           |
 | Database   | PostgreSQL (GORM) |
 | Migrations | goose             |
-| Queue      | Redis + asynq     |
+| Queue      | PostgreSQL        |
 | Sandbox    | Docker            |
 | Plugin     | Lua (Neovim)      |
 
@@ -40,7 +40,7 @@ judge-loop/                        # module: github.com/tuannm99/judge-loop
   cmd/                             # executable entry points (main packages only)
     migrate/                       # Run goose migrations manually
     api-server/                    # REST API server
-    judge-worker/                  # Async submission evaluator (+ optional queue monitor UI)
+    judge-worker/                  # Async submission evaluator
     local-agent/                   # Local HTTP daemon (runs on dev machine)
   internal/                        # private application code
     domain/                        # core domain types and pure domain logic
@@ -51,11 +51,10 @@ judge-loop/                        # module: github.com/tuannm99/judge-loop
       out/                         # outbound ports required by application, split by dependency
     adapter/                       # delivery and integration adapters
       http/                        # Gin handlers for api-server and local-agent
-      queue/                       # asynq-facing adapters
+      queue/                       # PostgreSQL job worker adapter
       sandbox/                     # code runner adapter
     infrastructure/                # concrete technical implementations
       postgres/                    # PostgreSQL persistence via GORM + goose; implements outbound repository ports
-      queue/                       # asynq jobs and queue wiring
       sandbox/                     # Docker sandbox execution
       registry/                    # local registry manifest loading
       localtimer/                  # in-memory local-agent timer
@@ -72,7 +71,7 @@ judge-loop/                        # module: github.com/tuannm99/judge-loop
 ## Quickstart
 
 ```bash
-make infra          # 1. start PostgreSQL + Redis
+make infra          # 1. start PostgreSQL
 make migrate        # 2. run migrations (required before first start)
 make api-server     # 3. start API server
 make judge-worker   # 4. start judge worker
@@ -96,7 +95,7 @@ mounts. Go services use Air for rebuild/restart, and the UI uses Vite HMR at
 Or without Make:
 
 ```bash
-# 1. Start infrastructure (PostgreSQL + Redis)
+# 1. Start infrastructure (PostgreSQL)
 docker compose -f deploy/compose/compose-infras.yml up -d
 
 # 2. Run database migrations (must be done before first start, and after pulling new migrations)
@@ -133,24 +132,16 @@ Migrations are **not** run automatically on startup. Run `cmd/migrate` manually 
 
 | Variable    | Default                                | Description                     |
 | ----------- | -------------------------------------- | ------------------------------- |
-| `REDIS_URL` | `localhost:6379`                       | Redis address for the job queue |
 | `PORT`      | `8080`                                 | HTTP listen port                |
 | `USER_ID`   | `00000000-0000-0000-0000-000000000001` | UUID of the local user account  |
 
 **`cmd/judge-worker`**
 
-| Variable          | Default          | Description                           |
-| ----------------- | ---------------- | ------------------------------------- |
-| `REDIS_URL`       | `localhost:6379` | Redis address                         |
-| `CONCURRENCY`     | `2`              | Number of parallel evaluation workers |
-| `TIME_LIMIT_SECS` | `10`             | Per-submission execution time limit   |
-
-`cmd/judge-worker` also supports optional flags for the embedded Asynq monitor UI:
-
-```bash
-go run ./cmd/judge-worker -ui -ui-port=8081 -ui-path=/monitoring
-make judge-worker JUDGE_WORKER_FLAGS='-ui -ui-port=8081 -ui-path=/monitoring'
-```
+| Variable          | Default        | Description                           |
+| ----------------- | -------------- | ------------------------------------- |
+| `CONCURRENCY`     | `2`            | Number of parallel evaluation workers |
+| `TIME_LIMIT_SECS` | `10`           | Per-submission execution time limit   |
+| `WORKER_ID`       | `judge-worker` | Worker identifier used for job locks  |
 
 **`cmd/local-agent`**
 
@@ -172,7 +163,7 @@ The codebase now follows a ports-and-adapters style:
 - `port/in` defines what adapters can call
 - `port/out` defines what the application needs from infrastructure
 - `adapter` contains HTTP, queue, and sandbox adapters
-- `infrastructure` contains concrete PostgreSQL, queue, sandbox, registry, and local timer implementations
+- `infrastructure` contains concrete PostgreSQL, sandbox, registry, and local timer implementations
 
 The dependency rule is simple: outer layers depend inward. `cmd/*` wires the graph; business logic stays out of entrypoints.
 

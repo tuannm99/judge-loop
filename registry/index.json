@@ -1,11 +1,16 @@
 {
-  "version": "2026-04-16-leetcode-free",
-  "updated_at": "2026-04-15T18:03:35.502Z",
+  "version": "2026-06-26-my-roadmap",
+  "updated_at": "2026-06-26T14:58:08.070Z",
   "manifests": [
     {
       "name": "leetcode",
       "path": "providers/leetcode/free/problems.json",
       "checksum": "sha256:0faab3465291aec9c8cc87db82d1117cabd04042c90cecb4ccda71341e049e39"
+    },
+    {
+      "name": "leetcode-premium",
+      "path": "providers/leetcode/premium/problems.json",
+      "checksum": "sha256:d2fa473b1e6b0c8c1a64ecc150983b2017bf5f8a87dc6eafd5a7885c08b36cf6"
     },
     {
       "name": "blind75",
@@ -16,6 +21,11 @@
       "name": "neetcode150",
       "path": "tracks/neetcode150.json",
       "checksum": "sha256:a3ff5b1fd92379ceff97e92150860446359484940847e60816e90a18ab7584ab"
+    },
+    {
+      "name": "my-roadmap",
+      "path": "tracks/my-roadmap.json",
+      "checksum": "sha256:0451d8cfba2687a3bb59b595365f7d5b3112d1babce200a87c54e64df4e91c07"
     },
     {
       "name": "judge-ready-blind75",

@@ -93,7 +93,8 @@ func prepare(language, code, dir string) ([]string, error) {
 		if err := os.WriteFile(filepath.Join(dir, "solution.py"), []byte(code), 0o644); err != nil {
 			return nil, fmt.Errorf("write solution: %w", err)
 		}
-		return append(base,
+		return append(
+			base,
 			"--memory", "64m", "--memory-swap", "64m",
 			"--cpus", "0.5",
 			"python:3.12-slim",
@@ -104,7 +105,8 @@ func prepare(language, code, dir string) ([]string, error) {
 		if err := os.WriteFile(filepath.Join(dir, "main.go"), []byte(code), 0o644); err != nil {
 			return nil, fmt.Errorf("write solution: %w", err)
 		}
-		return append(base,
+		return append(
+			base,
 			"--memory", "256m", "--memory-swap", "256m",
 			"--cpus", "0.5",
 			"golang:1.26.0-alpine",
@@ -115,7 +117,8 @@ func prepare(language, code, dir string) ([]string, error) {
 		if err := os.WriteFile(filepath.Join(dir, "solution.js"), []byte(code), 0o644); err != nil {
 			return nil, fmt.Errorf("write solution: %w", err)
 		}
-		return append(base,
+		return append(
+			base,
 			"--memory", "96m", "--memory-swap", "96m",
 			"--cpus", "0.5",
 			"node:22-alpine",
@@ -126,7 +129,8 @@ func prepare(language, code, dir string) ([]string, error) {
 		if err := os.WriteFile(filepath.Join(dir, "solution.ts"), []byte(code), 0o644); err != nil {
 			return nil, fmt.Errorf("write solution: %w", err)
 		}
-		return append(base,
+		return append(
+			base,
 			"--memory", "128m", "--memory-swap", "128m",
 			"--cpus", "0.5",
 			"denoland/deno:2.3.7",
@@ -137,7 +141,8 @@ func prepare(language, code, dir string) ([]string, error) {
 		if err := os.WriteFile(filepath.Join(dir, "main.rs"), []byte(code), 0o644); err != nil {
 			return nil, fmt.Errorf("write solution: %w", err)
 		}
-		return append(base,
+		return append(
+			base,
 			"--memory", "256m", "--memory-swap", "256m",
 			"--cpus", "0.5",
 			"rust:1-alpine",

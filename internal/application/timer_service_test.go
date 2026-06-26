@@ -10,7 +10,7 @@ import (
 	outmocks "github.com/tuannm99/judge-loop/internal/port/out/mocks"
 )
 
-func TestTimerServiceDelegates(t *testing.T) {
+func TestTimerServiceStartTimer(t *testing.T) {
 	sessions := outmocks.NewMockSessionRepository(t)
 	service := NewTimerService(sessions)
 
@@ -24,14 +24,32 @@ func TestTimerServiceDelegates(t *testing.T) {
 	gotTimer, err := service.StartTimer(ctx, userID, problemPtr)
 	require.NoError(t, err)
 	require.Equal(t, timer, gotTimer)
+}
+
+func TestTimerServiceStopTimer(t *testing.T) {
+	sessions := outmocks.NewMockSessionRepository(t)
+	service := NewTimerService(sessions)
+
+	ctx := context.Background()
+	userID := uuid.New()
+	timer := &domain.TimerSession{ID: uuid.New()}
 
 	sessions.EXPECT().StopTimer(ctx, userID).Return(timer, nil)
-	gotTimer, err = service.StopTimer(ctx, userID)
+	gotTimer, err := service.StopTimer(ctx, userID)
 	require.NoError(t, err)
 	require.Equal(t, timer, gotTimer)
+}
+
+func TestTimerServiceCurrentTimer(t *testing.T) {
+	sessions := outmocks.NewMockSessionRepository(t)
+	service := NewTimerService(sessions)
+
+	ctx := context.Background()
+	userID := uuid.New()
+	timer := &domain.TimerSession{ID: uuid.New()}
 
 	sessions.EXPECT().ActiveTimer(ctx, userID).Return(timer, nil)
-	gotTimer, err = service.CurrentTimer(ctx, userID)
+	gotTimer, err := service.CurrentTimer(ctx, userID)
 	require.NoError(t, err)
 	require.Equal(t, timer, gotTimer)
 }

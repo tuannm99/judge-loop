@@ -79,7 +79,7 @@ type MockSubmissionService_CreateSubmission_Call struct {
 //   - language string
 //   - code string
 //   - sessionID *uuid.UUID
-func (_e *MockSubmissionService_Expecter) CreateSubmission(ctx interface{}, userID interface{}, problemID interface{}, language interface{}, code interface{}, sessionID interface{}) *MockSubmissionService_CreateSubmission_Call {
+func (_e *MockSubmissionService_Expecter) CreateSubmission(ctx any, userID any, problemID any, language any, code any, sessionID any) *MockSubmissionService_CreateSubmission_Call {
 	return &MockSubmissionService_CreateSubmission_Call{Call: _e.mock.On("CreateSubmission", ctx, userID, problemID, language, code, sessionID)}
 }
 
@@ -167,7 +167,7 @@ type MockSubmissionService_GetSubmission_Call struct {
 // GetSubmission is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id uuid.UUID
-func (_e *MockSubmissionService_Expecter) GetSubmission(ctx interface{}, id interface{}) *MockSubmissionService_GetSubmission_Call {
+func (_e *MockSubmissionService_Expecter) GetSubmission(ctx any, id any) *MockSubmissionService_GetSubmission_Call {
 	return &MockSubmissionService_GetSubmission_Call{Call: _e.mock.On("GetSubmission", ctx, id)}
 }
 
@@ -238,7 +238,7 @@ type MockSubmissionService_ListSubmissions_Call struct {
 //   - problemID *uuid.UUID
 //   - limit int
 //   - offset int
-func (_e *MockSubmissionService_Expecter) ListSubmissions(ctx interface{}, userID interface{}, problemID interface{}, limit interface{}, offset interface{}) *MockSubmissionService_ListSubmissions_Call {
+func (_e *MockSubmissionService_Expecter) ListSubmissions(ctx any, userID any, problemID any, limit any, offset any) *MockSubmissionService_ListSubmissions_Call {
 	return &MockSubmissionService_ListSubmissions_Call{Call: _e.mock.On("ListSubmissions", ctx, userID, problemID, limit, offset)}
 }
 

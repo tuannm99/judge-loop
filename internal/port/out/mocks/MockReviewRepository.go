@@ -75,7 +75,7 @@ type MockReviewRepository_GetDue_Call struct {
 // GetDue is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID uuid.UUID
-func (_e *MockReviewRepository_Expecter) GetDue(ctx interface{}, userID interface{}) *MockReviewRepository_GetDue_Call {
+func (_e *MockReviewRepository_Expecter) GetDue(ctx any, userID any) *MockReviewRepository_GetDue_Call {
 	return &MockReviewRepository_GetDue_Call{Call: _e.mock.On("GetDue", ctx, userID)}
 }
 
@@ -133,7 +133,7 @@ type MockReviewRepository_Reset_Call struct {
 //   - ctx context.Context
 //   - userID uuid.UUID
 //   - problemID uuid.UUID
-func (_e *MockReviewRepository_Expecter) Reset(ctx interface{}, userID interface{}, problemID interface{}) *MockReviewRepository_Reset_Call {
+func (_e *MockReviewRepository_Expecter) Reset(ctx any, userID any, problemID any) *MockReviewRepository_Reset_Call {
 	return &MockReviewRepository_Reset_Call{Call: _e.mock.On("Reset", ctx, userID, problemID)}
 }
 
@@ -196,7 +196,7 @@ type MockReviewRepository_Upsert_Call struct {
 //   - ctx context.Context
 //   - userID uuid.UUID
 //   - problemID uuid.UUID
-func (_e *MockReviewRepository_Expecter) Upsert(ctx interface{}, userID interface{}, problemID interface{}) *MockReviewRepository_Upsert_Call {
+func (_e *MockReviewRepository_Expecter) Upsert(ctx any, userID any, problemID any) *MockReviewRepository_Upsert_Call {
 	return &MockReviewRepository_Upsert_Call{Call: _e.mock.On("Upsert", ctx, userID, problemID)}
 }
 

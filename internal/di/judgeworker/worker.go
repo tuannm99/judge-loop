@@ -2,21 +2,21 @@ package dijudge
 
 import (
 	"context"
-	"log"
 
-	"github.com/hibiken/asynq"
 	queueadapter "github.com/tuannm99/judge-loop/internal/adapter/queue"
 	"github.com/tuannm99/judge-loop/internal/config"
-	infraqueue "github.com/tuannm99/judge-loop/internal/infrastructure/queue"
+	postgres "github.com/tuannm99/judge-loop/internal/infrastructure/postgres"
 	inport "github.com/tuannm99/judge-loop/internal/port/in"
+	outport "github.com/tuannm99/judge-loop/internal/port/out"
 	"go.uber.org/fx"
 )
 
-var workerModule fx.Option = fx.Module("worker",
+var workerModule fx.Option = fx.Module(
+	"worker",
 	fx.Provide(
+		fx.Annotate(postgres.NewEvaluationJobRepositoryImpl, fx.As(new(outport.EvaluationJobQueue))),
 		provideEvaluator,
-		provideServer,
-		provideMux,
+		provideWorker,
 	),
 )
 
@@ -24,28 +24,23 @@ func provideEvaluator(cfg config.JudgeWorker, service inport.EvaluationService) 
 	return queueadapter.NewEvaluator(cfg.TimeLimitSecs, service)
 }
 
-func provideServer(cfg config.JudgeWorker) *asynq.Server {
-	return infraqueue.NewServer(cfg.RedisURL, cfg.Concurrency)
+func provideWorker(
+	cfg config.JudgeWorker,
+	queue outport.EvaluationJobQueue,
+	evaluator *queueadapter.Evaluator,
+) *queueadapter.Worker {
+	return queueadapter.NewWorker(queue, evaluator, cfg.WorkerID, cfg.Concurrency)
 }
 
-func provideMux(evaluator *queueadapter.Evaluator) *asynq.ServeMux {
-	mux := asynq.NewServeMux()
-	mux.HandleFunc(infraqueue.TypeEvaluateSubmission, evaluator.ProcessTask)
-	return mux
-}
-
-func registerLifecycle(lc fx.Lifecycle, server *asynq.Server, mux *asynq.ServeMux) {
+func registerLifecycle(lc fx.Lifecycle, worker *queueadapter.Worker) {
+	ctx, cancel := context.WithCancel(context.Background())
 	lc.Append(fx.Hook{
 		OnStart: func(context.Context) error {
-			go func() {
-				if err := server.Run(mux); err != nil {
-					log.Printf("judge-worker: %v", err)
-				}
-			}()
+			go worker.Run(ctx)
 			return nil
 		},
 		OnStop: func(context.Context) error {
-			server.Shutdown()
+			cancel()
 			return nil
 		},
 	})

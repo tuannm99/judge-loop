@@ -43,7 +43,10 @@ func (s *ProblemService) ListProblemLabelRecords(ctx context.Context, kind strin
 	return s.problems.ListLabelRecords(ctx, strings.TrimSpace(kind))
 }
 
-func (s *ProblemService) CreateProblemLabel(ctx context.Context, kind, slug, name string) (*domain.ProblemLabel, error) {
+func (s *ProblemService) CreateProblemLabel(
+	ctx context.Context,
+	kind, slug, name string,
+) (*domain.ProblemLabel, error) {
 	label := domain.ProblemLabel{
 		Kind: strings.TrimSpace(kind),
 		Slug: strings.TrimSpace(slug),
@@ -55,7 +58,11 @@ func (s *ProblemService) CreateProblemLabel(ctx context.Context, kind, slug, nam
 	return s.problems.CreateLabel(ctx, label)
 }
 
-func (s *ProblemService) UpdateProblemLabel(ctx context.Context, id uuid.UUID, slug, name string) (*domain.ProblemLabel, error) {
+func (s *ProblemService) UpdateProblemLabel(
+	ctx context.Context,
+	id uuid.UUID,
+	slug, name string,
+) (*domain.ProblemLabel, error) {
 	label := domain.ProblemLabel{
 		ID:   id,
 		Slug: strings.TrimSpace(slug),

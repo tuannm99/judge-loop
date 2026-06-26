@@ -8,10 +8,13 @@ import (
 	outport "github.com/tuannm99/judge-loop/internal/port/out"
 )
 
-func TestNewRunnerAndRun(t *testing.T) {
+func TestNewRunner(t *testing.T) {
 	runner := NewRunner()
 	require.NotNil(t, runner)
+}
 
+func TestRunnerRunRejectsUnsupportedLanguage(t *testing.T) {
+	runner := NewRunner()
 	_, err := runner.Run(context.Background(), outport.RunRequest{
 		Language: "ruby",
 		Code:     "puts 1",

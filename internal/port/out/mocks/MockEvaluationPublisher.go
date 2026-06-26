@@ -60,7 +60,7 @@ type MockEvaluationPublisher_PublishEvaluation_Call struct {
 
 // PublishEvaluation is a helper method to define mock.On call
 //   - job out.EvaluateSubmissionJob
-func (_e *MockEvaluationPublisher_Expecter) PublishEvaluation(job interface{}) *MockEvaluationPublisher_PublishEvaluation_Call {
+func (_e *MockEvaluationPublisher_Expecter) PublishEvaluation(job any) *MockEvaluationPublisher_PublishEvaluation_Call {
 	return &MockEvaluationPublisher_PublishEvaluation_Call{Call: _e.mock.On("PublishEvaluation", job)}
 }
 

@@ -16,77 +16,115 @@ import (
 	inmocks "github.com/tuannm99/judge-loop/internal/port/in/mocks"
 )
 
-func TestTimerHandlers(t *testing.T) {
+func TestTimersAPIStartTimer(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	userID := uuid.New()
-	service := inmocks.NewMockTimerService(t)
-	api := New(nil, nil, nil, service, nil, nil, nil, userID)
+
 	problemID := uuid.New()
 	timerID := uuid.New()
 	startedAt := time.Now().Add(-2 * time.Minute)
+	cases := []struct {
+		name       string
+		body       string
+		problemID  *uuid.UUID
+		timer      *domain.TimerSession
+		err        error
+		wantStatus int
+	}{
+		{
+			name:       "success",
+			body:       `{"problem_id":"` + problemID.String() + `"}`,
+			problemID:  &problemID,
+			timer:      &domain.TimerSession{ID: timerID, StartedAt: startedAt, ProblemID: &problemID},
+			wantStatus: http.StatusOK,
+		},
+		{
+			name:       "invalid problem id falls back to nil and returns service error",
+			body:       `{"problem_id":"bad"}`,
+			err:        errors.New("boom"),
+			wantStatus: http.StatusInternalServerError,
+		},
+	}
 
-	service.EXPECT().
-		StartTimer(mock.Anything, userID, &problemID).
-		Return(&domain.TimerSession{ID: timerID, StartedAt: startedAt, ProblemID: &problemID}, nil).
-		Once()
-	body := `{"problem_id":"` + problemID.String() + `"}`
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodPost, "/api/timers/start", bytes.NewBufferString(body))
-	c.Request.Header.Set("Content-Type", "application/json")
-	api.Timers.StartTimer(c)
-	require.Equal(t, http.StatusOK, w.Code)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			userID := uuid.New()
+			service := inmocks.NewMockTimerService(t)
+			api := New(nil, nil, nil, service, nil, nil, nil, userID)
 
-	service.EXPECT().StartTimer(mock.Anything, userID, (*uuid.UUID)(nil)).Return(nil, errors.New("boom")).Once()
-	w = httptest.NewRecorder()
-	c, _ = gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodPost, "/api/timers/start", bytes.NewBufferString(`{"problem_id":"bad"}`))
-	c.Request.Header.Set("Content-Type", "application/json")
-	api.Timers.StartTimer(c)
-	require.Equal(t, http.StatusInternalServerError, w.Code)
+			service.EXPECT().StartTimer(mock.Anything, userID, tc.problemID).Return(tc.timer, tc.err).Once()
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodPost, "/api/timers/start", bytes.NewBufferString(tc.body))
+			c.Request.Header.Set("Content-Type", "application/json")
+			api.Timers.StartTimer(c)
+			require.Equal(t, tc.wantStatus, w.Code)
+		})
+	}
+}
 
-	service.EXPECT().StopTimer(mock.Anything, userID).Return(nil, nil).Once()
-	w = httptest.NewRecorder()
-	c, _ = gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodPost, "/api/timers/stop", nil)
-	api.Timers.StopTimer(c)
-	require.Equal(t, http.StatusOK, w.Code)
+func TestTimersAPIStopTimer(t *testing.T) {
+	gin.SetMode(gin.TestMode)
 
-	service.EXPECT().StopTimer(mock.Anything, userID).Return(&domain.TimerSession{ElapsedSecs: 12}, nil).Once()
-	w = httptest.NewRecorder()
-	c, _ = gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodPost, "/api/timers/stop", nil)
-	api.Timers.StopTimer(c)
-	require.Equal(t, http.StatusOK, w.Code)
+	cases := []struct {
+		name       string
+		timer      *domain.TimerSession
+		err        error
+		wantStatus int
+	}{
+		{name: "no active timer", wantStatus: http.StatusOK},
+		{name: "success", timer: &domain.TimerSession{ElapsedSecs: 12}, wantStatus: http.StatusOK},
+		{name: "service error", err: errors.New("boom"), wantStatus: http.StatusInternalServerError},
+	}
 
-	service.EXPECT().StopTimer(mock.Anything, userID).Return(nil, errors.New("boom")).Once()
-	w = httptest.NewRecorder()
-	c, _ = gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodPost, "/api/timers/stop", nil)
-	api.Timers.StopTimer(c)
-	require.Equal(t, http.StatusInternalServerError, w.Code)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			userID := uuid.New()
+			service := inmocks.NewMockTimerService(t)
+			api := New(nil, nil, nil, service, nil, nil, nil, userID)
 
-	service.EXPECT().CurrentTimer(mock.Anything, userID).Return(nil, nil).Once()
-	w = httptest.NewRecorder()
-	c, _ = gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodGet, "/api/timers/current", nil)
-	api.Timers.CurrentTimer(c)
-	require.Equal(t, http.StatusOK, w.Code)
+			service.EXPECT().StopTimer(mock.Anything, userID).Return(tc.timer, tc.err).Once()
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodPost, "/api/timers/stop", nil)
+			api.Timers.StopTimer(c)
+			require.Equal(t, tc.wantStatus, w.Code)
+		})
+	}
+}
 
-	service.EXPECT().
-		CurrentTimer(mock.Anything, userID).
-		Return(&domain.TimerSession{ID: timerID, StartedAt: startedAt, ProblemID: &problemID}, nil).
-		Once()
-	w = httptest.NewRecorder()
-	c, _ = gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodGet, "/api/timers/current", nil)
-	api.Timers.CurrentTimer(c)
-	require.Equal(t, http.StatusOK, w.Code)
+func TestTimersAPICurrentTimer(t *testing.T) {
+	gin.SetMode(gin.TestMode)
 
-	service.EXPECT().CurrentTimer(mock.Anything, userID).Return(nil, errors.New("boom")).Once()
-	w = httptest.NewRecorder()
-	c, _ = gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodGet, "/api/timers/current", nil)
-	api.Timers.CurrentTimer(c)
-	require.Equal(t, http.StatusInternalServerError, w.Code)
+	problemID := uuid.New()
+	timerID := uuid.New()
+	startedAt := time.Now().Add(-2 * time.Minute)
+	cases := []struct {
+		name       string
+		timer      *domain.TimerSession
+		err        error
+		wantStatus int
+	}{
+		{name: "no active timer", wantStatus: http.StatusOK},
+		{
+			name:       "success",
+			timer:      &domain.TimerSession{ID: timerID, StartedAt: startedAt, ProblemID: &problemID},
+			wantStatus: http.StatusOK,
+		},
+		{name: "service error", err: errors.New("boom"), wantStatus: http.StatusInternalServerError},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			userID := uuid.New()
+			service := inmocks.NewMockTimerService(t)
+			api := New(nil, nil, nil, service, nil, nil, nil, userID)
+
+			service.EXPECT().CurrentTimer(mock.Anything, userID).Return(tc.timer, tc.err).Once()
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodGet, "/api/timers/current", nil)
+			api.Timers.CurrentTimer(c)
+			require.Equal(t, tc.wantStatus, w.Code)
+		})
+	}
 }

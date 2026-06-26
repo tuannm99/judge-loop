@@ -69,7 +69,6 @@ func (s *SubmissionService) CreateSubmission(
 		s.scheduleFallback(sub.ID, sub.UserID)
 		return sub, nil
 	}
-	s.scheduleFallback(sub.ID, sub.UserID)
 	return sub, nil
 }
 

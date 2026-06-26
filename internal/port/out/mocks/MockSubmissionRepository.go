@@ -65,7 +65,7 @@ type MockSubmissionRepository_Create_Call struct {
 // Create is a helper method to define mock.On call
 //   - ctx context.Context
 //   - sub *domain.Submission
-func (_e *MockSubmissionRepository_Expecter) Create(ctx interface{}, sub interface{}) *MockSubmissionRepository_Create_Call {
+func (_e *MockSubmissionRepository_Expecter) Create(ctx any, sub any) *MockSubmissionRepository_Create_Call {
 	return &MockSubmissionRepository_Create_Call{Call: _e.mock.On("Create", ctx, sub)}
 }
 
@@ -133,7 +133,7 @@ type MockSubmissionRepository_GetByID_Call struct {
 // GetByID is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id uuid.UUID
-func (_e *MockSubmissionRepository_Expecter) GetByID(ctx interface{}, id interface{}) *MockSubmissionRepository_GetByID_Call {
+func (_e *MockSubmissionRepository_Expecter) GetByID(ctx any, id any) *MockSubmissionRepository_GetByID_Call {
 	return &MockSubmissionRepository_GetByID_Call{Call: _e.mock.On("GetByID", ctx, id)}
 }
 
@@ -199,7 +199,7 @@ type MockSubmissionRepository_GetDistinctSolvedCount_Call struct {
 // GetDistinctSolvedCount is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID uuid.UUID
-func (_e *MockSubmissionRepository_Expecter) GetDistinctSolvedCount(ctx interface{}, userID interface{}) *MockSubmissionRepository_GetDistinctSolvedCount_Call {
+func (_e *MockSubmissionRepository_Expecter) GetDistinctSolvedCount(ctx any, userID any) *MockSubmissionRepository_GetDistinctSolvedCount_Call {
 	return &MockSubmissionRepository_GetDistinctSolvedCount_Call{Call: _e.mock.On("GetDistinctSolvedCount", ctx, userID)}
 }
 
@@ -270,7 +270,7 @@ type MockSubmissionRepository_ListByUser_Call struct {
 //   - problemID *uuid.UUID
 //   - limit int
 //   - offset int
-func (_e *MockSubmissionRepository_Expecter) ListByUser(ctx interface{}, userID interface{}, problemID interface{}, limit interface{}, offset interface{}) *MockSubmissionRepository_ListByUser_Call {
+func (_e *MockSubmissionRepository_Expecter) ListByUser(ctx any, userID any, problemID any, limit any, offset any) *MockSubmissionRepository_ListByUser_Call {
 	return &MockSubmissionRepository_ListByUser_Call{Call: _e.mock.On("ListByUser", ctx, userID, problemID, limit, offset)}
 }
 
@@ -351,7 +351,7 @@ type MockSubmissionRepository_TryStartEvaluation_Call struct {
 // TryStartEvaluation is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id uuid.UUID
-func (_e *MockSubmissionRepository_Expecter) TryStartEvaluation(ctx interface{}, id interface{}) *MockSubmissionRepository_TryStartEvaluation_Call {
+func (_e *MockSubmissionRepository_Expecter) TryStartEvaluation(ctx any, id any) *MockSubmissionRepository_TryStartEvaluation_Call {
 	return &MockSubmissionRepository_TryStartEvaluation_Call{Call: _e.mock.On("TryStartEvaluation", ctx, id)}
 }
 
@@ -415,7 +415,7 @@ type MockSubmissionRepository_UpdateVerdict_Call struct {
 //   - runtimeMS int64
 //   - errMsg string
 //   - evaluatedAt *time.Time
-func (_e *MockSubmissionRepository_Expecter) UpdateVerdict(ctx interface{}, id interface{}, status interface{}, verdict interface{}, passed interface{}, total interface{}, runtimeMS interface{}, errMsg interface{}, evaluatedAt interface{}) *MockSubmissionRepository_UpdateVerdict_Call {
+func (_e *MockSubmissionRepository_Expecter) UpdateVerdict(ctx any, id any, status any, verdict any, passed any, total any, runtimeMS any, errMsg any, evaluatedAt any) *MockSubmissionRepository_UpdateVerdict_Call {
 	return &MockSubmissionRepository_UpdateVerdict_Call{Call: _e.mock.On("UpdateVerdict", ctx, id, status, verdict, passed, total, runtimeMS, errMsg, evaluatedAt)}
 }
 

@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/tuannm99/judge-loop/internal/domain"
+	outport "github.com/tuannm99/judge-loop/internal/port/out"
 )
 
 type problemModel struct {
@@ -217,6 +218,33 @@ type registryVersionModel struct {
 }
 
 func (registryVersionModel) TableName() string { return "registry_versions" }
+
+type evaluationJobModel struct {
+	ID           uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	SubmissionID uuid.UUID  `gorm:"column:submission_id"`
+	UserID       uuid.UUID  `gorm:"column:user_id"`
+	Status       string     `gorm:"column:status"`
+	Attempts     int        `gorm:"column:attempts"`
+	MaxAttempts  int        `gorm:"column:max_attempts"`
+	AvailableAt  time.Time  `gorm:"column:available_at"`
+	LockedAt     *time.Time `gorm:"column:locked_at"`
+	LockedBy     string     `gorm:"column:locked_by"`
+	LastError    string     `gorm:"column:last_error"`
+	CreatedAt    time.Time  `gorm:"column:created_at"`
+	UpdatedAt    time.Time  `gorm:"column:updated_at"`
+}
+
+func (evaluationJobModel) TableName() string { return "evaluation_jobs" }
+
+func (m evaluationJobModel) toPort() outport.EvaluationJob {
+	return outport.EvaluationJob{
+		ID:           m.ID,
+		SubmissionID: m.SubmissionID,
+		UserID:       m.UserID,
+		Attempts:     m.Attempts,
+		MaxAttempts:  m.MaxAttempts,
+	}
+}
 
 type reviewScheduleModel struct {
 	ID           uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`

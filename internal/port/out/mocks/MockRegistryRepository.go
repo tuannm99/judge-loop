@@ -75,7 +75,7 @@ type MockRegistryRepository_GetLatest_Call struct {
 
 // GetLatest is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockRegistryRepository_Expecter) GetLatest(ctx interface{}) *MockRegistryRepository_GetLatest_Call {
+func (_e *MockRegistryRepository_Expecter) GetLatest(ctx any) *MockRegistryRepository_GetLatest_Call {
 	return &MockRegistryRepository_GetLatest_Call{Call: _e.mock.On("GetLatest", ctx)}
 }
 
@@ -129,7 +129,7 @@ type MockRegistryRepository_Save_Call struct {
 //   - version string
 //   - updatedAt time.Time
 //   - refs []domain.ManifestRef
-func (_e *MockRegistryRepository_Expecter) Save(ctx interface{}, version interface{}, updatedAt interface{}, refs interface{}) *MockRegistryRepository_Save_Call {
+func (_e *MockRegistryRepository_Expecter) Save(ctx any, version any, updatedAt any, refs any) *MockRegistryRepository_Save_Call {
 	return &MockRegistryRepository_Save_Call{Call: _e.mock.On("Save", ctx, version, updatedAt, refs)}
 }
 

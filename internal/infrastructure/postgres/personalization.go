@@ -86,21 +86,24 @@ type PatternScoreRow struct {
 }
 
 // GetPatternScores returns a map of pattern tag -> score (accepted/attempted).
-func (s *PerformanceRepositoryImpl) GetPatternScores(ctx context.Context, userID uuid.UUID) (map[string]float64, error) {
+func (s *PerformanceRepositoryImpl) GetPatternScores(
+	ctx context.Context,
+	userID uuid.UUID,
+) (map[string]float64, error) {
 	var rows []PatternScoreRow
-	err := s.db.Gorm.WithContext(ctx).Raw(`
+	err := s.db.Gorm.WithContext(ctx).Raw(
+		`
 		SELECT
 			pl.slug                                       AS pattern,
 			COUNT(*) FILTER (WHERE s.status = 'accepted') AS accepted,
 			COUNT(*)                                      AS attempted
 		FROM submissions s
-		JOIN problems p ON p.id = s.problem_id
-		JOIN problem_label_links pll ON pll.problem_id = p.id
-		JOIN problem_labels pl ON pl.id = pll.problem_label_id
-		WHERE s.user_id = $1
-		  AND pl.kind = 'pattern'
-		GROUP BY pl.slug
-		ORDER BY pattern`,
+			JOIN problems p ON p.id = s.problem_id
+			JOIN problem_label_links pll ON pll.problem_id = p.id
+			JOIN problem_labels pl ON pl.id = pll.problem_label_id
+			WHERE s.user_id = $1
+			GROUP BY pl.slug
+			ORDER BY pattern`,
 		userID,
 	).Scan(&rows).Error
 	if err != nil {
@@ -126,7 +129,8 @@ type PerformanceStats struct {
 // GetStats returns aggregate performance statistics for the user.
 func (s *PerformanceRepositoryImpl) GetStats(ctx context.Context, userID uuid.UUID) (PerformanceStats, error) {
 	var st PerformanceStats
-	err := s.db.Gorm.WithContext(ctx).Raw(`
+	err := s.db.Gorm.WithContext(ctx).Raw(
+		`
 		SELECT
 			COUNT(*)                                       AS total_attempts,
 			COUNT(*) FILTER (WHERE s.status = 'accepted') AS accepted_count,
@@ -143,7 +147,11 @@ func (s *PerformanceRepositoryImpl) GetStats(ctx context.Context, userID uuid.UU
 }
 
 // GetUnsolved returns problems the user has not yet accepted, in random order.
-func (s *ProblemRepositoryImpl) GetUnsolved(ctx context.Context, userID uuid.UUID, limit int) ([]domain.Problem, error) {
+func (s *ProblemRepositoryImpl) GetUnsolved(
+	ctx context.Context,
+	userID uuid.UUID,
+	limit int,
+) ([]domain.Problem, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -151,7 +159,8 @@ func (s *ProblemRepositoryImpl) GetUnsolved(ctx context.Context, userID uuid.UUI
 	var models []problemModel
 	err := s.db.Gorm.WithContext(ctx).
 		Model(&problemModel{}).
-		Where("problems.id NOT IN (?)",
+		Where(
+			"problems.id NOT IN (?)",
 			s.db.Gorm.WithContext(ctx).
 				Model(&submissionModel{}).
 				Select("DISTINCT problem_id").

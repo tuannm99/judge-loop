@@ -15,9 +15,7 @@ import (
 	"go.uber.org/fx"
 )
 
-var httpModule fx.Option = fx.Module("http",
-	fx.Provide(provideHTTP),
-)
+var httpModule fx.Option = fx.Module("http", fx.Provide(provideHTTP))
 
 func provideHTTP(
 	cfg config.APIServer,

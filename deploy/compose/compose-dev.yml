@@ -8,8 +8,7 @@ services:
     container_name: judge-loop-api-dev
     command: ['air', '-c', 'deploy/dev/air.api-server.toml']
     environment:
-      DATABASE_URL: postgres://judgeloop:judgeloop@postgres:5432/judgeloop?sslmode=disable
-      REDIS_URL: redis:6379
+      DATABASE_URL: ${DATABASE_URL:-postgres://judgeloop:judgeloop@postgres:5432/judgeloop?sslmode=disable}
       PORT: '8080'
       USER_ID: 00000000-0000-0000-0000-000000000001
       TIME_LIMIT_SECS: '10'
@@ -33,10 +32,10 @@ services:
     container_name: judge-loop-worker-dev
     command: ['air', '-c', 'deploy/dev/air.judge-worker.toml']
     environment:
-      DATABASE_URL: postgres://judgeloop:judgeloop@postgres:5432/judgeloop?sslmode=disable
-      REDIS_URL: redis:6379
+      DATABASE_URL: ${DATABASE_URL:-postgres://judgeloop:judgeloop@postgres:5432/judgeloop?sslmode=disable}
       CONCURRENCY: '2'
       TIME_LIMIT_SECS: '10'
+      WORKER_ID: judge-worker-dev
       GOCACHE: /tmp/go-build
       GOMODCACHE: /go/pkg/mod
     volumes:

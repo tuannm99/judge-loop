@@ -1,20 +1,36 @@
-filename: '{{.Mock}}{{.InterfaceName}}.go'
-force-file-write: true
-formatter: goimports
-generate: true
-include-auto-generated: false
-log-level: info
-structname: '{{.Mock}}{{.InterfaceName}}'
-recursive: false
+all: false
+pkgname: mocks
 template: testify
+filename: "Mock{{.InterfaceName}}.go"
+formatter: goimports
+force-file-write: true
+
 packages:
   github.com/tuannm99/judge-loop/internal/port/in:
     config:
-      all: true
       dir: internal/port/in/mocks
-      pkgname: mocks
+    interfaces:
+      EvaluationService:
+      MissionService:
+      ProblemService:
+      ProgressService:
+      RegistryService:
+      ReviewService:
+      SubmissionService:
+      TimerService:
+
   github.com/tuannm99/judge-loop/internal/port/out:
     config:
-      all: true
       dir: internal/port/out/mocks
-      pkgname: mocks
+    interfaces:
+      CodeRunner:
+      EvaluationJobQueue:
+      EvaluationPublisher:
+      MissionRepository:
+      PerformanceRepository:
+      ProblemRepository:
+      RegistryRepository:
+      ReviewRepository:
+      SessionRepository:
+      SubmissionRepository:
+      TestCaseRepository:

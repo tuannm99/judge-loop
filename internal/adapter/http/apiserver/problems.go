@@ -12,30 +12,30 @@ import (
 )
 
 type contributeProblemRequest struct {
-	Provider            domain.Provider             `json:"provider"       binding:"required"`
-	ExternalID          string                      `json:"external_id"    binding:"required"`
-	Slug                string                      `json:"slug"           binding:"required"`
-	Title               string                      `json:"title"          binding:"required"`
-	Difficulty          domain.Difficulty           `json:"difficulty"     binding:"required"`
+	Provider            domain.Provider             `json:"provider"             binding:"required"`
+	ExternalID          string                      `json:"external_id"          binding:"required"`
+	Slug                string                      `json:"slug"                 binding:"required"`
+	Title               string                      `json:"title"                binding:"required"`
+	Difficulty          domain.Difficulty           `json:"difficulty"           binding:"required"`
 	Tags                []string                    `json:"tags"`
 	LegacyPatternTags   []string                    `json:"pattern_tags"`
-	SourceURL           string                      `json:"source_url"     binding:"required"`
+	SourceURL           string                      `json:"source_url"           binding:"required"`
 	EstimatedTime       int                         `json:"estimated_time"`
 	DescriptionMarkdown string                      `json:"description_markdown"`
 	StarterCode         map[string]string           `json:"starter_code"`
 	Version             int                         `json:"version"`
-	TestCases           []contributeTestCaseRequest `json:"test_cases"     binding:"required,min=1"`
+	TestCases           []contributeTestCaseRequest `json:"test_cases"           binding:"required,min=1"`
 }
 
 type updateProblemRequest struct {
-	Provider            domain.Provider             `json:"provider"       binding:"required"`
-	ExternalID          string                      `json:"external_id"    binding:"required"`
-	Slug                string                      `json:"slug"           binding:"required"`
-	Title               string                      `json:"title"          binding:"required"`
-	Difficulty          domain.Difficulty           `json:"difficulty"     binding:"required"`
+	Provider            domain.Provider             `json:"provider"             binding:"required"`
+	ExternalID          string                      `json:"external_id"          binding:"required"`
+	Slug                string                      `json:"slug"                 binding:"required"`
+	Title               string                      `json:"title"                binding:"required"`
+	Difficulty          domain.Difficulty           `json:"difficulty"           binding:"required"`
 	Tags                []string                    `json:"tags"`
 	LegacyPatternTags   []string                    `json:"pattern_tags"`
-	SourceURL           string                      `json:"source_url"     binding:"required"`
+	SourceURL           string                      `json:"source_url"           binding:"required"`
 	EstimatedTime       int                         `json:"estimated_time"`
 	DescriptionMarkdown string                      `json:"description_markdown"`
 	StarterCode         map[string]string           `json:"starter_code"`

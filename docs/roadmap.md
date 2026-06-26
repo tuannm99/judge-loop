@@ -4,7 +4,7 @@
 
 - Monorepo directory structure (`cmd/`, `internal/`)
 - Documentation
-- Docker Compose (PostgreSQL + Redis)
+- Docker Compose (PostgreSQL + Postgres-backed queue)
 - DB schema + seed problems
 - Domain models
 - Single Go module (`github.com/tuannm99/judge-loop`, Go 1.26.0)

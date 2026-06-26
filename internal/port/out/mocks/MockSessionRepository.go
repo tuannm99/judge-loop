@@ -76,7 +76,7 @@ type MockSessionRepository_ActiveTimer_Call struct {
 // ActiveTimer is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID uuid.UUID
-func (_e *MockSessionRepository_Expecter) ActiveTimer(ctx interface{}, userID interface{}) *MockSessionRepository_ActiveTimer_Call {
+func (_e *MockSessionRepository_Expecter) ActiveTimer(ctx any, userID any) *MockSessionRepository_ActiveTimer_Call {
 	return &MockSessionRepository_ActiveTimer_Call{Call: _e.mock.On("ActiveTimer", ctx, userID)}
 }
 
@@ -144,7 +144,7 @@ type MockSessionRepository_GetOrCreateToday_Call struct {
 // GetOrCreateToday is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID uuid.UUID
-func (_e *MockSessionRepository_Expecter) GetOrCreateToday(ctx interface{}, userID interface{}) *MockSessionRepository_GetOrCreateToday_Call {
+func (_e *MockSessionRepository_Expecter) GetOrCreateToday(ctx any, userID any) *MockSessionRepository_GetOrCreateToday_Call {
 	return &MockSessionRepository_GetOrCreateToday_Call{Call: _e.mock.On("GetOrCreateToday", ctx, userID)}
 }
 
@@ -210,7 +210,7 @@ type MockSessionRepository_GetStreak_Call struct {
 // GetStreak is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID uuid.UUID
-func (_e *MockSessionRepository_Expecter) GetStreak(ctx interface{}, userID interface{}) *MockSessionRepository_GetStreak_Call {
+func (_e *MockSessionRepository_Expecter) GetStreak(ctx any, userID any) *MockSessionRepository_GetStreak_Call {
 	return &MockSessionRepository_GetStreak_Call{Call: _e.mock.On("GetStreak", ctx, userID)}
 }
 
@@ -268,7 +268,7 @@ type MockSessionRepository_RecordSubmission_Call struct {
 //   - ctx context.Context
 //   - userID uuid.UUID
 //   - accepted bool
-func (_e *MockSessionRepository_Expecter) RecordSubmission(ctx interface{}, userID interface{}, accepted interface{}) *MockSessionRepository_RecordSubmission_Call {
+func (_e *MockSessionRepository_Expecter) RecordSubmission(ctx any, userID any, accepted any) *MockSessionRepository_RecordSubmission_Call {
 	return &MockSessionRepository_RecordSubmission_Call{Call: _e.mock.On("RecordSubmission", ctx, userID, accepted)}
 }
 
@@ -342,7 +342,7 @@ type MockSessionRepository_StartTimer_Call struct {
 //   - ctx context.Context
 //   - userID uuid.UUID
 //   - problemID *uuid.UUID
-func (_e *MockSessionRepository_Expecter) StartTimer(ctx interface{}, userID interface{}, problemID interface{}) *MockSessionRepository_StartTimer_Call {
+func (_e *MockSessionRepository_Expecter) StartTimer(ctx any, userID any, problemID any) *MockSessionRepository_StartTimer_Call {
 	return &MockSessionRepository_StartTimer_Call{Call: _e.mock.On("StartTimer", ctx, userID, problemID)}
 }
 
@@ -415,7 +415,7 @@ type MockSessionRepository_StopTimer_Call struct {
 // StopTimer is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID uuid.UUID
-func (_e *MockSessionRepository_Expecter) StopTimer(ctx interface{}, userID interface{}) *MockSessionRepository_StopTimer_Call {
+func (_e *MockSessionRepository_Expecter) StopTimer(ctx any, userID any) *MockSessionRepository_StopTimer_Call {
 	return &MockSessionRepository_StopTimer_Call{Call: _e.mock.On("StopTimer", ctx, userID)}
 }
 

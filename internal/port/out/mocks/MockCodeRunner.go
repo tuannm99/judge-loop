@@ -73,7 +73,7 @@ type MockCodeRunner_Run_Call struct {
 // Run is a helper method to define mock.On call
 //   - ctx context.Context
 //   - req out.RunRequest
-func (_e *MockCodeRunner_Expecter) Run(ctx interface{}, req interface{}) *MockCodeRunner_Run_Call {
+func (_e *MockCodeRunner_Expecter) Run(ctx any, req any) *MockCodeRunner_Run_Call {
 	return &MockCodeRunner_Run_Call{Call: _e.mock.On("Run", ctx, req)}
 }
 

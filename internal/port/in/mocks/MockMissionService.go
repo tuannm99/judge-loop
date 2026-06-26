@@ -75,7 +75,7 @@ type MockMissionService_GetDailyMission_Call struct {
 // GetDailyMission is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID uuid.UUID
-func (_e *MockMissionService_Expecter) GetDailyMission(ctx interface{}, userID interface{}) *MockMissionService_GetDailyMission_Call {
+func (_e *MockMissionService_Expecter) GetDailyMission(ctx any, userID any) *MockMissionService_GetDailyMission_Call {
 	return &MockMissionService_GetDailyMission_Call{Call: _e.mock.On("GetDailyMission", ctx, userID)}
 }
 

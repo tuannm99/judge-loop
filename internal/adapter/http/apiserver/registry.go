@@ -16,6 +16,12 @@ type registrySyncRequest struct {
 	Manifests []domain.ManifestRef     `json:"manifests"`
 }
 
+// dataProblemsImportRequest is the body for POST /api/data/problems and
+// POST /api/data/problems/import.
+// Its shape intentionally mirrors the registry manifest payload so import can
+// preserve the same problem fields and registry version metadata.
+type dataProblemsImportRequest registrySyncRequest
+
 // SyncRegistry handles POST /api/registry/sync.
 // It upserts all problems from the supplied manifests and records the registry version.
 func (h *RegistryAPI) SyncRegistry(c *gin.Context) {
@@ -40,6 +46,33 @@ func (h *RegistryAPI) SyncRegistry(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"version": req.Version,
 		"synced":  synced,
+	})
+}
+
+// ImportDataProblems handles POST /api/data/problems and POST /api/data/problems/import.
+// It imports problem metadata using the same fields as registry manifests.
+func (h *RegistryAPI) ImportDataProblems(c *gin.Context) {
+	var req dataProblemsImportRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	imported, err := h.service.SyncRegistry(
+		c.Request.Context(),
+		req.Version,
+		req.UpdatedAt,
+		req.Problems,
+		req.Manifests,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"version":  req.Version,
+		"imported": imported,
 	})
 }
 

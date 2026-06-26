@@ -51,6 +51,11 @@ func RegisterRoutes(router gin.IRouter, api *API) {
 		timers.GET("/current", api.Timers.CurrentTimer)
 
 		v1.GET("/reviews/today", api.Reviews.GetReviewsToday)
+
+		data := v1.Group("/data")
+		data.POST("/problems", api.Registry.ImportDataProblems)
+		data.POST("/problems/import", api.Registry.ImportDataProblems)
+
 		v1.POST("/registry/sync", api.Registry.SyncRegistry)
 		v1.GET("/registry/version", api.Registry.GetRegistryVersion)
 

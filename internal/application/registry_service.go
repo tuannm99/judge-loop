@@ -51,7 +51,8 @@ func (s *RegistryService) SyncRegistry(
 			if problem == nil {
 				return 0, fmt.Errorf("problem not found after registry upsert: %s", m.Slug)
 			}
-			if err := s.testCases.ReplaceForProblem(ctx, problem.ID, testCaseManifestsToDomain(problem.ID, m.TestCases)); err != nil {
+			testCases := testCaseManifestsToDomain(problem.ID, m.TestCases)
+			if err := s.testCases.ReplaceForProblem(ctx, problem.ID, testCases); err != nil {
 				return 0, err
 			}
 		}

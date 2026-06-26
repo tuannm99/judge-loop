@@ -6,12 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hibiken/asynq"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/tuannm99/judge-loop/internal/config"
 	inmocks "github.com/tuannm99/judge-loop/internal/port/in/mocks"
+	outmocks "github.com/tuannm99/judge-loop/internal/port/out/mocks"
 	"go.uber.org/fx/fxtest"
 )
 
@@ -81,23 +83,44 @@ func TestProvideDB(t *testing.T) {
 	})
 }
 
-func TestProvideHelpers(t *testing.T) {
+func TestProvideEvaluator(t *testing.T) {
 	service := inmocks.NewMockEvaluationService(t)
 	evaluator := provideEvaluator(config.JudgeWorker{TimeLimitSecs: 3}, service)
 	require.NotNil(t, evaluator)
+}
 
-	server := provideServer(config.JudgeWorker{RedisURL: "redis://localhost:6379", Concurrency: 2})
-	require.NotNil(t, server)
-
-	mux := provideMux(evaluator)
-	require.NotNil(t, mux)
+func TestProvideWorker(t *testing.T) {
+	service := inmocks.NewMockEvaluationService(t)
+	evaluator := provideEvaluator(config.JudgeWorker{TimeLimitSecs: 3}, service)
+	worker := provideWorker(
+		config.JudgeWorker{WorkerID: "test-worker", Concurrency: 2},
+		outmocks.NewMockEvaluationJobQueue(t),
+		evaluator,
+	)
+	require.NotNil(t, worker)
 }
 
 func TestRegisterLifecycle(t *testing.T) {
 	lc := fxtest.NewLifecycle(t)
-	server := asynq.NewServer(asynq.RedisClientOpt{Addr: "localhost:0"}, asynq.Config{Concurrency: 1})
-	mux := asynq.NewServeMux()
-	registerLifecycle(lc, server, mux)
+	service := evaluationServiceFunc(func(context.Context, uuid.UUID, uuid.UUID, int) error { return nil })
+	queue := outmocks.NewMockEvaluationJobQueue(t)
+	queue.EXPECT().ClaimEvaluationJob(mock.Anything, "test-worker").Return(nil, nil).Maybe()
+	worker := provideWorker(
+		config.JudgeWorker{WorkerID: "test-worker", Concurrency: 1, TimeLimitSecs: 1},
+		queue,
+		provideEvaluator(config.JudgeWorker{TimeLimitSecs: 1}, service),
+	)
+	registerLifecycle(lc, worker)
 	lc.RequireStart()
 	lc.RequireStop()
+}
+
+type evaluationServiceFunc func(ctx context.Context, submissionID, userID uuid.UUID, timeLimitSecs int) error
+
+func (f evaluationServiceFunc) EvaluateSubmission(
+	ctx context.Context,
+	submissionID, userID uuid.UUID,
+	timeLimitSecs int,
+) error {
+	return f(ctx, submissionID, userID, timeLimitSecs)
 }

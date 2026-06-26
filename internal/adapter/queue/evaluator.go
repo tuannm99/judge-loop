@@ -2,48 +2,30 @@ package queueadapter
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 
-	"github.com/google/uuid"
-	"github.com/hibiken/asynq"
-	q "github.com/tuannm99/judge-loop/internal/infrastructure/queue"
-	inport "github.com/tuannm99/judge-loop/internal/port/in"
+	"github.com/tuannm99/judge-loop/internal/port/in"
+	"github.com/tuannm99/judge-loop/internal/port/out"
 )
 
-// Evaluator processes submission evaluation jobs from the queue.
+// Evaluator runs a claimed evaluation job through the application service.
 type Evaluator struct {
 	timeLimitSecs int
-	service       inport.EvaluationService
+	service       in.EvaluationService
 }
 
-var _ asynq.Handler = (*Evaluator)(nil)
-
-// NewEvaluator creates an Evaluator wired to the given evaluation service.
-func NewEvaluator(timeLimitSecs int, service inport.EvaluationService) *Evaluator {
+func NewEvaluator(timeLimitSecs int, service in.EvaluationService) *Evaluator {
 	return &Evaluator{
 		timeLimitSecs: timeLimitSecs,
 		service:       service,
 	}
 }
 
-// ProcessTask implements asynq.Handler for TypeEvaluateSubmission jobs.
-func (e *Evaluator) ProcessTask(ctx context.Context, t *asynq.Task) error {
-	var payload q.EvaluatePayload
-	if err := json.Unmarshal(t.Payload(), &payload); err != nil {
-		return fmt.Errorf("unmarshal payload: %w", err)
+func (e *Evaluator) ProcessJob(ctx context.Context, job out.EvaluationJob) error {
+	log.Printf("evaluating submission %s", job.SubmissionID)
+	if err := e.service.EvaluateSubmission(ctx, job.SubmissionID, job.UserID, e.timeLimitSecs); err != nil {
+		return fmt.Errorf("evaluate submission %s: %w", job.SubmissionID, err)
 	}
-
-	subID, err := uuid.Parse(payload.SubmissionID)
-	if err != nil {
-		return fmt.Errorf("parse submission_id: %w", err)
-	}
-	userID, err := uuid.Parse(payload.UserID)
-	if err != nil {
-		return fmt.Errorf("parse user_id: %w", err)
-	}
-
-	log.Printf("evaluating submission %s", subID)
-	return e.service.EvaluateSubmission(ctx, subID, userID, e.timeLimitSecs)
+	return nil
 }

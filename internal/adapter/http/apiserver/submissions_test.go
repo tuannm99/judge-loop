@@ -15,121 +15,173 @@ import (
 	inmocks "github.com/tuannm99/judge-loop/internal/port/in/mocks"
 )
 
-func TestSubmissionHandlers(t *testing.T) {
+func TestSubmissionsAPICreateSubmission(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	userID := uuid.New()
-	service := inmocks.NewMockSubmissionService(t)
-	api := New(nil, service, nil, nil, nil, nil, nil, userID)
 
 	problemID := uuid.New()
 	sessionID := uuid.New()
 	submissionID := uuid.New()
+	cases := []struct {
+		name       string
+		body       string
+		language   string
+		code       string
+		sessionID  *uuid.UUID
+		result     *domain.Submission
+		err        error
+		wantStatus int
+		wantCall   bool
+	}{
+		{
+			name: "success",
+			body: `{"problem_id":"` + problemID.String() +
+				`","language":"go","code":"package main{}","session_id":"` + sessionID.String() + `"}`,
+			language:   "go",
+			code:       "package main{}",
+			sessionID:  &sessionID,
+			result:     &domain.Submission{ID: submissionID, Status: domain.StatusPending},
+			wantStatus: http.StatusCreated,
+			wantCall:   true,
+		},
+		{name: "malformed body", body: "{", wantStatus: http.StatusBadRequest},
+		{
+			name:       "bad problem id",
+			body:       `{"problem_id":"bad","language":"go","code":"x"}`,
+			wantStatus: http.StatusBadRequest,
+		},
+		{
+			name:       "unsupported language",
+			body:       `{"problem_id":"` + problemID.String() + `","language":"ruby","code":"puts 1"}`,
+			language:   "ruby",
+			code:       "puts 1",
+			err:        domain.ErrUnsupportedSubmissionLanguage,
+			wantStatus: http.StatusBadRequest,
+			wantCall:   true,
+		},
+		{
+			name:       "service error with invalid session id ignored",
+			body:       `{"problem_id":"` + problemID.String() + `","language":"go","code":"x","session_id":"bad"}`,
+			language:   "go",
+			code:       "x",
+			err:        errors.New("boom"),
+			wantStatus: http.StatusInternalServerError,
+			wantCall:   true,
+		},
+	}
 
-	t.Run("create submission success", func(t *testing.T) {
-		service.EXPECT().CreateSubmission(mock.Anything, userID, problemID, "go", "package main{}", &sessionID).
-			Return(&domain.Submission{ID: submissionID, Status: domain.StatusPending}, nil).Once()
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			userID := uuid.New()
+			service := inmocks.NewMockSubmissionService(t)
+			api := New(nil, service, nil, nil, nil, nil, nil, userID)
+			if tc.wantCall {
+				service.EXPECT().
+					CreateSubmission(mock.Anything, userID, problemID, tc.language, tc.code, tc.sessionID).
+					Return(tc.result, tc.err).
+					Once()
+			}
 
-		body := `{"problem_id":"` + problemID.String() + `","language":"go","code":"package main{}","session_id":"` + sessionID.String() + `"}`
-		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
-		c.Request = httptest.NewRequest(http.MethodPost, "/api/submissions", bytes.NewBufferString(body))
-		c.Request.Header.Set("Content-Type", "application/json")
-		api.Submissions.CreateSubmission(c)
-		require.Equal(t, http.StatusCreated, w.Code)
-	})
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodPost, "/api/submissions", bytes.NewBufferString(tc.body))
+			c.Request.Header.Set("Content-Type", "application/json")
+			api.Submissions.CreateSubmission(c)
+			require.Equal(t, tc.wantStatus, w.Code)
+		})
+	}
+}
 
-	t.Run("create submission bad request and server error", func(t *testing.T) {
-		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
-		c.Request = httptest.NewRequest(http.MethodPost, "/api/submissions", bytes.NewBufferString("{"))
-		c.Request.Header.Set("Content-Type", "application/json")
-		api.Submissions.CreateSubmission(c)
-		require.Equal(t, http.StatusBadRequest, w.Code)
+func TestSubmissionsAPIGetSubmission(t *testing.T) {
+	gin.SetMode(gin.TestMode)
 
-		body := `{"problem_id":"bad","language":"go","code":"x"}`
-		w = httptest.NewRecorder()
-		c, _ = gin.CreateTestContext(w)
-		c.Request = httptest.NewRequest(http.MethodPost, "/api/submissions", bytes.NewBufferString(body))
-		c.Request.Header.Set("Content-Type", "application/json")
-		api.Submissions.CreateSubmission(c)
-		require.Equal(t, http.StatusBadRequest, w.Code)
+	submissionID := uuid.New()
+	cases := []struct {
+		name       string
+		idParam    string
+		result     *domain.Submission
+		err        error
+		wantStatus int
+		wantCall   bool
+	}{
+		{
+			name:       "success",
+			idParam:    submissionID.String(),
+			result:     &domain.Submission{ID: submissionID},
+			wantStatus: http.StatusOK,
+			wantCall:   true,
+		},
+		{name: "bad id", idParam: "bad", wantStatus: http.StatusBadRequest},
+		{name: "not found", idParam: submissionID.String(), wantStatus: http.StatusNotFound, wantCall: true},
+		{
+			name:       "service error",
+			idParam:    submissionID.String(),
+			err:        errors.New("boom"),
+			wantStatus: http.StatusInternalServerError,
+			wantCall:   true,
+		},
+	}
 
-		service.EXPECT().
-			CreateSubmission(mock.Anything, userID, problemID, "ruby", "puts 1", (*uuid.UUID)(nil)).
-			Return(nil, domain.ErrUnsupportedSubmissionLanguage).
-			Once()
-		body = `{"problem_id":"` + problemID.String() + `","language":"ruby","code":"puts 1"}`
-		w = httptest.NewRecorder()
-		c, _ = gin.CreateTestContext(w)
-		c.Request = httptest.NewRequest(http.MethodPost, "/api/submissions", bytes.NewBufferString(body))
-		c.Request.Header.Set("Content-Type", "application/json")
-		api.Submissions.CreateSubmission(c)
-		require.Equal(t, http.StatusBadRequest, w.Code)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			service := inmocks.NewMockSubmissionService(t)
+			api := New(nil, service, nil, nil, nil, nil, nil, uuid.New())
+			if tc.wantCall {
+				service.EXPECT().GetSubmission(mock.Anything, submissionID).Return(tc.result, tc.err).Once()
+			}
 
-		service.EXPECT().CreateSubmission(mock.Anything, userID, problemID, "go", "x", (*uuid.UUID)(nil)).
-			Return(nil, errors.New("boom")).Once()
-		body = `{"problem_id":"` + problemID.String() + `","language":"go","code":"x","session_id":"bad"}`
-		w = httptest.NewRecorder()
-		c, _ = gin.CreateTestContext(w)
-		c.Request = httptest.NewRequest(http.MethodPost, "/api/submissions", bytes.NewBufferString(body))
-		c.Request.Header.Set("Content-Type", "application/json")
-		api.Submissions.CreateSubmission(c)
-		require.Equal(t, http.StatusInternalServerError, w.Code)
-	})
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Params = gin.Params{{Key: "id", Value: tc.idParam}}
+			c.Request = httptest.NewRequest(http.MethodGet, "/api/submissions/"+tc.idParam, nil)
+			api.Submissions.GetSubmission(c)
+			require.Equal(t, tc.wantStatus, w.Code)
+		})
+	}
+}
 
-	t.Run("get submission and list submissions branches", func(t *testing.T) {
-		service.EXPECT().
-			GetSubmission(mock.Anything, submissionID).
-			Return(&domain.Submission{ID: submissionID}, nil).
-			Once()
-		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
-		c.Params = gin.Params{{Key: "id", Value: submissionID.String()}}
-		c.Request = httptest.NewRequest(http.MethodGet, "/api/submissions/"+submissionID.String(), nil)
-		api.Submissions.GetSubmission(c)
-		require.Equal(t, http.StatusOK, w.Code)
+func TestSubmissionsAPIListSubmissions(t *testing.T) {
+	gin.SetMode(gin.TestMode)
 
-		w = httptest.NewRecorder()
-		c, _ = gin.CreateTestContext(w)
-		c.Params = gin.Params{{Key: "id", Value: "bad"}}
-		c.Request = httptest.NewRequest(http.MethodGet, "/api/submissions/bad", nil)
-		api.Submissions.GetSubmission(c)
-		require.Equal(t, http.StatusBadRequest, w.Code)
+	problemID := uuid.New()
+	submissionID := uuid.New()
+	cases := []struct {
+		name       string
+		path       string
+		problemID  *uuid.UUID
+		result     []domain.Submission
+		err        error
+		wantStatus int
+	}{
+		{
+			name:       "success",
+			path:       "/api/submissions/history?problem_id=" + problemID.String(),
+			problemID:  &problemID,
+			result:     []domain.Submission{{ID: submissionID}},
+			wantStatus: http.StatusOK,
+		},
+		{
+			name:       "invalid problem id ignored then service error",
+			path:       "/api/submissions/history?problem_id=bad",
+			err:        errors.New("boom"),
+			wantStatus: http.StatusInternalServerError,
+		},
+	}
 
-		service.EXPECT().GetSubmission(mock.Anything, submissionID).Return(nil, nil).Once()
-		w = httptest.NewRecorder()
-		c, _ = gin.CreateTestContext(w)
-		c.Params = gin.Params{{Key: "id", Value: submissionID.String()}}
-		c.Request = httptest.NewRequest(http.MethodGet, "/api/submissions/"+submissionID.String(), nil)
-		api.Submissions.GetSubmission(c)
-		require.Equal(t, http.StatusNotFound, w.Code)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			userID := uuid.New()
+			service := inmocks.NewMockSubmissionService(t)
+			api := New(nil, service, nil, nil, nil, nil, nil, userID)
 
-		service.EXPECT().GetSubmission(mock.Anything, submissionID).Return(nil, errors.New("boom")).Once()
-		w = httptest.NewRecorder()
-		c, _ = gin.CreateTestContext(w)
-		c.Params = gin.Params{{Key: "id", Value: submissionID.String()}}
-		c.Request = httptest.NewRequest(http.MethodGet, "/api/submissions/"+submissionID.String(), nil)
-		api.Submissions.GetSubmission(c)
-		require.Equal(t, http.StatusInternalServerError, w.Code)
-
-		service.EXPECT().
-			ListSubmissions(mock.Anything, userID, &problemID, 20, 0).
-			Return([]domain.Submission{{ID: submissionID}}, nil).
-			Once()
-		w = httptest.NewRecorder()
-		c, _ = gin.CreateTestContext(w)
-		c.Request = httptest.NewRequest(http.MethodGet, "/api/submissions/history?problem_id="+problemID.String(), nil)
-		api.Submissions.ListSubmissions(c)
-		require.Equal(t, http.StatusOK, w.Code)
-
-		service.EXPECT().
-			ListSubmissions(mock.Anything, userID, (*uuid.UUID)(nil), 20, 0).
-			Return(nil, errors.New("boom")).
-			Once()
-		w = httptest.NewRecorder()
-		c, _ = gin.CreateTestContext(w)
-		c.Request = httptest.NewRequest(http.MethodGet, "/api/submissions/history?problem_id=bad", nil)
-		api.Submissions.ListSubmissions(c)
-		require.Equal(t, http.StatusInternalServerError, w.Code)
-	})
+			service.EXPECT().
+				ListSubmissions(mock.Anything, userID, tc.problemID, 20, 0).
+				Return(tc.result, tc.err).
+				Once()
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodGet, tc.path, nil)
+			api.Submissions.ListSubmissions(c)
+			require.Equal(t, tc.wantStatus, w.Code)
+		})
+	}
 }

@@ -75,7 +75,7 @@ type MockTimerService_CurrentTimer_Call struct {
 // CurrentTimer is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID uuid.UUID
-func (_e *MockTimerService_Expecter) CurrentTimer(ctx interface{}, userID interface{}) *MockTimerService_CurrentTimer_Call {
+func (_e *MockTimerService_Expecter) CurrentTimer(ctx any, userID any) *MockTimerService_CurrentTimer_Call {
 	return &MockTimerService_CurrentTimer_Call{Call: _e.mock.On("CurrentTimer", ctx, userID)}
 }
 
@@ -144,7 +144,7 @@ type MockTimerService_StartTimer_Call struct {
 //   - ctx context.Context
 //   - userID uuid.UUID
 //   - problemID *uuid.UUID
-func (_e *MockTimerService_Expecter) StartTimer(ctx interface{}, userID interface{}, problemID interface{}) *MockTimerService_StartTimer_Call {
+func (_e *MockTimerService_Expecter) StartTimer(ctx any, userID any, problemID any) *MockTimerService_StartTimer_Call {
 	return &MockTimerService_StartTimer_Call{Call: _e.mock.On("StartTimer", ctx, userID, problemID)}
 }
 
@@ -217,7 +217,7 @@ type MockTimerService_StopTimer_Call struct {
 // StopTimer is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID uuid.UUID
-func (_e *MockTimerService_Expecter) StopTimer(ctx interface{}, userID interface{}) *MockTimerService_StopTimer_Call {
+func (_e *MockTimerService_Expecter) StopTimer(ctx any, userID any) *MockTimerService_StopTimer_Call {
 	return &MockTimerService_StopTimer_Call{Call: _e.mock.On("StopTimer", ctx, userID)}
 }
 

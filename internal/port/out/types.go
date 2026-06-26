@@ -40,6 +40,14 @@ type EvaluateSubmissionJob struct {
 	UserID       string
 }
 
+type EvaluationJob struct {
+	ID           uuid.UUID
+	SubmissionID uuid.UUID
+	UserID       uuid.UUID
+	Attempts     int
+	MaxAttempts  int
+}
+
 type RunRequest struct {
 	Language string
 	Code     string

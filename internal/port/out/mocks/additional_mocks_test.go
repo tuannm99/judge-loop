@@ -39,9 +39,11 @@ func TestAdditionalRepositoryMocks(t *testing.T) {
 	gotMission, err := missionRepo.GetToday(ctx, userID)
 	require.NoError(t, err)
 	require.Equal(t, mission.ID, gotMission.ID)
-	missionRepo.EXPECT().GetToday(mock.Anything, userID).RunAndReturn(func(context.Context, uuid.UUID) (*domain.DailyMission, error) {
-		return &mission, nil
-	})
+	missionRepo.EXPECT().
+		GetToday(mock.Anything, userID).
+		RunAndReturn(func(context.Context, uuid.UUID) (*domain.DailyMission, error) {
+			return &mission, nil
+		})
 	_, err = missionRepo.GetToday(ctx, userID)
 	require.NoError(t, err)
 	missionRepo.EXPECT().Save(mock.Anything, mission).Run(func(context.Context, domain.DailyMission) {}).Return(nil)
@@ -54,13 +56,18 @@ func TestAdditionalRepositoryMocks(t *testing.T) {
 	perfRepo := NewMockPerformanceRepository(t)
 	require.NotNil(t, perfRepo.EXPECT())
 	scores := map[string]float64{"dp": 0.8}
-	perfRepo.EXPECT().GetPatternScores(mock.Anything, userID).Run(func(context.Context, uuid.UUID) {}).Return(scores, nil)
+	perfRepo.EXPECT().
+		GetPatternScores(mock.Anything, userID).
+		Run(func(context.Context, uuid.UUID) {}).
+		Return(scores, nil)
 	gotScores, err := perfRepo.GetPatternScores(ctx, userID)
 	require.NoError(t, err)
-	require.Equal(t, 0.8, gotScores["dp"])
-	perfRepo.EXPECT().GetPatternScores(mock.Anything, userID).RunAndReturn(func(context.Context, uuid.UUID) (map[string]float64, error) {
-		return scores, nil
-	})
+	require.InEpsilon(t, 0.8, gotScores["dp"], 0.001)
+	perfRepo.EXPECT().
+		GetPatternScores(mock.Anything, userID).
+		RunAndReturn(func(context.Context, uuid.UUID) (map[string]float64, error) {
+			return scores, nil
+		})
 	_, err = perfRepo.GetPatternScores(ctx, userID)
 	require.NoError(t, err)
 

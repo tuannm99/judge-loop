@@ -15,7 +15,7 @@ func TestNew(t *testing.T) {
 	require.NotNil(t, New(config.LocalAgent{}))
 }
 
-func TestProvideHelpers(t *testing.T) {
+func TestProvideHandler(t *testing.T) {
 	cfg := config.LocalAgent{
 		ServerURL:    "http://localhost:8080",
 		BindAddress:  "127.0.0.1",
@@ -26,8 +26,15 @@ func TestProvideHelpers(t *testing.T) {
 
 	handler := provideHandler(cfg)
 	require.NotNil(t, handler)
+}
 
-	server := provideHTTP(cfg, handler)
+func TestProvideHTTP(t *testing.T) {
+	cfg := config.LocalAgent{
+		BindAddress: "127.0.0.1",
+		Port:        7070,
+	}
+
+	server := provideHTTP(cfg, localagent.NewHandler(&localagent.APIClient{}, "user-1", "./registry"))
 	require.Equal(t, "127.0.0.1:7070", server.Addr)
 	require.NotNil(t, server.Handler)
 }

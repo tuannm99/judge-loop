@@ -20,7 +20,8 @@ func New(cfg config.JudgeWorker) *fx.App {
 		fx.WithLogger(func() fxevent.Logger { return fxevent.NopLogger }),
 		fx.Supply(cfg),
 		fx.Provide(provideDB),
-		fx.Module("evaluation",
+		fx.Module(
+			"evaluation",
 			fx.Provide(
 				fx.Annotate(postgres.NewSubmissionRepositoryImpl, fx.As(new(outport.SubmissionRepository))),
 				fx.Annotate(postgres.NewTestCaseRepositoryImpl, fx.As(new(outport.TestCaseRepository))),

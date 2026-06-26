@@ -74,7 +74,7 @@ type MockPerformanceRepository_GetPatternScores_Call struct {
 // GetPatternScores is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID uuid.UUID
-func (_e *MockPerformanceRepository_Expecter) GetPatternScores(ctx interface{}, userID interface{}) *MockPerformanceRepository_GetPatternScores_Call {
+func (_e *MockPerformanceRepository_Expecter) GetPatternScores(ctx any, userID any) *MockPerformanceRepository_GetPatternScores_Call {
 	return &MockPerformanceRepository_GetPatternScores_Call{Call: _e.mock.On("GetPatternScores", ctx, userID)}
 }
 

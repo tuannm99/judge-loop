@@ -63,7 +63,6 @@ func TestNewStarts(t *testing.T) {
 
 	app := New(config.APIServer{
 		DatabaseURL:   dsn,
-		RedisURL:      "localhost:6379",
 		Port:          "0",
 		UserID:        uuid.NewString(),
 		TimeLimitSecs: 10,
@@ -102,7 +101,7 @@ func TestProvideDB(t *testing.T) {
 	})
 }
 
-func TestProvideHTTPAndQueue(t *testing.T) {
+func TestProvideHTTP(t *testing.T) {
 	cfg := config.APIServer{Port: "8080", UserID: uuid.NewString()}
 
 	server, err := provideHTTP(
@@ -118,8 +117,10 @@ func TestProvideHTTPAndQueue(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, ":8080", server.Addr)
 	require.NotNil(t, server.Handler)
+}
 
-	_, err = provideHTTP(
+func TestProvideHTTPRejectsInvalidUserID(t *testing.T) {
+	_, err := provideHTTP(
 		config.APIServer{Port: "8080", UserID: "not-a-uuid"},
 		inmocks.NewMockProblemService(t),
 		inmocks.NewMockSubmissionService(t),
@@ -130,12 +131,6 @@ func TestProvideHTTPAndQueue(t *testing.T) {
 		inmocks.NewMockMissionService(t),
 	)
 	require.Error(t, err)
-
-	lc := fxtest.NewLifecycle(t)
-	client := provideQueueClient(lc, config.APIServer{RedisURL: "redis://localhost:6379"})
-	require.NotNil(t, client)
-	lc.RequireStart()
-	lc.RequireStop()
 }
 
 func TestRegisterLifecycle(t *testing.T) {

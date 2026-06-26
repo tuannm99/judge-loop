@@ -75,7 +75,7 @@ type MockRegistryService_GetRegistryVersion_Call struct {
 
 // GetRegistryVersion is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockRegistryService_Expecter) GetRegistryVersion(ctx interface{}) *MockRegistryService_GetRegistryVersion_Call {
+func (_e *MockRegistryService_Expecter) GetRegistryVersion(ctx any) *MockRegistryService_GetRegistryVersion_Call {
 	return &MockRegistryService_GetRegistryVersion_Call{Call: _e.mock.On("GetRegistryVersion", ctx)}
 }
 
@@ -139,7 +139,7 @@ type MockRegistryService_SyncRegistry_Call struct {
 //   - updatedAt time.Time
 //   - problems []domain.ProblemManifest
 //   - manifests []domain.ManifestRef
-func (_e *MockRegistryService_Expecter) SyncRegistry(ctx interface{}, version interface{}, updatedAt interface{}, problems interface{}, manifests interface{}) *MockRegistryService_SyncRegistry_Call {
+func (_e *MockRegistryService_Expecter) SyncRegistry(ctx any, version any, updatedAt any, problems any, manifests any) *MockRegistryService_SyncRegistry_Call {
 	return &MockRegistryService_SyncRegistry_Call{Call: _e.mock.On("SyncRegistry", ctx, version, updatedAt, problems, manifests)}
 }
 

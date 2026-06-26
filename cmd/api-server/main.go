@@ -15,6 +15,6 @@ func main() {
 		log.Fatalf("config: %v", err)
 	}
 
-	log.Printf("api-server listening on :%s (redis: %s)", cfg.Port, cfg.RedisURL)
+	log.Printf("api-server listening on :%s", cfg.Port)
 	diserver.New(cfg).Run()
 }

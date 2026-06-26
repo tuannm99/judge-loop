@@ -13,7 +13,8 @@ import (
 	"go.uber.org/fx"
 )
 
-var httpModule fx.Option = fx.Module("http",
+var httpModule fx.Option = fx.Module(
+	"http",
 	fx.Provide(provideHTTP),
 )
 

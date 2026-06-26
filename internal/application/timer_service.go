@@ -19,7 +19,11 @@ func NewTimerService(sessions outport.SessionRepository) *TimerService {
 	return &TimerService{sessions: sessions}
 }
 
-func (s *TimerService) StartTimer(ctx context.Context, userID uuid.UUID, problemID *uuid.UUID) (*domain.TimerSession, error) {
+func (s *TimerService) StartTimer(
+	ctx context.Context,
+	userID uuid.UUID,
+	problemID *uuid.UUID,
+) (*domain.TimerSession, error) {
 	return s.sessions.StartTimer(ctx, userID, problemID)
 }
 

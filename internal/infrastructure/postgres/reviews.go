@@ -20,7 +20,8 @@ func NewReviewRepositoryImpl(db *DB) *ReviewRepositoryImpl { return &ReviewRepos
 // GetDue returns problems due for review today or overdue.
 func (s *ReviewRepositoryImpl) GetDue(ctx context.Context, userID uuid.UUID) ([]outport.DueReview, error) {
 	var out []outport.DueReview
-	err := s.db.Gorm.WithContext(ctx).Raw(`
+	err := s.db.Gorm.WithContext(ctx).Raw(
+		`
 		SELECT
 			p.id AS problem_id,
 			p.slug,

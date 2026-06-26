@@ -16,8 +16,13 @@ func TestMockEvaluationService(t *testing.T) {
 
 	m := NewMockEvaluationService(t)
 	require.NotNil(t, m.EXPECT())
-	m.EXPECT().EvaluateSubmission(mock.Anything, subID, userID, 2).Run(func(context.Context, uuid.UUID, uuid.UUID, int) {}).Return(nil)
+	m.EXPECT().
+		EvaluateSubmission(mock.Anything, subID, userID, 2).
+		Run(func(context.Context, uuid.UUID, uuid.UUID, int) {}).
+		Return(nil)
 	require.NoError(t, m.EvaluateSubmission(ctx, subID, userID, 2))
-	m.EXPECT().EvaluateSubmission(mock.Anything, subID, userID, 3).RunAndReturn(func(context.Context, uuid.UUID, uuid.UUID, int) error { return nil })
+	m.EXPECT().
+		EvaluateSubmission(mock.Anything, subID, userID, 3).
+		RunAndReturn(func(context.Context, uuid.UUID, uuid.UUID, int) error { return nil })
 	require.NoError(t, m.EvaluateSubmission(ctx, subID, userID, 3))
 }

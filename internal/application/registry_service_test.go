@@ -95,7 +95,11 @@ func TestRegistryServiceErrors(t *testing.T) {
 	manifest := domain.ProblemManifest{Slug: "two-sum"}
 
 	problems.EXPECT().UpsertFromManifest(ctx, manifest).Return(errors.New("upsert"))
-	_, err := NewRegistryService(problems, testCases, registry).SyncRegistry(ctx, "v1", time.Time{}, []domain.ProblemManifest{manifest}, nil)
+	_, err := NewRegistryService(
+		problems,
+		testCases,
+		registry,
+	).SyncRegistry(ctx, "v1", time.Time{}, []domain.ProblemManifest{manifest}, nil)
 	require.Error(t, err)
 
 	problems2 := outmocks.NewMockProblemRepository(t)
@@ -103,6 +107,10 @@ func TestRegistryServiceErrors(t *testing.T) {
 	registry2 := outmocks.NewMockRegistryRepository(t)
 	problems2.EXPECT().UpsertFromManifest(ctx, manifest).Return(nil)
 	registry2.EXPECT().Save(ctx, "v1", mock.Anything, []domain.ManifestRef(nil)).Return(errors.New("save"))
-	_, err = NewRegistryService(problems2, testCases2, registry2).SyncRegistry(ctx, "v1", time.Time{}, []domain.ProblemManifest{manifest}, nil)
+	_, err = NewRegistryService(
+		problems2,
+		testCases2,
+		registry2,
+	).SyncRegistry(ctx, "v1", time.Time{}, []domain.ProblemManifest{manifest}, nil)
 	require.Error(t, err)
 }

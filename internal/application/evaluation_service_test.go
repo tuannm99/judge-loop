@@ -57,7 +57,10 @@ func TestEvaluationServiceEvaluateSubmission(t *testing.T) {
 			return ok && r.Input == "1" && r.Language == "python"
 		})).Return(judge.RunResult{Output: "1", RuntimeMS: 5}, nil)
 		submissions.EXPECT().
-			UpdateVerdict(mock.Anything, subID, string(domain.StatusAccepted), string(domain.VerdictAccepted), 1, 1, int64(5), "", mock.Anything).
+			UpdateVerdict(
+				mock.Anything, subID, string(domain.StatusAccepted), string(domain.VerdictAccepted),
+				1, 1, int64(5), "", mock.Anything,
+			).
 			Return(nil)
 		reviews.EXPECT().Upsert(mock.Anything, userID, problemID).Return(nil)
 		sessions.EXPECT().RecordSubmission(mock.Anything, userID, true).Return(nil)
@@ -97,7 +100,10 @@ func TestEvaluationServiceEvaluateSubmission(t *testing.T) {
 				return judge.RunResult{Output: req.Input, RuntimeMS: 5}, nil
 			})
 		submissions.EXPECT().
-			UpdateVerdict(mock.Anything, subID, string(domain.StatusAccepted), string(domain.VerdictAccepted), 2, 2, int64(5), "", mock.Anything).
+			UpdateVerdict(
+				mock.Anything, subID, string(domain.StatusAccepted), string(domain.VerdictAccepted),
+				2, 2, int64(5), "", mock.Anything,
+			).
 			Return(nil)
 		reviews.EXPECT().Upsert(mock.Anything, userID, problemID).Return(nil)
 		sessions.EXPECT().RecordSubmission(mock.Anything, userID, true).Return(nil)
@@ -118,7 +124,10 @@ func TestEvaluationServiceEvaluateSubmission(t *testing.T) {
 		submissions.EXPECT().TryStartEvaluation(mock.Anything, subID).Return(true, nil)
 		testCases.EXPECT().GetAllByProblem(mock.Anything, problemID).Return(nil, errors.New("no cases"))
 		submissions.EXPECT().
-			UpdateVerdict(mock.Anything, subID, string(domain.StatusRuntimeError), string(domain.VerdictRuntimeError), 0, 0, int64(0), "load test cases: no cases", mock.Anything).
+			UpdateVerdict(
+				mock.Anything, subID, string(domain.StatusRuntimeError), string(domain.VerdictRuntimeError),
+				0, 0, int64(0), "load test cases: no cases", mock.Anything,
+			).
 			Return(nil)
 
 		svc := NewEvaluationService(submissions, testCases, nil, nil, nil)
@@ -139,7 +148,10 @@ func TestEvaluationServiceEvaluateSubmission(t *testing.T) {
 		submissions.EXPECT().TryStartEvaluation(mock.Anything, subID).Return(true, nil)
 		testCases.EXPECT().GetAllByProblem(mock.Anything, problemID).Return([]domain.TestCase{}, nil)
 		submissions.EXPECT().
-			UpdateVerdict(mock.Anything, subID, string(domain.StatusRuntimeError), string(domain.VerdictRuntimeError), 0, 0, int64(0), "no test cases configured for problem", mock.Anything).
+			UpdateVerdict(
+				mock.Anything, subID, string(domain.StatusRuntimeError), string(domain.VerdictRuntimeError),
+				0, 0, int64(0), "no test cases configured for problem", mock.Anything,
+			).
 			Return(nil)
 
 		svc := NewEvaluationService(submissions, testCases, nil, nil, nil)
@@ -172,7 +184,10 @@ func TestEvaluationServiceEvaluateSubmission(t *testing.T) {
 		testCases.EXPECT().GetAllByProblem(mock.Anything, problemID).Return(cases, nil)
 		runner.EXPECT().Run(mock.Anything, mock.Anything).Return(judge.RunResult{Output: "1", RuntimeMS: 5}, nil)
 		submissions.EXPECT().
-			UpdateVerdict(mock.Anything, subID, string(domain.StatusAccepted), string(domain.VerdictAccepted), 1, 1, int64(5), "", mock.Anything).
+			UpdateVerdict(
+				mock.Anything, subID, string(domain.StatusAccepted), string(domain.VerdictAccepted),
+				1, 1, int64(5), "", mock.Anything,
+			).
 			Return(nil)
 		reviews.EXPECT().Upsert(mock.Anything, userID, problemID).Return(errors.New("review failed"))
 

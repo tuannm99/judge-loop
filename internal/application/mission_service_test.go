@@ -89,7 +89,10 @@ func TestMissionServiceReturnsDependencyErrors(t *testing.T) {
 	missions = outmocks.NewMockMissionRepository(t)
 	problems := outmocks.NewMockProblemRepository(t)
 	missions.EXPECT().GetToday(mock.Anything, userID).Return(nil, nil).Once()
-	problems.EXPECT().GetUnsolved(mock.Anything, userID, defaultMissionProblemLimit).Return(nil, errors.New("unsolved")).Once()
+	problems.EXPECT().
+		GetUnsolved(mock.Anything, userID, defaultMissionProblemLimit).
+		Return(nil, errors.New("unsolved")).
+		Once()
 	_, err = NewMissionService(missions, nil, problems, nil, nil).GetDailyMission(context.Background(), userID)
 	require.ErrorContains(t, err, "unsolved")
 

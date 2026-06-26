@@ -75,7 +75,7 @@ type MockMissionRepository_GetToday_Call struct {
 // GetToday is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID uuid.UUID
-func (_e *MockMissionRepository_Expecter) GetToday(ctx interface{}, userID interface{}) *MockMissionRepository_GetToday_Call {
+func (_e *MockMissionRepository_Expecter) GetToday(ctx any, userID any) *MockMissionRepository_GetToday_Call {
 	return &MockMissionRepository_GetToday_Call{Call: _e.mock.On("GetToday", ctx, userID)}
 }
 
@@ -132,7 +132,7 @@ type MockMissionRepository_Save_Call struct {
 // Save is a helper method to define mock.On call
 //   - ctx context.Context
 //   - mission domain.DailyMission
-func (_e *MockMissionRepository_Expecter) Save(ctx interface{}, mission interface{}) *MockMissionRepository_Save_Call {
+func (_e *MockMissionRepository_Expecter) Save(ctx any, mission any) *MockMissionRepository_Save_Call {
 	return &MockMissionRepository_Save_Call{Call: _e.mock.On("Save", ctx, mission)}
 }
 

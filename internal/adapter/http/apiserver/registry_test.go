@@ -18,17 +18,8 @@ import (
 	outport "github.com/tuannm99/judge-loop/internal/port/out"
 )
 
-func TestRegistryHandlers(t *testing.T) {
+func TestRegistryAPISyncRegistry(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	service := inmocks.NewMockRegistryService(t)
-	api := New(nil, nil, nil, nil, nil, service, nil, uuid.New())
-
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodPost, "/api/registry/sync", bytes.NewBufferString("{"))
-	c.Request.Header.Set("Content-Type", "application/json")
-	api.Registry.SyncRegistry(c)
-	require.Equal(t, http.StatusBadRequest, w.Code)
 
 	updatedAt := time.Date(2026, 3, 31, 0, 0, 0, 0, time.UTC)
 	body, err := json.Marshal(registrySyncRequest{
@@ -39,46 +30,142 @@ func TestRegistryHandlers(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	service.EXPECT().SyncRegistry(mock.Anything, "v1", updatedAt, mock.Anything, mock.Anything).Return(1, nil).Once()
-	w = httptest.NewRecorder()
-	c, _ = gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodPost, "/api/registry/sync", bytes.NewReader(body))
-	c.Request.Header.Set("Content-Type", "application/json")
-	api.Registry.SyncRegistry(c)
-	require.Equal(t, http.StatusOK, w.Code)
+	cases := []struct {
+		name       string
+		body       []byte
+		synced     int
+		err        error
+		wantStatus int
+		wantCall   bool
+	}{
+		{name: "bad request", body: []byte("{"), wantStatus: http.StatusBadRequest},
+		{name: "success", body: body, synced: 1, wantStatus: http.StatusOK, wantCall: true},
+		{
+			name:       "service error",
+			body:       body,
+			err:        errors.New("boom"),
+			wantStatus: http.StatusInternalServerError,
+			wantCall:   true,
+		},
+	}
 
-	service.EXPECT().
-		SyncRegistry(mock.Anything, "v1", updatedAt, mock.Anything, mock.Anything).
-		Return(0, errors.New("boom")).
-		Once()
-	w = httptest.NewRecorder()
-	c, _ = gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodPost, "/api/registry/sync", bytes.NewReader(body))
-	c.Request.Header.Set("Content-Type", "application/json")
-	api.Registry.SyncRegistry(c)
-	require.Equal(t, http.StatusInternalServerError, w.Code)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			service := inmocks.NewMockRegistryService(t)
+			api := New(nil, nil, nil, nil, nil, service, nil, uuid.New())
+			if tc.wantCall {
+				service.EXPECT().
+					SyncRegistry(mock.Anything, "v1", updatedAt, mock.Anything, mock.Anything).
+					Return(tc.synced, tc.err).
+					Once()
+			}
 
-	service.EXPECT().GetRegistryVersion(mock.Anything).Return(nil, nil).Once()
-	w = httptest.NewRecorder()
-	c, _ = gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodGet, "/api/registry/version", nil)
-	api.Registry.GetRegistryVersion(c)
-	require.Equal(t, http.StatusOK, w.Code)
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodPost, "/api/registry/sync", bytes.NewReader(tc.body))
+			c.Request.Header.Set("Content-Type", "application/json")
+			api.Registry.SyncRegistry(c)
+			require.Equal(t, tc.wantStatus, w.Code)
+		})
+	}
+}
 
-	service.EXPECT().
-		GetRegistryVersion(mock.Anything).
-		Return(&outport.RegistryVersion{Version: "v1", SyncedAt: time.Now()}, nil).
-		Once()
-	w = httptest.NewRecorder()
-	c, _ = gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodGet, "/api/registry/version", nil)
-	api.Registry.GetRegistryVersion(c)
-	require.Equal(t, http.StatusOK, w.Code)
+func TestRegistryAPIGetRegistryVersion(t *testing.T) {
+	gin.SetMode(gin.TestMode)
 
-	service.EXPECT().GetRegistryVersion(mock.Anything).Return(nil, errors.New("boom")).Once()
-	w = httptest.NewRecorder()
-	c, _ = gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodGet, "/api/registry/version", nil)
-	api.Registry.GetRegistryVersion(c)
-	require.Equal(t, http.StatusInternalServerError, w.Code)
+	cases := []struct {
+		name       string
+		version    *outport.RegistryVersion
+		err        error
+		wantStatus int
+	}{
+		{name: "empty", wantStatus: http.StatusOK},
+		{
+			name:       "success",
+			version:    &outport.RegistryVersion{Version: "v1", SyncedAt: time.Now()},
+			wantStatus: http.StatusOK,
+		},
+		{
+			name:       "service error",
+			err:        errors.New("boom"),
+			wantStatus: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			service := inmocks.NewMockRegistryService(t)
+			api := New(nil, nil, nil, nil, nil, service, nil, uuid.New())
+
+			service.EXPECT().GetRegistryVersion(mock.Anything).Return(tc.version, tc.err).Once()
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodGet, "/api/registry/version", nil)
+			api.Registry.GetRegistryVersion(c)
+			require.Equal(t, tc.wantStatus, w.Code)
+		})
+	}
+}
+
+func TestRegistryAPIImportDataProblems(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	updatedAt := time.Date(2026, 6, 26, 0, 0, 0, 0, time.UTC)
+	body, err := json.Marshal(dataProblemsImportRequest{
+		Version:   "my-roadmap-v1",
+		UpdatedAt: updatedAt,
+		Problems: []domain.ProblemManifest{
+			{
+				Provider:      domain.ProviderLeetCode,
+				ExternalID:    "1",
+				Slug:          "two-sum",
+				Title:         "Two Sum",
+				Difficulty:    domain.DifficultyEasy,
+				Tags:          []string{"array", "hash-table"},
+				SourceURL:     "https://leetcode.com/problems/two-sum/",
+				EstimatedTime: 15,
+			},
+		},
+		Manifests: []domain.ManifestRef{{Name: "my-roadmap", Path: "tracks/my-roadmap.json"}},
+	})
+	require.NoError(t, err)
+
+	cases := []struct {
+		name       string
+		body       []byte
+		imported   int
+		err        error
+		wantStatus int
+		wantCall   bool
+	}{
+		{name: "bad request", body: []byte("{"), wantStatus: http.StatusBadRequest},
+		{name: "success", body: body, imported: 1, wantStatus: http.StatusOK, wantCall: true},
+		{
+			name:       "service error",
+			body:       body,
+			err:        errors.New("boom"),
+			wantStatus: http.StatusInternalServerError,
+			wantCall:   true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			service := inmocks.NewMockRegistryService(t)
+			api := New(nil, nil, nil, nil, nil, service, nil, uuid.New())
+			if tc.wantCall {
+				service.EXPECT().
+					SyncRegistry(mock.Anything, "my-roadmap-v1", updatedAt, mock.Anything, mock.Anything).
+					Return(tc.imported, tc.err).
+					Once()
+			}
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodPost, "/api/data/problems", bytes.NewReader(tc.body))
+			c.Request.Header.Set("Content-Type", "application/json")
+			api.Registry.ImportDataProblems(c)
+			require.Equal(t, tc.wantStatus, w.Code)
+		})
+	}
 }

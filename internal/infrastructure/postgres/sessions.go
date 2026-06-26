@@ -35,7 +35,9 @@ func (s *SessionRepositoryImpl) GetOrCreateToday(ctx context.Context, userID uui
 	}
 
 	var model dailySessionModel
-	if err := s.db.Gorm.WithContext(ctx).Where("user_id = ? AND date = ?", userID, today.Format("2006-01-02")).Take(&model).Error; err != nil {
+	if err := s.db.Gorm.WithContext(ctx).
+		Where("user_id = ? AND date = ?", userID, today.Format("2006-01-02")).
+		Take(&model).Error; err != nil {
 		return nil, fmt.Errorf("get or create daily session: %w", err)
 	}
 	ds := model.toDomain()
@@ -59,7 +61,12 @@ func (s *SessionRepositoryImpl) RecordSubmission(ctx context.Context, userID uui
 			AttemptedCount: 1,
 			SolvedCount:    solved,
 		}
-		if err := tx.Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "user_id"}, {Name: "date"}}, DoNothing: true}).Create(&model).Error; err != nil {
+		if err := tx.
+			Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "user_id"}, {Name: "date"}},
+				DoNothing: true,
+			}).
+			Create(&model).Error; err != nil {
 			return fmt.Errorf("insert daily session: %w", err)
 		}
 		if err := tx.Model(&dailySessionModel{}).
@@ -139,7 +146,12 @@ func (s *SessionRepositoryImpl) StopTimer(ctx context.Context, userID uuid.UUID)
 			UserID: userID,
 			Date:   today,
 		}
-		if err := tx.Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "user_id"}, {Name: "date"}}, DoNothing: true}).Create(&session).Error; err != nil {
+		if err := tx.
+			Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "user_id"}, {Name: "date"}},
+				DoNothing: true,
+			}).
+			Create(&session).Error; err != nil {
 			return err
 		}
 		return tx.Model(&dailySessionModel{}).

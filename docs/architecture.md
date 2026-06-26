@@ -10,14 +10,14 @@ The main runtime pieces are:
 - `judge-worker` for async evaluation
 - `local-agent` for editor-facing local workflows
 - PostgreSQL for persistent state
-- Redis/asynq for background jobs
+- PostgreSQL-backed evaluation jobs
 - Docker sandbox for code execution
 
 ```
 Neovim plugin
   -> local-agent
   -> api-server
-  -> Redis/asynq
+  -> PostgreSQL evaluation_jobs
   -> judge-worker
   -> Docker sandbox
   -> PostgreSQL
@@ -33,7 +33,7 @@ flowchart LR
   Editor[Neovim Plugin]
   LocalAgent[local-agent]
   APIServer[api-server]
-  Queue[Redis / asynq]
+  Queue[PostgreSQL evaluation_jobs]
   Worker[judge-worker]
   Sandbox[Docker sandbox]
   Postgres[(PostgreSQL)]
@@ -66,9 +66,8 @@ flowchart TB
 
   subgraph Platform["judge-loop backend"]
     API[api-server\nHTTP API + submission creation]
-    Redis[Redis / asynq\njob queue]
     Worker[judge-worker\nasync evaluator]
-    DB[(PostgreSQL)]
+    DB[(PostgreSQL\nstate + evaluation_jobs)]
     Sandbox[Docker sandbox]
   end
 
@@ -77,8 +76,6 @@ flowchart TB
   Agent --> API
   Agent --> Registry
   API --> DB
-  API --> Redis
-  Worker --> Redis
   Worker --> DB
   Worker --> Sandbox
 ```
@@ -92,7 +89,7 @@ sequenceDiagram
   participant Agent as local-agent
   participant API as api-server
   participant DB as PostgreSQL
-  participant Q as Redis/asynq
+  participant Q as PostgreSQL evaluation_jobs
   participant Worker as judge-worker
   participant Sandbox as Docker sandbox
 
@@ -104,7 +101,7 @@ sequenceDiagram
   Agent-->>Plugin: submission_id
   Plugin->>Agent: poll /local/submissions/:id
   Agent->>API: GET /api/submissions/:id
-  Q-->>Worker: deliver job
+  Worker->>Q: claim next job
   Worker->>DB: load submission + test cases
   Worker->>DB: claim submission(status=running)
   Worker->>Sandbox: run code against test case input
@@ -112,32 +109,6 @@ sequenceDiagram
   Worker->>DB: update final verdict
   API-->>Agent: submission status
   Agent-->>Plugin: verdict
-```
-
-### Fallback Sequence
-
-This is the intended resilient path when no external worker claims the queued job in time.
-
-```mermaid
-sequenceDiagram
-  autonumber
-  participant API as api-server
-  participant Q as Redis/asynq
-  participant DB as PostgreSQL
-  participant Eval as in-process evaluation fallback
-  participant Sandbox as Docker sandbox
-
-  API->>DB: insert submission(status=pending)
-  API->>Q: enqueue evaluate-submission
-  API->>Eval: schedule delayed fallback
-  Eval->>DB: try claim submission(status: pending -> running)
-  alt claim succeeds
-    Eval->>Sandbox: run user code
-    Sandbox-->>Eval: execution result
-    Eval->>DB: write final verdict
-  else already claimed by worker
-    Eval-->>API: no-op
-  end
 ```
 
 ## Dependency Rule
@@ -169,10 +140,9 @@ Single Go module: `github.com/tuannm99/judge-loop`
 | `internal/port/in`                   | inbound ports implemented by application services                    |
 | `internal/port/out`                  | outbound ports implemented by adapters/infrastructure                |
 | `internal/adapter/http`              | Gin handlers for `api-server` and `local-agent`                      |
-| `internal/adapter/queue`             | asynq-facing adapters for publish/consume flow                       |
+| `internal/adapter/queue`             | PostgreSQL job worker adapter for evaluation flow                    |
 | `internal/adapter/sandbox`           | code runner adapter used by application services                     |
-| `internal/infrastructure/postgres`   | GORM repositories and embedded goose migrations                      |
-| `internal/infrastructure/queue`      | asynq task definitions and queue setup                               |
+| `internal/infrastructure/postgres`   | GORM repositories, evaluation queue, and embedded goose migrations   |
 | `internal/infrastructure/sandbox`    | Docker-based code execution                                          |
 | `internal/infrastructure/registry`   | local registry manifest loading from disk                            |
 | `internal/infrastructure/localtimer` | in-memory timer for the local-agent                                  |
@@ -188,7 +158,7 @@ Single Go module: `github.com/tuannm99/judge-loop`
 
 ### `judge-worker`
 
-- consumes evaluation jobs from Redis/asynq
+- consumes evaluation jobs from PostgreSQL
 - calls the evaluation application service
 - runs code through the sandbox adapter
 - writes final verdicts back through repositories

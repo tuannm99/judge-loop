@@ -75,7 +75,7 @@ type MockReviewService_GetReviewsToday_Call struct {
 // GetReviewsToday is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID uuid.UUID
-func (_e *MockReviewService_Expecter) GetReviewsToday(ctx interface{}, userID interface{}) *MockReviewService_GetReviewsToday_Call {
+func (_e *MockReviewService_Expecter) GetReviewsToday(ctx any, userID any) *MockReviewService_GetReviewsToday_Call {
 	return &MockReviewService_GetReviewsToday_Call{Call: _e.mock.On("GetReviewsToday", ctx, userID)}
 }
 

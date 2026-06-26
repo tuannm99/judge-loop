@@ -65,7 +65,7 @@ type MockEvaluationService_EvaluateSubmission_Call struct {
 //   - submissionID uuid.UUID
 //   - userID uuid.UUID
 //   - timeLimitSecs int
-func (_e *MockEvaluationService_Expecter) EvaluateSubmission(ctx interface{}, submissionID interface{}, userID interface{}, timeLimitSecs interface{}) *MockEvaluationService_EvaluateSubmission_Call {
+func (_e *MockEvaluationService_Expecter) EvaluateSubmission(ctx any, submissionID any, userID any, timeLimitSecs any) *MockEvaluationService_EvaluateSubmission_Call {
 	return &MockEvaluationService_EvaluateSubmission_Call{Call: _e.mock.On("EvaluateSubmission", ctx, submissionID, userID, timeLimitSecs)}
 }
 

@@ -95,7 +95,10 @@ func (s *ProblemRepositoryImpl) ListLabelRecords(ctx context.Context, kind strin
 	return labels, nil
 }
 
-func (s *ProblemRepositoryImpl) CreateLabel(ctx context.Context, label domain.ProblemLabel) (*domain.ProblemLabel, error) {
+func (s *ProblemRepositoryImpl) CreateLabel(
+	ctx context.Context,
+	label domain.ProblemLabel,
+) (*domain.ProblemLabel, error) {
 	model := problemLabelModel{
 		Slug: label.Slug,
 		Name: label.Name,
@@ -107,7 +110,10 @@ func (s *ProblemRepositoryImpl) CreateLabel(ctx context.Context, label domain.Pr
 	return &out, nil
 }
 
-func (s *ProblemRepositoryImpl) UpdateLabel(ctx context.Context, label domain.ProblemLabel) (*domain.ProblemLabel, error) {
+func (s *ProblemRepositoryImpl) UpdateLabel(
+	ctx context.Context,
+	label domain.ProblemLabel,
+) (*domain.ProblemLabel, error) {
 	updates := map[string]any{
 		"slug":       label.Slug,
 		"name":       label.Name,
@@ -228,7 +234,8 @@ func (s *ProblemRepositoryImpl) Suggest(
 
 	q := s.db.Gorm.WithContext(ctx).
 		Model(&problemModel{}).
-		Where("problems.id NOT IN (?)",
+		Where(
+			"problems.id NOT IN (?)",
 			s.db.Gorm.WithContext(ctx).
 				Model(&submissionModel{}).
 				Select("DISTINCT problem_id").
@@ -263,16 +270,16 @@ func (s *ProblemRepositoryImpl) Suggest(
 }
 
 func joinProblemLabelFilter(q *gorm.DB, slugs []string) *gorm.DB {
-	linkAlias := "tag_pll"
-	labelAlias := "tag_pl"
-
-	return q.Joins(fmt.Sprintf(
-		"JOIN problem_label_links %s ON %s.problem_id = problems.id",
-		linkAlias, linkAlias,
-	)).Joins(fmt.Sprintf(
-		"JOIN problem_labels %s ON %s.id = %s.problem_label_id AND %s.slug IN ?",
-		labelAlias, labelAlias, linkAlias, labelAlias,
-	), slugs)
+	return q.Where(`
+		problems.id IN (
+			SELECT pll.problem_id
+			FROM problem_label_links pll
+			JOIN problem_labels pl ON pl.id = pll.problem_label_id
+			WHERE pl.slug IN ?
+			GROUP BY pll.problem_id
+			HAVING COUNT(DISTINCT pl.slug) = ?
+		)
+	`, slugs, len(slugs))
 }
 
 func (s *ProblemRepositoryImpl) loadProblemLabels(ctx context.Context, models []*problemModel) error {

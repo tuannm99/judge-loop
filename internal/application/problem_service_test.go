@@ -45,7 +45,7 @@ func TestProblemServiceListProblemLabels(t *testing.T) {
 	require.Equal(t, []string{"array", "graph"}, tags)
 }
 
-func TestProblemServiceProblemLabelCRUD(t *testing.T) {
+func TestProblemServiceListProblemLabelRecords(t *testing.T) {
 	problems := outmocks.NewMockProblemRepository(t)
 	testCases := outmocks.NewMockTestCaseRepository(t)
 	service := NewProblemService(problems, testCases)
@@ -53,22 +53,52 @@ func TestProblemServiceProblemLabelCRUD(t *testing.T) {
 	ctx := context.Background()
 	labelID := uuid.New()
 
-	problems.EXPECT().ListLabelRecords(ctx, "tag").Return([]domain.ProblemLabel{{ID: labelID, Kind: "tag", Slug: "array", Name: "Array"}}, nil).Once()
+	problems.EXPECT().
+		ListLabelRecords(ctx, "tag").
+		Return([]domain.ProblemLabel{{ID: labelID, Kind: "tag", Slug: "array", Name: "Array"}}, nil).
+		Once()
 	labels, err := service.ListProblemLabelRecords(ctx, " tag ")
 	require.NoError(t, err)
 	require.Len(t, labels, 1)
+}
+
+func TestProblemServiceCreateProblemLabel(t *testing.T) {
+	problems := outmocks.NewMockProblemRepository(t)
+	testCases := outmocks.NewMockTestCaseRepository(t)
+	service := NewProblemService(problems, testCases)
+
+	ctx := context.Background()
+	labelID := uuid.New()
 
 	problems.EXPECT().CreateLabel(ctx, domain.ProblemLabel{Kind: "tag", Slug: "graph", Name: "Graph"}).
 		Return(&domain.ProblemLabel{ID: labelID, Kind: "tag", Slug: "graph", Name: "Graph"}, nil).Once()
 	created, err := service.CreateProblemLabel(ctx, "tag", " graph ", "Graph")
 	require.NoError(t, err)
 	require.Equal(t, "graph", created.Slug)
+}
+
+func TestProblemServiceUpdateProblemLabel(t *testing.T) {
+	problems := outmocks.NewMockProblemRepository(t)
+	testCases := outmocks.NewMockTestCaseRepository(t)
+	service := NewProblemService(problems, testCases)
+
+	ctx := context.Background()
+	labelID := uuid.New()
 
 	problems.EXPECT().UpdateLabel(ctx, domain.ProblemLabel{ID: labelID, Slug: "graphs", Name: "Graphs"}).
 		Return(&domain.ProblemLabel{ID: labelID, Kind: "tag", Slug: "graphs", Name: "Graphs"}, nil).Once()
 	updated, err := service.UpdateProblemLabel(ctx, labelID, " graphs ", "Graphs")
 	require.NoError(t, err)
 	require.Equal(t, "graphs", updated.Slug)
+}
+
+func TestProblemServiceDeleteProblemLabel(t *testing.T) {
+	problems := outmocks.NewMockProblemRepository(t)
+	testCases := outmocks.NewMockTestCaseRepository(t)
+	service := NewProblemService(problems, testCases)
+
+	ctx := context.Background()
+	labelID := uuid.New()
 
 	problems.EXPECT().DeleteLabel(ctx, labelID).Return(nil).Once()
 	require.NoError(t, service.DeleteProblemLabel(ctx, labelID))

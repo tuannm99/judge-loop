@@ -3,89 +3,23 @@ package queueadapter
 import (
 	"context"
 	"errors"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/hibiken/asynq"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
-	q "github.com/tuannm99/judge-loop/internal/infrastructure/queue"
 	outport "github.com/tuannm99/judge-loop/internal/port/out"
+	outmocks "github.com/tuannm99/judge-loop/internal/port/out/mocks"
 )
 
-func TestNewEvaluationPublisherAndPublish(t *testing.T) {
-	publisher := NewEvaluationPublisher(asynq.NewClient(asynq.RedisClientOpt{Addr: "127.0.0.1:1"}))
-	require.NotNil(t, publisher)
-
-	err := publisher.PublishEvaluation(outport.EvaluateSubmissionJob{SubmissionID: uuid.NewString(), UserID: uuid.NewString()})
-	require.Error(t, err)
-}
-
-func TestEvaluationPublisherSuccess(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "redis:7-alpine",
-			ExposedPorts: []string{"6379/tcp"},
-			WaitingFor:   wait.ForListeningPort("6379/tcp"),
-		},
-		Started: true,
-	})
-	if err != nil {
-		t.Skipf("docker/testcontainers unavailable: %v", err)
-	}
-	t.Cleanup(func() {
-		_ = container.Terminate(context.Background())
-	})
-
-	host, err := container.Host(ctx)
-	require.NoError(t, err)
-	port, err := container.MappedPort(ctx, "6379/tcp")
-	require.NoError(t, err)
-
-	client := asynq.NewClient(asynq.RedisClientOpt{Addr: host + ":" + port.Port()})
-	t.Cleanup(func() { _ = client.Close() })
-
-	publisher := NewEvaluationPublisher(client)
-	require.NoError(t, publisher.PublishEvaluation(outport.EvaluateSubmissionJob{
-		SubmissionID: uuid.NewString(),
-		UserID:       uuid.NewString(),
-	}))
-}
-
-func TestNewEvaluatorAndProcessTask(t *testing.T) {
-	e := NewEvaluator(2, evaluationServiceFunc(func(context.Context, uuid.UUID, uuid.UUID, int) error { return nil }))
-	require.NotNil(t, e)
-
-	err := e.ProcessTask(context.Background(), asynq.NewTask(q.TypeEvaluateSubmission, []byte("{")))
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "unmarshal payload")
-
-	payload := q.EvaluatePayload{SubmissionID: "bad", UserID: uuid.NewString()}
-	task, err := q.NewEvaluateTask(payload)
-	require.NoError(t, err)
-	err = e.ProcessTask(context.Background(), task)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "parse submission_id")
-
-	payload = q.EvaluatePayload{SubmissionID: uuid.NewString(), UserID: "bad"}
-	task, err = q.NewEvaluateTask(payload)
-	require.NoError(t, err)
-	err = e.ProcessTask(context.Background(), task)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "parse user_id")
-
+func TestEvaluatorProcessJob(t *testing.T) {
 	subID := uuid.New()
 	userID := uuid.New()
-	task, err = q.NewEvaluateTask(q.EvaluatePayload{SubmissionID: subID.String(), UserID: userID.String()})
-	require.NoError(t, err)
-
 	called := false
-	e.service = evaluationServiceFunc(
+
+	e := NewEvaluator(2, evaluationServiceFunc(
 		func(ctx context.Context, submissionID, runnerUserID uuid.UUID, timeLimitSecs int) error {
 			called = true
 			require.Equal(t, subID, submissionID)
@@ -93,15 +27,107 @@ func TestNewEvaluatorAndProcessTask(t *testing.T) {
 			require.Equal(t, 2, timeLimitSecs)
 			return nil
 		},
-	)
-	require.NoError(t, e.ProcessTask(context.Background(), task))
+	))
+	require.NoError(t, e.ProcessJob(context.Background(), outport.EvaluationJob{
+		ID:           uuid.New(),
+		SubmissionID: subID,
+		UserID:       userID,
+	}))
 	require.True(t, called)
 
 	e.service = evaluationServiceFunc(
 		func(context.Context, uuid.UUID, uuid.UUID, int) error { return errors.New("boom") },
 	)
-	err = e.ProcessTask(context.Background(), task)
+	err := e.ProcessJob(context.Background(), outport.EvaluationJob{
+		ID:           uuid.New(),
+		SubmissionID: subID,
+		UserID:       userID,
+	})
 	require.Error(t, err)
+	require.Contains(t, err.Error(), "evaluate submission")
+}
+
+func TestWorkerCompletesAndFailsJobs(t *testing.T) {
+	successJob := outport.EvaluationJob{ID: uuid.New(), SubmissionID: uuid.New(), UserID: uuid.New()}
+	failJob := outport.EvaluationJob{ID: uuid.New(), SubmissionID: uuid.New(), UserID: uuid.New()}
+	jobs := []outport.EvaluationJob{successJob, failJob}
+	queue := outmocks.NewMockEvaluationJobQueue(t)
+	completed := make(chan uuid.UUID, 1)
+	failed := make(chan uuid.UUID, 1)
+
+	queue.EXPECT().
+		ClaimEvaluationJob(mock.Anything, "test-worker").
+		RunAndReturn(func(context.Context, string) (*outport.EvaluationJob, error) {
+			if len(jobs) == 0 {
+				return nil, nil
+			}
+			job := jobs[0]
+			jobs = jobs[1:]
+			return &job, nil
+		})
+	queue.EXPECT().
+		CompleteEvaluationJob(mock.Anything, successJob.ID).
+		RunAndReturn(func(_ context.Context, id uuid.UUID) error {
+			completed <- id
+			return nil
+		}).
+		Once()
+	queue.EXPECT().
+		FailEvaluationJob(mock.Anything, failJob.ID, "evaluate submission "+failJob.SubmissionID.String()+": boom").
+		RunAndReturn(func(_ context.Context, id uuid.UUID, _ string) error {
+			failed <- id
+			return nil
+		}).
+		Once()
+
+	evaluator := NewEvaluator(2, evaluationServiceFunc(
+		func(_ context.Context, submissionID, _ uuid.UUID, _ int) error {
+			if submissionID == failJob.SubmissionID {
+				return errors.New("boom")
+			}
+			return nil
+		},
+	))
+	worker := NewWorker(queue, evaluator, "test-worker", 1)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	go worker.Run(ctx)
+
+	require.Equal(t, successJob.ID, receiveJobID(t, completed))
+	require.Equal(t, failJob.ID, receiveJobID(t, failed))
+	cancel()
+}
+
+func TestNewWorkerDefaults(t *testing.T) {
+	queue := outmocks.NewMockEvaluationJobQueue(t)
+	worker := NewWorker(queue, NewEvaluator(1, evaluationServiceFunc(
+		func(context.Context, uuid.UUID, uuid.UUID, int) error { return nil },
+	)), "", 0)
+	require.Equal(t, "judge-worker", worker.workerID)
+	require.Equal(t, 1, worker.concurrency)
+}
+
+func TestWorkerContinuesAfterClaimError(t *testing.T) {
+	queue := outmocks.NewMockEvaluationJobQueue(t)
+	var claims atomic.Int32
+	queue.EXPECT().
+		ClaimEvaluationJob(mock.Anything, "test-worker").
+		RunAndReturn(func(context.Context, string) (*outport.EvaluationJob, error) {
+			claims.Add(1)
+			return nil, errors.New("down")
+		})
+
+	worker := NewWorker(queue, NewEvaluator(1, evaluationServiceFunc(
+		func(context.Context, uuid.UUID, uuid.UUID, int) error { return nil },
+	)), "test-worker", 1)
+	worker.pollInterval = time.Millisecond
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+	worker.Run(ctx)
+
+	require.Positive(t, claims.Load())
 }
 
 type evaluationServiceFunc func(ctx context.Context, submissionID, userID uuid.UUID, timeLimitSecs int) error
@@ -112,4 +138,15 @@ func (f evaluationServiceFunc) EvaluateSubmission(
 	timeLimitSecs int,
 ) error {
 	return f(ctx, submissionID, userID, timeLimitSecs)
+}
+
+func receiveJobID(t *testing.T, ch <-chan uuid.UUID) uuid.UUID {
+	t.Helper()
+	select {
+	case id := <-ch:
+		return id
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for job status update")
+		return uuid.Nil
+	}
 }

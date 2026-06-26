@@ -74,7 +74,7 @@ type MockProgressService_GetGoalProgress_Call struct {
 // GetGoalProgress is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID uuid.UUID
-func (_e *MockProgressService_Expecter) GetGoalProgress(ctx interface{}, userID interface{}) *MockProgressService_GetGoalProgress_Call {
+func (_e *MockProgressService_Expecter) GetGoalProgress(ctx any, userID any) *MockProgressService_GetGoalProgress_Call {
 	return &MockProgressService_GetGoalProgress_Call{Call: _e.mock.On("GetGoalProgress", ctx, userID)}
 }
 
@@ -140,7 +140,7 @@ type MockProgressService_GetProgressToday_Call struct {
 // GetProgressToday is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID uuid.UUID
-func (_e *MockProgressService_Expecter) GetProgressToday(ctx interface{}, userID interface{}) *MockProgressService_GetProgressToday_Call {
+func (_e *MockProgressService_Expecter) GetProgressToday(ctx any, userID any) *MockProgressService_GetProgressToday_Call {
 	return &MockProgressService_GetProgressToday_Call{Call: _e.mock.On("GetProgressToday", ctx, userID)}
 }
 
@@ -206,7 +206,7 @@ type MockProgressService_GetStreak_Call struct {
 // GetStreak is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID uuid.UUID
-func (_e *MockProgressService_Expecter) GetStreak(ctx interface{}, userID interface{}) *MockProgressService_GetStreak_Call {
+func (_e *MockProgressService_Expecter) GetStreak(ctx any, userID any) *MockProgressService_GetStreak_Call {
 	return &MockProgressService_GetStreak_Call{Call: _e.mock.On("GetStreak", ctx, userID)}
 }
 

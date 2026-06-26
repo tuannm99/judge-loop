@@ -20,8 +20,20 @@ func TestGenerate(t *testing.T) {
 		PatternScores: map[string]float64{"dp": 0.2, "array": 0.9},
 		Unsolved: []domain.Problem{
 			{ID: weakID, Slug: "weak", Title: "Weak", Difficulty: domain.DifficultyEasy, Tags: []string{"dp"}},
-			{ID: normalID, Slug: "normal", Title: "Normal", Difficulty: domain.DifficultyMedium, Tags: []string{"array"}},
-			{ID: optionalID, Slug: "opt", Title: "Optional", Difficulty: domain.DifficultyHard, Tags: []string{"graph"}},
+			{
+				ID:         normalID,
+				Slug:       "normal",
+				Title:      "Normal",
+				Difficulty: domain.DifficultyMedium,
+				Tags:       []string{"array"},
+			},
+			{
+				ID:         optionalID,
+				Slug:       "opt",
+				Title:      "Optional",
+				Difficulty: domain.DifficultyHard,
+				Tags:       []string{"graph"},
+			},
 		},
 		DueReviews: []outport.DueReview{{ProblemID: reviewID, Slug: "review", Title: "Review", DaysOverdue: 2}},
 	})
@@ -37,10 +49,12 @@ func TestGenerate(t *testing.T) {
 	require.Equal(t, optionalID, mission.OptionalTasks[0].ProblemID)
 }
 
-func TestWeakPatternHelpers(t *testing.T) {
+func TestWeakPatterns(t *testing.T) {
 	weak := WeakPatterns(map[string]float64{"dp": 0.2, "graph": 0.7})
 	require.Equal(t, []string{"dp"}, weak)
+}
 
+func TestFirstMatch(t *testing.T) {
 	require.Equal(t, "dp", firstMatch([]string{"array", "dp"}, []string{"dp"}))
 	require.Empty(t, firstMatch([]string{"array"}, []string{"dp"}))
 }

@@ -20,47 +20,54 @@ func New(cfg config.APIServer) *fx.App {
 		fx.WithLogger(func() fxevent.Logger { return fxevent.NopLogger }),
 		fx.Supply(cfg),
 		fx.Provide(provideDB),
-		fx.Module("problem",
+		fx.Module(
+			"problem",
 			fx.Provide(
 				fx.Annotate(postgres.NewProblemRepositoryImpl, fx.As(new(outport.ProblemRepository))),
 				fx.Annotate(postgres.NewTestCaseRepositoryImpl, fx.As(new(outport.TestCaseRepository))),
 				fx.Annotate(application.NewProblemService, fx.As(new(inport.ProblemService))),
 			),
 		),
-		fx.Module("submission",
+		fx.Module(
+			"submission",
 			fx.Provide(
 				fx.Annotate(postgres.NewSubmissionRepositoryImpl, fx.As(new(outport.SubmissionRepository))),
 				fx.Annotate(application.NewSubmissionService, fx.As(new(inport.SubmissionService))),
 			),
 		),
-		fx.Module("evaluation",
+		fx.Module(
+			"evaluation",
 			fx.Provide(
 				fx.Annotate(sandboxadapter.NewRunner, fx.As(new(outport.CodeRunner))),
 				fx.Annotate(application.NewEvaluationService, fx.As(new(inport.EvaluationService))),
 				func(cfg config.APIServer) int { return cfg.TimeLimitSecs },
 			),
 		),
-		fx.Module("session",
+		fx.Module(
+			"session",
 			fx.Provide(
 				fx.Annotate(postgres.NewSessionRepositoryImpl, fx.As(new(outport.SessionRepository))),
 				fx.Annotate(application.NewProgressService, fx.As(new(inport.ProgressService))),
 				fx.Annotate(application.NewTimerService, fx.As(new(inport.TimerService))),
 			),
 		),
-		fx.Module("review",
+		fx.Module(
+			"review",
 			fx.Provide(
 				fx.Annotate(postgres.NewReviewRepositoryImpl, fx.As(new(outport.ReviewRepository))),
 				fx.Annotate(application.NewReviewService, fx.As(new(inport.ReviewService))),
 			),
 		),
-		fx.Module("mission",
+		fx.Module(
+			"mission",
 			fx.Provide(
 				fx.Annotate(postgres.NewMissionRepositoryImpl, fx.As(new(outport.MissionRepository))),
 				fx.Annotate(postgres.NewPerformanceRepositoryImpl, fx.As(new(outport.PerformanceRepository))),
 				fx.Annotate(application.NewMissionService, fx.As(new(inport.MissionService))),
 			),
 		),
-		fx.Module("registry",
+		fx.Module(
+			"registry",
 			fx.Provide(
 				fx.Annotate(postgres.NewRegistryRepositoryImpl, fx.As(new(outport.RegistryRepository))),
 				fx.Annotate(application.NewRegistryService, fx.As(new(inport.RegistryService))),

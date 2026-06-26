@@ -11,6 +11,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/tuannm99/judge-loop/internal/domain"
+	outport "github.com/tuannm99/judge-loop/internal/port/out"
 )
 
 func newIntegrationDB(t *testing.T) *DB {
@@ -99,6 +100,66 @@ func seedProblem(t *testing.T, db *DB, slug string, tags []string) uuid.UUID {
 	require.NoError(t, err)
 	require.NotNil(t, problem)
 	return problem.ID
+}
+
+func TestEvaluationJobQueueIntegration(t *testing.T) {
+	db := newIntegrationDB(t)
+	ctx := context.Background()
+
+	userID := seedUser(t, db)
+	problemID := seedProblem(t, db, "queue-problem", []string{"queue"})
+	submissionStore := NewSubmissionRepositoryImpl(db)
+	queue := NewEvaluationJobRepositoryImpl(db)
+
+	sub := &domain.Submission{
+		UserID:    userID,
+		ProblemID: problemID,
+		Language:  domain.LanguageGo,
+		Code:      "package main\nfunc main(){}",
+	}
+	require.NoError(t, submissionStore.Create(ctx, sub))
+
+	require.NoError(t, queue.PublishEvaluation(outport.EvaluateSubmissionJob{
+		SubmissionID: sub.ID.String(),
+		UserID:       userID.String(),
+	}))
+	require.NoError(t, queue.PublishEvaluation(outport.EvaluateSubmissionJob{
+		SubmissionID: sub.ID.String(),
+		UserID:       userID.String(),
+	}))
+
+	var count int64
+	require.NoError(t, db.Gorm.Model(&evaluationJobModel{}).Count(&count).Error)
+	require.Equal(t, int64(1), count)
+
+	job, err := queue.ClaimEvaluationJob(ctx, "worker-a")
+	require.NoError(t, err)
+	require.NotNil(t, job)
+	require.Equal(t, sub.ID, job.SubmissionID)
+	require.Equal(t, userID, job.UserID)
+	require.Equal(t, 1, job.Attempts)
+
+	again, err := queue.ClaimEvaluationJob(ctx, "worker-b")
+	require.NoError(t, err)
+	require.Nil(t, again)
+
+	require.NoError(t, queue.FailEvaluationJob(ctx, job.ID, "boom"))
+	var model evaluationJobModel
+	require.NoError(t, db.Gorm.First(&model, "id = ?", job.ID).Error)
+	require.Equal(t, evaluationJobStatusPending, model.Status)
+	require.Equal(t, "boom", model.LastError)
+
+	require.NoError(t, db.Gorm.Model(&evaluationJobModel{}).
+		Where("id = ?", job.ID).
+		Update("available_at", time.Now().Add(-time.Second)).Error)
+	job, err = queue.ClaimEvaluationJob(ctx, "worker-a")
+	require.NoError(t, err)
+	require.NotNil(t, job)
+	require.Equal(t, 2, job.Attempts)
+
+	require.NoError(t, queue.CompleteEvaluationJob(ctx, job.ID))
+	require.NoError(t, db.Gorm.First(&model, "id = ?", job.ID).Error)
+	require.Equal(t, evaluationJobStatusDone, model.Status)
 }
 
 func TestConnectRegistryAndMissionIntegration(t *testing.T) {
@@ -300,7 +361,7 @@ func TestProblemSubmissionSessionAndPerformanceIntegration(t *testing.T) {
 
 	patternScores, err := performanceStore.GetPatternScores(ctx, userID)
 	require.NoError(t, err)
-	require.Equal(t, 1.0, patternScores["hash-map"])
+	require.InEpsilon(t, 1.0, patternScores["hash-map"], 0.001)
 
 	stats, err := performanceStore.GetStats(ctx, userID)
 	require.NoError(t, err)

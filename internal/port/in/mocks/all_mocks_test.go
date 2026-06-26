@@ -34,31 +34,43 @@ func TestAllInportMocks(t *testing.T) {
 	problemSvc := NewMockProblemService(t)
 	require.NotNil(t, problemSvc.EXPECT())
 	filter := outport.ProblemFilter{Limit: 10}
-	problemSvc.EXPECT().ListProblems(mock.Anything, filter).Run(func(context.Context, outport.ProblemFilter) {}).Return(problems, 1, nil)
+	problemSvc.EXPECT().
+		ListProblems(mock.Anything, filter).
+		Run(func(context.Context, outport.ProblemFilter) {}).
+		Return(problems, 1, nil)
 	gotProblems, total, err := problemSvc.ListProblems(ctx, filter)
 	require.NoError(t, err)
 	require.Len(t, gotProblems, 1)
 	require.Equal(t, 1, total)
-	problemSvc.EXPECT().ListProblems(mock.Anything, filter).RunAndReturn(func(context.Context, outport.ProblemFilter) ([]domain.Problem, int, error) {
-		return problems, 1, nil
-	})
+	problemSvc.EXPECT().
+		ListProblems(mock.Anything, filter).
+		RunAndReturn(func(context.Context, outport.ProblemFilter) ([]domain.Problem, int, error) {
+			return problems, 1, nil
+		})
 	_, _, err = problemSvc.ListProblems(ctx, filter)
 	require.NoError(t, err)
 	problemSvc.EXPECT().GetProblem(mock.Anything, "two-sum").Run(func(context.Context, string) {}).Return(problem, nil)
 	gotProblem, err := problemSvc.GetProblem(ctx, "two-sum")
 	require.NoError(t, err)
 	require.Equal(t, problemID, gotProblem.ID)
-	problemSvc.EXPECT().GetProblem(mock.Anything, "two-sum-2").RunAndReturn(func(context.Context, string) (*domain.Problem, error) {
-		return problem, nil
-	})
+	problemSvc.EXPECT().
+		GetProblem(mock.Anything, "two-sum-2").
+		RunAndReturn(func(context.Context, string) (*domain.Problem, error) {
+			return problem, nil
+		})
 	_, err = problemSvc.GetProblem(ctx, "two-sum-2")
 	require.NoError(t, err)
-	problemSvc.EXPECT().SuggestProblem(mock.Anything, userID).Run(func(context.Context, uuid.UUID) {}).Return(problem, nil)
+	problemSvc.EXPECT().
+		SuggestProblem(mock.Anything, userID).
+		Run(func(context.Context, uuid.UUID) {}).
+		Return(problem, nil)
 	_, err = problemSvc.SuggestProblem(ctx, userID)
 	require.NoError(t, err)
-	problemSvc.EXPECT().SuggestProblem(mock.Anything, userID).RunAndReturn(func(context.Context, uuid.UUID) (*domain.Problem, error) {
-		return problem, nil
-	})
+	problemSvc.EXPECT().
+		SuggestProblem(mock.Anything, userID).
+		RunAndReturn(func(context.Context, uuid.UUID) (*domain.Problem, error) {
+			return problem, nil
+		})
 	_, err = problemSvc.SuggestProblem(ctx, userID)
 	require.NoError(t, err)
 
@@ -76,12 +88,17 @@ func TestAllInportMocks(t *testing.T) {
 		})
 	_, err = submissionSvc.CreateSubmission(ctx, userID, problemID, "go", "code", nil)
 	require.NoError(t, err)
-	submissionSvc.EXPECT().GetSubmission(mock.Anything, submissionID).Run(func(context.Context, uuid.UUID) {}).Return(submission, nil)
+	submissionSvc.EXPECT().
+		GetSubmission(mock.Anything, submissionID).
+		Run(func(context.Context, uuid.UUID) {}).
+		Return(submission, nil)
 	_, err = submissionSvc.GetSubmission(ctx, submissionID)
 	require.NoError(t, err)
-	submissionSvc.EXPECT().GetSubmission(mock.Anything, submissionID).RunAndReturn(func(context.Context, uuid.UUID) (*domain.Submission, error) {
-		return submission, nil
-	})
+	submissionSvc.EXPECT().
+		GetSubmission(mock.Anything, submissionID).
+		RunAndReturn(func(context.Context, uuid.UUID) (*domain.Submission, error) {
+			return submission, nil
+		})
 	_, err = submissionSvc.GetSubmission(ctx, submissionID)
 	require.NoError(t, err)
 	submissionSvc.EXPECT().ListSubmissions(mock.Anything, userID, (*uuid.UUID)(nil), 10, 0).
@@ -98,59 +115,80 @@ func TestAllInportMocks(t *testing.T) {
 
 	progressSvc := NewMockProgressService(t)
 	require.NotNil(t, progressSvc.EXPECT())
-	progressSvc.EXPECT().GetProgressToday(mock.Anything, userID).Run(func(context.Context, uuid.UUID) {}).Return(progress, nil)
+	progressSvc.EXPECT().
+		GetProgressToday(mock.Anything, userID).
+		Run(func(context.Context, uuid.UUID) {}).
+		Return(progress, nil)
 	gotProgress, err := progressSvc.GetProgressToday(ctx, userID)
 	require.NoError(t, err)
 	require.Equal(t, 2, gotProgress.Solved)
-	progressSvc.EXPECT().GetProgressToday(mock.Anything, userID).RunAndReturn(func(context.Context, uuid.UUID) (inport.ProgressToday, error) {
-		return progress, nil
-	})
+	progressSvc.EXPECT().
+		GetProgressToday(mock.Anything, userID).
+		RunAndReturn(func(context.Context, uuid.UUID) (inport.ProgressToday, error) {
+			return progress, nil
+		})
 	_, err = progressSvc.GetProgressToday(ctx, userID)
 	require.NoError(t, err)
 	progressSvc.EXPECT().GetStreak(mock.Anything, userID).Run(func(context.Context, uuid.UUID) {}).Return(streak, nil)
 	_, err = progressSvc.GetStreak(ctx, userID)
 	require.NoError(t, err)
-	progressSvc.EXPECT().GetStreak(mock.Anything, userID).RunAndReturn(func(context.Context, uuid.UUID) (outport.StreakInfo, error) {
-		return streak, nil
-	})
+	progressSvc.EXPECT().
+		GetStreak(mock.Anything, userID).
+		RunAndReturn(func(context.Context, uuid.UUID) (outport.StreakInfo, error) {
+			return streak, nil
+		})
 	_, err = progressSvc.GetStreak(ctx, userID)
 	require.NoError(t, err)
 
 	timerSvc := NewMockTimerService(t)
 	require.NotNil(t, timerSvc.EXPECT())
-	timerSvc.EXPECT().StartTimer(mock.Anything, userID, (*uuid.UUID)(nil)).Run(func(context.Context, uuid.UUID, *uuid.UUID) {}).Return(timer, nil)
+	timerSvc.EXPECT().
+		StartTimer(mock.Anything, userID, (*uuid.UUID)(nil)).
+		Run(func(context.Context, uuid.UUID, *uuid.UUID) {}).
+		Return(timer, nil)
 	_, err = timerSvc.StartTimer(ctx, userID, nil)
 	require.NoError(t, err)
-	timerSvc.EXPECT().StartTimer(mock.Anything, userID, (*uuid.UUID)(nil)).RunAndReturn(func(context.Context, uuid.UUID, *uuid.UUID) (*domain.TimerSession, error) {
-		return timer, nil
-	})
+	timerSvc.EXPECT().
+		StartTimer(mock.Anything, userID, (*uuid.UUID)(nil)).
+		RunAndReturn(func(context.Context, uuid.UUID, *uuid.UUID) (*domain.TimerSession, error) {
+			return timer, nil
+		})
 	_, err = timerSvc.StartTimer(ctx, userID, nil)
 	require.NoError(t, err)
 	timerSvc.EXPECT().StopTimer(mock.Anything, userID).Run(func(context.Context, uuid.UUID) {}).Return(timer, nil)
 	_, err = timerSvc.StopTimer(ctx, userID)
 	require.NoError(t, err)
-	timerSvc.EXPECT().StopTimer(mock.Anything, userID).RunAndReturn(func(context.Context, uuid.UUID) (*domain.TimerSession, error) {
-		return timer, nil
-	})
+	timerSvc.EXPECT().
+		StopTimer(mock.Anything, userID).
+		RunAndReturn(func(context.Context, uuid.UUID) (*domain.TimerSession, error) {
+			return timer, nil
+		})
 	_, err = timerSvc.StopTimer(ctx, userID)
 	require.NoError(t, err)
 	timerSvc.EXPECT().CurrentTimer(mock.Anything, userID).Run(func(context.Context, uuid.UUID) {}).Return(timer, nil)
 	_, err = timerSvc.CurrentTimer(ctx, userID)
 	require.NoError(t, err)
-	timerSvc.EXPECT().CurrentTimer(mock.Anything, userID).RunAndReturn(func(context.Context, uuid.UUID) (*domain.TimerSession, error) {
-		return timer, nil
-	})
+	timerSvc.EXPECT().
+		CurrentTimer(mock.Anything, userID).
+		RunAndReturn(func(context.Context, uuid.UUID) (*domain.TimerSession, error) {
+			return timer, nil
+		})
 	_, err = timerSvc.CurrentTimer(ctx, userID)
 	require.NoError(t, err)
 
 	reviewSvc := NewMockReviewService(t)
 	require.NotNil(t, reviewSvc.EXPECT())
-	reviewSvc.EXPECT().GetReviewsToday(mock.Anything, userID).Run(func(context.Context, uuid.UUID) {}).Return(reviews, nil)
+	reviewSvc.EXPECT().
+		GetReviewsToday(mock.Anything, userID).
+		Run(func(context.Context, uuid.UUID) {}).
+		Return(reviews, nil)
 	_, err = reviewSvc.GetReviewsToday(ctx, userID)
 	require.NoError(t, err)
-	reviewSvc.EXPECT().GetReviewsToday(mock.Anything, userID).RunAndReturn(func(context.Context, uuid.UUID) ([]outport.DueReview, error) {
-		return reviews, nil
-	})
+	reviewSvc.EXPECT().
+		GetReviewsToday(mock.Anything, userID).
+		RunAndReturn(func(context.Context, uuid.UUID) ([]outport.DueReview, error) {
+			return reviews, nil
+		})
 	_, err = reviewSvc.GetReviewsToday(ctx, userID)
 	require.NoError(t, err)
 
@@ -173,20 +211,27 @@ func TestAllInportMocks(t *testing.T) {
 	registrySvc.EXPECT().GetRegistryVersion(mock.Anything).Run(func(context.Context) {}).Return(registryVersion, nil)
 	_, err = registrySvc.GetRegistryVersion(ctx)
 	require.NoError(t, err)
-	registrySvc.EXPECT().GetRegistryVersion(mock.Anything).RunAndReturn(func(context.Context) (*outport.RegistryVersion, error) {
-		return registryVersion, nil
-	})
+	registrySvc.EXPECT().
+		GetRegistryVersion(mock.Anything).
+		RunAndReturn(func(context.Context) (*outport.RegistryVersion, error) {
+			return registryVersion, nil
+		})
 	_, err = registrySvc.GetRegistryVersion(ctx)
 	require.NoError(t, err)
 
 	missionSvc := NewMockMissionService(t)
 	require.NotNil(t, missionSvc.EXPECT())
-	missionSvc.EXPECT().GetDailyMission(mock.Anything, userID).Run(func(context.Context, uuid.UUID) {}).Return(mission, nil)
+	missionSvc.EXPECT().
+		GetDailyMission(mock.Anything, userID).
+		Run(func(context.Context, uuid.UUID) {}).
+		Return(mission, nil)
 	_, err = missionSvc.GetDailyMission(ctx, userID)
 	require.NoError(t, err)
-	missionSvc.EXPECT().GetDailyMission(mock.Anything, userID).RunAndReturn(func(context.Context, uuid.UUID) (*domain.DailyMission, error) {
-		return mission, nil
-	})
+	missionSvc.EXPECT().
+		GetDailyMission(mock.Anything, userID).
+		RunAndReturn(func(context.Context, uuid.UUID) (*domain.DailyMission, error) {
+			return mission, nil
+		})
 	_, err = missionSvc.GetDailyMission(ctx, userID)
 	require.NoError(t, err)
 }
