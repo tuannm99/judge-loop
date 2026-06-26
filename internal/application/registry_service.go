@@ -71,11 +71,15 @@ func testCaseManifestsToDomain(problemID uuid.UUID, manifests []domain.TestCaseM
 	out := make([]domain.TestCase, 0, len(manifests))
 	for i, manifest := range manifests {
 		out = append(out, domain.TestCase{
-			ProblemID: problemID,
-			Input:     manifest.Input,
-			Expected:  manifest.Expected,
-			IsHidden:  manifest.IsHidden,
-			OrderIdx:  i,
+			ProblemID:    problemID,
+			Name:         manifest.Name,
+			Input:        manifest.Input,
+			Expected:     manifest.Expected,
+			InputJSON:    manifest.InputJSON,
+			ExpectedJSON: manifest.ExpectedJSON,
+			Metadata:     manifest.Metadata,
+			IsHidden:     manifest.IsHidden,
+			OrderIdx:     i,
 		})
 	}
 	return out

@@ -188,6 +188,10 @@ func (s *ProblemRepositoryImpl) Update(
 	if err != nil {
 		return nil, fmt.Errorf("marshal starter code: %w", err)
 	}
+	executionSpec, err := json.Marshal(m.ExecutionSpec)
+	if err != nil {
+		return nil, fmt.Errorf("marshal execution spec: %w", err)
+	}
 
 	err = s.db.Gorm.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		updates := map[string]any{
@@ -200,6 +204,8 @@ func (s *ProblemRepositoryImpl) Update(
 			"estimated_time":       m.EstimatedTime,
 			"description_markdown": m.DescriptionMarkdown,
 			"starter_code":         starterCode,
+			"execution_spec":       executionSpec,
+			"judge_ready":          m.JudgeReady,
 			"updated_at":           gorm.Expr("NOW()"),
 		}
 		result := tx.Model(&problemModel{}).Where("id = ?", id).Updates(updates)

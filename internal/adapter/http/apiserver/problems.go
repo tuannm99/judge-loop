@@ -1,6 +1,7 @@
 package apiserver
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
@@ -23,6 +24,8 @@ type contributeProblemRequest struct {
 	EstimatedTime       int                         `json:"estimated_time"`
 	DescriptionMarkdown string                      `json:"description_markdown"`
 	StarterCode         map[string]string           `json:"starter_code"`
+	ExecutionSpec       domain.ExecutionSpec        `json:"execution_spec"`
+	JudgeReady          bool                        `json:"judge_ready"`
 	Version             int                         `json:"version"`
 	TestCases           []contributeTestCaseRequest `json:"test_cases"           binding:"required,min=1"`
 }
@@ -39,13 +42,19 @@ type updateProblemRequest struct {
 	EstimatedTime       int                         `json:"estimated_time"`
 	DescriptionMarkdown string                      `json:"description_markdown"`
 	StarterCode         map[string]string           `json:"starter_code"`
+	ExecutionSpec       domain.ExecutionSpec        `json:"execution_spec"`
+	JudgeReady          bool                        `json:"judge_ready"`
 	TestCases           []contributeTestCaseRequest `json:"test_cases"`
 }
 
 type contributeTestCaseRequest struct {
-	Input    string `json:"input"     binding:"required"`
-	Expected string `json:"expected"  binding:"required"`
-	IsHidden bool   `json:"is_hidden"`
+	Name         string          `json:"name"`
+	Input        string          `json:"input"`
+	Expected     string          `json:"expected"`
+	InputJSON    json.RawMessage `json:"input_json,omitempty"`
+	ExpectedJSON json.RawMessage `json:"expected_json,omitempty"`
+	Metadata     json.RawMessage `json:"metadata,omitempty"`
+	IsHidden     bool            `json:"is_hidden"`
 }
 
 type problemLabelRequest struct {
@@ -251,16 +260,10 @@ func (h *ProblemsAPI) UpdateProblem(c *gin.Context) {
 		EstimatedTime:       req.EstimatedTime,
 		DescriptionMarkdown: req.DescriptionMarkdown,
 		StarterCode:         req.StarterCode,
+		ExecutionSpec:       req.ExecutionSpec,
+		JudgeReady:          req.JudgeReady || len(req.TestCases) > 0,
 	}
-	testCases := make([]domain.TestCase, 0, len(req.TestCases))
-	for i, tc := range req.TestCases {
-		testCases = append(testCases, domain.TestCase{
-			Input:    tc.Input,
-			Expected: tc.Expected,
-			IsHidden: tc.IsHidden,
-			OrderIdx: i,
-		})
-	}
+	testCases := domainTestCasesFromRequest(req.TestCases)
 
 	var problem *domain.Problem
 	if req.TestCases != nil {
@@ -303,15 +306,7 @@ func (h *ProblemsAPI) ContributeProblem(c *gin.Context) {
 		return
 	}
 
-	testCases := make([]domain.TestCase, 0, len(req.TestCases))
-	for i, tc := range req.TestCases {
-		testCases = append(testCases, domain.TestCase{
-			Input:    tc.Input,
-			Expected: tc.Expected,
-			IsHidden: tc.IsHidden,
-			OrderIdx: i,
-		})
-	}
+	testCases := domainTestCasesFromRequest(req.TestCases)
 
 	problem, err := h.service.ContributeProblem(c.Request.Context(), domain.ProblemManifest{
 		Provider:            req.Provider,
@@ -324,6 +319,8 @@ func (h *ProblemsAPI) ContributeProblem(c *gin.Context) {
 		EstimatedTime:       req.EstimatedTime,
 		DescriptionMarkdown: req.DescriptionMarkdown,
 		StarterCode:         req.StarterCode,
+		ExecutionSpec:       req.ExecutionSpec,
+		JudgeReady:          req.JudgeReady || len(req.TestCases) > 0,
 		Version:             req.Version,
 	}, testCases)
 	if err != nil {
@@ -336,6 +333,23 @@ func (h *ProblemsAPI) ContributeProblem(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, problem)
+}
+
+func domainTestCasesFromRequest(req []contributeTestCaseRequest) []domain.TestCase {
+	testCases := make([]domain.TestCase, 0, len(req))
+	for i, tc := range req {
+		testCases = append(testCases, domain.TestCase{
+			Name:         tc.Name,
+			Input:        tc.Input,
+			Expected:     tc.Expected,
+			InputJSON:    tc.InputJSON,
+			ExpectedJSON: tc.ExpectedJSON,
+			Metadata:     tc.Metadata,
+			IsHidden:     tc.IsHidden,
+			OrderIdx:     i,
+		})
+	}
+	return testCases
 }
 
 func normalizeProblemLabelKind(kind string) string {

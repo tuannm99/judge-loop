@@ -380,7 +380,8 @@ func TestProblemsAPIContributeProblem(t *testing.T) {
 			"python": "class Solution:\n    pass\n",
 			"go":     "package main\n\nfunc main() {}\n",
 		},
-		Version: 1,
+		JudgeReady: true,
+		Version:    1,
 	}
 	wantCases := []domain.TestCase{
 		{Input: "1 2", Expected: "3", OrderIdx: 0},

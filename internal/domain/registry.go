@@ -20,14 +20,20 @@ type ProblemManifest struct {
 	EstimatedTime       int                `json:"estimated_time"`
 	DescriptionMarkdown string             `json:"description_markdown"`
 	StarterCode         map[string]string  `json:"starter_code"`
+	ExecutionSpec       ExecutionSpec      `json:"execution_spec"`
+	JudgeReady          bool               `json:"judge_ready"`
 	TestCases           []TestCaseManifest `json:"test_cases"`
 	Version             int                `json:"version"`
 }
 
 type TestCaseManifest struct {
-	Input    string `json:"input"`
-	Expected string `json:"expected"`
-	IsHidden bool   `json:"is_hidden"`
+	Name         string          `json:"name"`
+	Input        string          `json:"input"`
+	Expected     string          `json:"expected"`
+	InputJSON    json.RawMessage `json:"input_json,omitempty"`
+	ExpectedJSON json.RawMessage `json:"expected_json,omitempty"`
+	Metadata     json.RawMessage `json:"metadata,omitempty"`
+	IsHidden     bool            `json:"is_hidden"`
 }
 
 func (m *ProblemManifest) UnmarshalJSON(data []byte) error {
@@ -43,6 +49,8 @@ func (m *ProblemManifest) UnmarshalJSON(data []byte) error {
 		EstimatedTime       int                `json:"estimated_time"`
 		DescriptionMarkdown string             `json:"description_markdown"`
 		StarterCode         map[string]string  `json:"starter_code"`
+		ExecutionSpec       ExecutionSpec      `json:"execution_spec"`
+		JudgeReady          bool               `json:"judge_ready"`
 		TestCases           []TestCaseManifest `json:"test_cases"`
 		Version             int                `json:"version"`
 	}
@@ -63,6 +71,8 @@ func (m *ProblemManifest) UnmarshalJSON(data []byte) error {
 		EstimatedTime:       raw.EstimatedTime,
 		DescriptionMarkdown: raw.DescriptionMarkdown,
 		StarterCode:         raw.StarterCode,
+		ExecutionSpec:       raw.ExecutionSpec,
+		JudgeReady:          raw.JudgeReady,
 		TestCases:           raw.TestCases,
 		Version:             raw.Version,
 	}

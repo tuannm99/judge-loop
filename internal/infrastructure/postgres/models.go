@@ -21,6 +21,8 @@ type problemModel struct {
 	EstimatedTime       int       `gorm:"column:estimated_time"`
 	DescriptionMarkdown string    `gorm:"column:description_markdown"`
 	StarterCode         []byte    `gorm:"column:starter_code"`
+	ExecutionSpec       []byte    `gorm:"column:execution_spec"`
+	JudgeReady          bool      `gorm:"column:judge_ready"`
 	CreatedAt           time.Time `gorm:"column:created_at"`
 	UpdatedAt           time.Time `gorm:"column:updated_at"`
 
@@ -36,6 +38,12 @@ func (m problemModel) toDomain() domain.Problem {
 			log.Printf("unmarshal starter_code for problem %s: %v", m.ID, err)
 		}
 	}
+	var executionSpec domain.ExecutionSpec
+	if len(m.ExecutionSpec) > 0 {
+		if err := json.Unmarshal(m.ExecutionSpec, &executionSpec); err != nil {
+			log.Printf("unmarshal execution_spec for problem %s: %v", m.ID, err)
+		}
+	}
 
 	return domain.Problem{
 		ID:                  m.ID,
@@ -49,6 +57,8 @@ func (m problemModel) toDomain() domain.Problem {
 		EstimatedTime:       m.EstimatedTime,
 		DescriptionMarkdown: m.DescriptionMarkdown,
 		StarterCode:         starterCode,
+		ExecutionSpec:       executionSpec,
+		JudgeReady:          m.JudgeReady,
 		CreatedAt:           m.CreatedAt,
 		UpdatedAt:           m.UpdatedAt,
 	}
@@ -188,24 +198,32 @@ func (m dailySessionModel) toDomain() domain.DailySession {
 }
 
 type testCaseModel struct {
-	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	ProblemID uuid.UUID `gorm:"column:problem_id"`
-	Input     string    `gorm:"column:input"`
-	Expected  string    `gorm:"column:expected"`
-	IsHidden  bool      `gorm:"column:is_hidden"`
-	OrderIdx  int       `gorm:"column:order_idx"`
+	ID           uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	ProblemID    uuid.UUID `gorm:"column:problem_id"`
+	Name         string    `gorm:"column:name"`
+	Input        string    `gorm:"column:input"`
+	Expected     string    `gorm:"column:expected"`
+	InputJSON    []byte    `gorm:"column:input_json"`
+	ExpectedJSON []byte    `gorm:"column:expected_json"`
+	Metadata     []byte    `gorm:"column:metadata"`
+	IsHidden     bool      `gorm:"column:is_hidden"`
+	OrderIdx     int       `gorm:"column:order_idx"`
 }
 
 func (testCaseModel) TableName() string { return "test_cases" }
 
 func (m testCaseModel) toDomain() domain.TestCase {
 	return domain.TestCase{
-		ID:        m.ID,
-		ProblemID: m.ProblemID,
-		Input:     m.Input,
-		Expected:  m.Expected,
-		IsHidden:  m.IsHidden,
-		OrderIdx:  m.OrderIdx,
+		ID:           m.ID,
+		ProblemID:    m.ProblemID,
+		Name:         m.Name,
+		Input:        m.Input,
+		Expected:     m.Expected,
+		InputJSON:    json.RawMessage(m.InputJSON),
+		ExpectedJSON: json.RawMessage(m.ExpectedJSON),
+		Metadata:     json.RawMessage(m.Metadata),
+		IsHidden:     m.IsHidden,
+		OrderIdx:     m.OrderIdx,
 	}
 }
 

@@ -4,7 +4,9 @@ package judge
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/tuannm99/judge-loop/internal/domain"
@@ -18,12 +20,22 @@ type RunResult struct {
 	RuntimeMS int64
 }
 
-// RunFn executes code against a single test case input and returns the result.
-type RunFn func(input string) (RunResult, error)
+// RunFn executes code against a single test case and returns the result.
+type RunFn func(tc domain.TestCase) (RunResult, error)
 
 // Evaluate runs all test cases via runFn and returns the aggregate verdict.
 // If there are no test cases, it returns Accepted (can't judge without test data).
 func Evaluate(cases []domain.TestCase, runFn RunFn) (
+	status domain.SubmissionStatus,
+	verdict domain.Verdict,
+	passed, total int,
+	maxRuntimeMS int64,
+	errMsg string,
+) {
+	return EvaluateWithSpec(cases, domain.ExecutionSpec{}, runFn)
+}
+
+func EvaluateWithSpec(cases []domain.TestCase, spec domain.ExecutionSpec, runFn RunFn) (
 	status domain.SubmissionStatus,
 	verdict domain.Verdict,
 	passed, total int,
@@ -38,7 +50,7 @@ func Evaluate(cases []domain.TestCase, runFn RunFn) (
 	}
 
 	for i, tc := range cases {
-		result, err := runFn(tc.Input)
+		result, err := runFn(tc)
 		if err != nil {
 			return domain.StatusRuntimeError, domain.VerdictRuntimeError,
 				passed, total, maxRuntimeMS, err.Error()
@@ -60,8 +72,8 @@ func Evaluate(cases []domain.TestCase, runFn RunFn) (
 		}
 
 		got := normalizeOutput(result.Output)
-		exp := normalizeOutput(tc.Expected)
-		if outputsEqual(got, exp) {
+		exp := expectedOutput(tc)
+		if outputsEqualWithComparator(got, exp, spec.Comparator) {
 			passed++
 		} else {
 			msg := fmt.Sprintf("case %d: expected %q, got %q", i+1, exp, got)
@@ -73,11 +85,18 @@ func Evaluate(cases []domain.TestCase, runFn RunFn) (
 	return domain.StatusAccepted, domain.VerdictAccepted, passed, total, maxRuntimeMS, ""
 }
 
+func expectedOutput(tc domain.TestCase) string {
+	if len(tc.ExpectedJSON) > 0 {
+		return normalizeOutput(string(tc.ExpectedJSON))
+	}
+	return normalizeOutput(tc.Expected)
+}
+
 func normalizeOutput(value string) string {
 	return strings.TrimSpace(value)
 }
 
-func outputsEqual(got, expected string) bool {
+func outputsEqualWithComparator(got, expected string, comparator domain.ComparatorSpec) bool {
 	if got == expected {
 		return true
 	}
@@ -90,7 +109,51 @@ func outputsEqual(got, expected string) bool {
 	if json.Unmarshal([]byte(expected), &expectedJSON) != nil {
 		return false
 	}
+	switch comparator.Kind {
+	case "unordered_array":
+		return unorderedArraysEqual(gotJSON, expectedJSON)
+	case "float_epsilon":
+		return floatsEqual(gotJSON, expectedJSON, comparator.Epsilon)
+	}
 	return reflect.DeepEqual(gotJSON, expectedJSON)
+}
+
+func unorderedArraysEqual(got, expected any) bool {
+	gotSlice, ok := got.([]any)
+	if !ok {
+		return false
+	}
+	expectedSlice, ok := expected.([]any)
+	if !ok || len(gotSlice) != len(expectedSlice) {
+		return false
+	}
+	gotValues := canonicalValues(gotSlice)
+	expectedValues := canonicalValues(expectedSlice)
+	sort.Strings(gotValues)
+	sort.Strings(expectedValues)
+	return reflect.DeepEqual(gotValues, expectedValues)
+}
+
+func canonicalValues(values []any) []string {
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		encoded, err := json.Marshal(value)
+		if err != nil {
+			out = append(out, fmt.Sprint(value))
+			continue
+		}
+		out = append(out, string(encoded))
+	}
+	return out
+}
+
+func floatsEqual(got, expected any, epsilon float64) bool {
+	if epsilon <= 0 {
+		epsilon = 1e-9
+	}
+	gotFloat, gotOK := got.(float64)
+	expectedFloat, expectedOK := expected.(float64)
+	return gotOK && expectedOK && math.Abs(gotFloat-expectedFloat) <= epsilon
 }
 
 // isCompileError heuristically checks if stderr looks like a compile/syntax error

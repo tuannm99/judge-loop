@@ -24,6 +24,7 @@ func New(cfg config.JudgeWorker) *fx.App {
 			"evaluation",
 			fx.Provide(
 				fx.Annotate(postgres.NewSubmissionRepositoryImpl, fx.As(new(outport.SubmissionRepository))),
+				fx.Annotate(postgres.NewProblemRepositoryImpl, fx.As(new(outport.ProblemRepository))),
 				fx.Annotate(postgres.NewTestCaseRepositoryImpl, fx.As(new(outport.TestCaseRepository))),
 				fx.Annotate(postgres.NewReviewRepositoryImpl, fx.As(new(outport.ReviewRepository))),
 				fx.Annotate(postgres.NewSessionRepositoryImpl, fx.As(new(outport.SessionRepository))),

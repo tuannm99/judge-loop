@@ -239,6 +239,12 @@ func TestProblemSubmissionSessionAndPerformanceIntegration(t *testing.T) {
 			"python": "class Solution:\n    pass\n",
 			"go":     "package main\n\nfunc main() {}\n",
 		},
+		ExecutionSpec: domain.ExecutionSpec{
+			Mode:       domain.ExecutionModeFunction,
+			Entrypoint: "twoSum",
+			Comparator: domain.ComparatorSpec{Kind: "unordered_array"},
+		},
+		JudgeReady: true,
 	}
 	problemB := domain.ProblemManifest{
 		Slug:          "best-time",
@@ -271,18 +277,26 @@ func TestProblemSubmissionSessionAndPerformanceIntegration(t *testing.T) {
 	require.Equal(t, "## Two Sum\n\nReturn indices for the matching pair.", bySlug.DescriptionMarkdown)
 	require.Equal(t, "class Solution:\n    pass\n", bySlug.StarterCode["python"])
 	require.Equal(t, "package main\n\nfunc main() {}\n", bySlug.StarterCode["go"])
+	require.Equal(t, domain.ExecutionModeFunction, bySlug.ExecutionSpec.Mode)
+	require.Equal(t, "twoSum", bySlug.ExecutionSpec.Entrypoint)
+	require.Equal(t, "unordered_array", bySlug.ExecutionSpec.Comparator.Kind)
+	require.True(t, bySlug.JudgeReady)
 
 	suggested, err := problemStore.Suggest(ctx, userID, []string{"hash-map"})
 	require.NoError(t, err)
 	require.NotNil(t, suggested)
 
 	require.NoError(t, db.Gorm.Create(&testCaseModel{
-		ID:        uuid.New(),
-		ProblemID: first.ID,
-		Input:     "1 2",
-		Expected:  "3",
-		IsHidden:  false,
-		OrderIdx:  1,
+		ID:           uuid.New(),
+		ProblemID:    first.ID,
+		Name:         "example",
+		Input:        "1 2",
+		Expected:     "3",
+		InputJSON:    []byte(`{"args":[[2,7],9]}`),
+		ExpectedJSON: []byte(`[0,1]`),
+		Metadata:     []byte(`{"source":"example"}`),
+		IsHidden:     false,
+		OrderIdx:     1,
 	}).Error)
 	require.NoError(t, db.Gorm.Create(&testCaseModel{
 		ID:        uuid.New(),
@@ -295,6 +309,10 @@ func TestProblemSubmissionSessionAndPerformanceIntegration(t *testing.T) {
 	testCases, err := testCaseStore.GetByProblem(ctx, first.ID)
 	require.NoError(t, err)
 	require.Len(t, testCases, 1)
+	require.Equal(t, "example", testCases[0].Name)
+	require.JSONEq(t, `{"args":[[2,7],9]}`, string(testCases[0].InputJSON))
+	require.JSONEq(t, `[0,1]`, string(testCases[0].ExpectedJSON))
+	require.JSONEq(t, `{"source":"example"}`, string(testCases[0].Metadata))
 
 	daily, err := sessionStore.GetOrCreateToday(ctx, userID)
 	require.NoError(t, err)

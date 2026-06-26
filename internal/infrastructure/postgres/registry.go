@@ -77,6 +77,10 @@ func (s *ProblemRepositoryImpl) UpsertFromManifest(ctx context.Context, m domain
 	if err != nil {
 		return fmt.Errorf("marshal starter code: %w", err)
 	}
+	executionSpec, err := json.Marshal(m.ExecutionSpec)
+	if err != nil {
+		return fmt.Errorf("marshal execution spec: %w", err)
+	}
 
 	model := problemModel{
 		Slug:                m.Slug,
@@ -88,6 +92,8 @@ func (s *ProblemRepositoryImpl) UpsertFromManifest(ctx context.Context, m domain
 		EstimatedTime:       m.EstimatedTime,
 		DescriptionMarkdown: m.DescriptionMarkdown,
 		StarterCode:         starterCode,
+		ExecutionSpec:       executionSpec,
+		JudgeReady:          m.JudgeReady,
 	}
 
 	err = s.db.Gorm.WithContext(ctx).Clauses(clause.OnConflict{
@@ -100,6 +106,8 @@ func (s *ProblemRepositoryImpl) UpsertFromManifest(ctx context.Context, m domain
 			"estimated_time":       model.EstimatedTime,
 			"description_markdown": model.DescriptionMarkdown,
 			"starter_code":         model.StarterCode,
+			"execution_spec":       model.ExecutionSpec,
+			"judge_ready":          model.JudgeReady,
 			"updated_at":           gorm.Expr("NOW()"),
 		}),
 	}).Create(&model).Error

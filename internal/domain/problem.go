@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -38,8 +39,50 @@ type Problem struct {
 	EstimatedTime       int               `json:"estimated_time"` // minutes
 	DescriptionMarkdown string            `json:"description_markdown"`
 	StarterCode         map[string]string `json:"starter_code"`
+	ExecutionSpec       ExecutionSpec     `json:"execution_spec"`
+	JudgeReady          bool              `json:"judge_ready"`
 	CreatedAt           time.Time         `json:"created_at"`
 	UpdatedAt           time.Time         `json:"updated_at"`
+}
+
+type ExecutionMode string
+
+const (
+	ExecutionModeStdin    ExecutionMode = "stdin"
+	ExecutionModeFunction ExecutionMode = "function"
+	ExecutionModeClass    ExecutionMode = "class"
+)
+
+type ExecutionSpec struct {
+	Mode        ExecutionMode         `json:"mode"`
+	Entrypoint  string                `json:"entrypoint,omitempty"`
+	ClassName   string                `json:"class_name,omitempty"`
+	Signature   ExecutionSignature    `json:"signature,omitempty"`
+	Constructor ExecutionSignature    `json:"constructor,omitempty"`
+	Methods     map[string]MethodSpec `json:"methods,omitempty"`
+	Comparator  ComparatorSpec        `json:"comparator,omitempty"`
+	TimeoutMS   int                   `json:"timeout_ms,omitempty"`
+	MemoryMB    int                   `json:"memory_mb,omitempty"`
+}
+
+type ExecutionSignature struct {
+	Params  []ExecutionParam `json:"params,omitempty"`
+	Returns string           `json:"returns,omitempty"`
+}
+
+type ExecutionParam struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+type MethodSpec struct {
+	Params  []ExecutionParam `json:"params,omitempty"`
+	Returns string           `json:"returns,omitempty"`
+}
+
+type ComparatorSpec struct {
+	Kind    string  `json:"kind,omitempty"`
+	Epsilon float64 `json:"epsilon,omitempty"`
 }
 
 type ProblemLabel struct {
@@ -53,12 +96,16 @@ type ProblemLabel struct {
 
 // TestCase stores input/output for judge evaluation.
 type TestCase struct {
-	ID        uuid.UUID `json:"id"`
-	ProblemID uuid.UUID `json:"problem_id"`
-	Input     string    `json:"input"`
-	Expected  string    `json:"expected"`
-	IsHidden  bool      `json:"is_hidden"` // hidden test cases are not shown to the user
-	OrderIdx  int       `json:"order_idx"` // display order
+	ID           uuid.UUID       `json:"id"`
+	ProblemID    uuid.UUID       `json:"problem_id"`
+	Name         string          `json:"name"`
+	Input        string          `json:"input"`
+	Expected     string          `json:"expected"`
+	InputJSON    json.RawMessage `json:"input_json,omitempty"`
+	ExpectedJSON json.RawMessage `json:"expected_json,omitempty"`
+	Metadata     json.RawMessage `json:"metadata,omitempty"`
+	IsHidden     bool            `json:"is_hidden"` // hidden test cases are not shown to the user
+	OrderIdx     int             `json:"order_idx"` // display order
 }
 
 // ProblemPerformance tracks a user's history on a specific problem.

@@ -124,6 +124,16 @@ func TestRegistryAPIImportDataProblems(t *testing.T) {
 				Tags:          []string{"array", "hash-table"},
 				SourceURL:     "https://leetcode.com/problems/two-sum/",
 				EstimatedTime: 15,
+				ExecutionSpec: domain.ExecutionSpec{
+					Mode:       domain.ExecutionModeFunction,
+					Entrypoint: "twoSum",
+				},
+				TestCases: []domain.TestCaseManifest{
+					{
+						InputJSON:    []byte(`{"args":[[2,7],9]}`),
+						ExpectedJSON: []byte(`[0,1]`),
+					},
+				},
 			},
 		},
 		Manifests: []domain.ManifestRef{{Name: "my-roadmap", Path: "tracks/my-roadmap.json"}},
@@ -155,7 +165,19 @@ func TestRegistryAPIImportDataProblems(t *testing.T) {
 			api := New(nil, nil, nil, nil, nil, service, nil, uuid.New())
 			if tc.wantCall {
 				service.EXPECT().
-					SyncRegistry(mock.Anything, "my-roadmap-v1", updatedAt, mock.Anything, mock.Anything).
+					SyncRegistry(
+						mock.Anything,
+						"my-roadmap-v1",
+						updatedAt,
+						mock.MatchedBy(func(problems []domain.ProblemManifest) bool {
+							return len(problems) == 1 &&
+								problems[0].ExecutionSpec.Mode == domain.ExecutionModeFunction &&
+								problems[0].ExecutionSpec.Entrypoint == "twoSum" &&
+								string(problems[0].TestCases[0].InputJSON) == `{"args":[[2,7],9]}` &&
+								string(problems[0].TestCases[0].ExpectedJSON) == `[0,1]`
+						}),
+						mock.Anything,
+					).
 					Return(tc.imported, tc.err).
 					Once()
 			}

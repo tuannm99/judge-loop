@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -74,12 +75,16 @@ func (s *TestCaseRepositoryImpl) ReplaceForProblem(
 				id = uuid.New()
 			}
 			models = append(models, testCaseModel{
-				ID:        id,
-				ProblemID: problemID,
-				Input:     tc.Input,
-				Expected:  tc.Expected,
-				IsHidden:  tc.IsHidden,
-				OrderIdx:  i,
+				ID:           id,
+				ProblemID:    problemID,
+				Name:         tc.Name,
+				Input:        tc.Input,
+				Expected:     tc.Expected,
+				InputJSON:    nullableRawJSON(tc.InputJSON),
+				ExpectedJSON: nullableRawJSON(tc.ExpectedJSON),
+				Metadata:     defaultRawJSON(tc.Metadata),
+				IsHidden:     tc.IsHidden,
+				OrderIdx:     i,
 			})
 		}
 
@@ -88,4 +93,18 @@ func (s *TestCaseRepositoryImpl) ReplaceForProblem(
 		}
 		return nil
 	})
+}
+
+func nullableRawJSON(raw json.RawMessage) []byte {
+	if len(raw) == 0 {
+		return nil
+	}
+	return []byte(raw)
+}
+
+func defaultRawJSON(raw json.RawMessage) []byte {
+	if len(raw) == 0 {
+		return []byte("{}")
+	}
+	return []byte(raw)
 }

@@ -23,7 +23,7 @@ func TestEvaluate(t *testing.T) {
 		runErr := errors.New("boom")
 		status, verdict, passed, total, _, errMsg := Evaluate(
 			[]domain.TestCase{{Input: "1"}},
-			func(string) (RunResult, error) {
+			func(domain.TestCase) (RunResult, error) {
 				return RunResult{}, runErr
 			},
 		)
@@ -37,7 +37,7 @@ func TestEvaluate(t *testing.T) {
 	t.Run("returns time limit exceeded", func(t *testing.T) {
 		status, verdict, passed, total, _, errMsg := Evaluate(
 			[]domain.TestCase{{Input: "1"}},
-			func(string) (RunResult, error) {
+			func(domain.TestCase) (RunResult, error) {
 				return RunResult{TimedOut: true}, nil
 			},
 		)
@@ -51,7 +51,7 @@ func TestEvaluate(t *testing.T) {
 	t.Run("returns compile error", func(t *testing.T) {
 		status, verdict, _, _, _, errMsg := Evaluate(
 			[]domain.TestCase{{Input: "1"}},
-			func(string) (RunResult, error) {
+			func(domain.TestCase) (RunResult, error) {
 				return RunResult{ExitCode: 1, Stderr: "syntax error near x"}, nil
 			},
 		)
@@ -63,7 +63,7 @@ func TestEvaluate(t *testing.T) {
 	t.Run("returns runtime error for non compile stderr", func(t *testing.T) {
 		status, verdict, _, _, _, errMsg := Evaluate(
 			[]domain.TestCase{{Input: "1"}},
-			func(string) (RunResult, error) {
+			func(domain.TestCase) (RunResult, error) {
 				return RunResult{ExitCode: 1, Stderr: "panic: nil pointer"}, nil
 			},
 		)
@@ -75,7 +75,7 @@ func TestEvaluate(t *testing.T) {
 	t.Run("returns wrong answer and max runtime", func(t *testing.T) {
 		cases := []domain.TestCase{{Input: "1", Expected: "1"}, {Input: "2", Expected: "2"}}
 		idx := 0
-		status, verdict, passed, total, runtimeMS, errMsg := Evaluate(cases, func(string) (RunResult, error) {
+		status, verdict, passed, total, runtimeMS, errMsg := Evaluate(cases, func(domain.TestCase) (RunResult, error) {
 			idx++
 			if idx == 1 {
 				return RunResult{Output: "1", RuntimeMS: 7}, nil
@@ -93,7 +93,7 @@ func TestEvaluate(t *testing.T) {
 	t.Run("accepts when all outputs match after trimming", func(t *testing.T) {
 		cases := []domain.TestCase{{Input: "1", Expected: " 1 "}, {Input: "2", Expected: "2"}}
 		idx := 0
-		status, verdict, passed, total, runtimeMS, errMsg := Evaluate(cases, func(string) (RunResult, error) {
+		status, verdict, passed, total, runtimeMS, errMsg := Evaluate(cases, func(domain.TestCase) (RunResult, error) {
 			idx++
 			return RunResult{Output: "\n" + cases[idx-1].Expected + "\n", RuntimeMS: int64(3 + idx)}, nil
 		})
@@ -111,7 +111,7 @@ func TestEvaluate(t *testing.T) {
 			{Input: "object", Expected: `{"answer":[1,2],"ok":true}`},
 		}
 		idx := 0
-		status, verdict, passed, total, _, errMsg := Evaluate(cases, func(string) (RunResult, error) {
+		status, verdict, passed, total, _, errMsg := Evaluate(cases, func(domain.TestCase) (RunResult, error) {
 			idx++
 			if idx == 1 {
 				return RunResult{Output: "[1, 2, 3]"}, nil
@@ -125,10 +125,39 @@ func TestEvaluate(t *testing.T) {
 		require.Empty(t, errMsg)
 	})
 
+	t.Run("uses expected json when present", func(t *testing.T) {
+		status, verdict, passed, total, _, errMsg := Evaluate(
+			[]domain.TestCase{{InputJSON: []byte(`{"args":[1]}`), ExpectedJSON: []byte(`[1,2]`)}},
+			func(domain.TestCase) (RunResult, error) {
+				return RunResult{Output: "[1, 2]"}, nil
+			},
+		)
+		require.Equal(t, domain.StatusAccepted, status)
+		require.Equal(t, domain.VerdictAccepted, verdict)
+		require.Equal(t, 1, passed)
+		require.Equal(t, 1, total)
+		require.Empty(t, errMsg)
+	})
+
+	t.Run("supports unordered array comparator", func(t *testing.T) {
+		status, verdict, passed, total, _, errMsg := EvaluateWithSpec(
+			[]domain.TestCase{{ExpectedJSON: []byte(`[1,2]`)}},
+			domain.ExecutionSpec{Comparator: domain.ComparatorSpec{Kind: "unordered_array"}},
+			func(domain.TestCase) (RunResult, error) {
+				return RunResult{Output: "[2,1]"}, nil
+			},
+		)
+		require.Equal(t, domain.StatusAccepted, status)
+		require.Equal(t, domain.VerdictAccepted, verdict)
+		require.Equal(t, 1, passed)
+		require.Equal(t, 1, total)
+		require.Empty(t, errMsg)
+	})
+
 	t.Run("falls back to string comparison for non json", func(t *testing.T) {
 		status, verdict, passed, total, _, errMsg := Evaluate(
 			[]domain.TestCase{{Input: "plain", Expected: "hello"}},
-			func(string) (RunResult, error) {
+			func(domain.TestCase) (RunResult, error) {
 				return RunResult{Output: "hello world"}, nil
 			},
 		)
