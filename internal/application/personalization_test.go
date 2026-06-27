@@ -73,6 +73,13 @@ func TestGenerateUsesDefaultGoal(t *testing.T) {
 	require.Len(t, mission.OptionalTasks, 2)
 }
 
+func TestAdaptiveDailyGoal(t *testing.T) {
+	require.Equal(t, 2, AdaptiveDailyGoal(0))
+	require.Equal(t, 3, AdaptiveDailyGoal(8))
+	require.Equal(t, 4, AdaptiveDailyGoal(22))
+	require.Equal(t, 5, AdaptiveDailyGoal(50))
+}
+
 func TestGenerateWithExplicitGoalAndDueReviewReason(t *testing.T) {
 	userID := uuid.New()
 	problemID := uuid.New()

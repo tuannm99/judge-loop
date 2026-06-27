@@ -1,6 +1,7 @@
 package judge
 
 import (
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -217,4 +218,78 @@ func TestIsCompileError(t *testing.T) {
 	require.True(t, isCompileError("SyntaxError: invalid syntax"))
 	require.True(t, isCompileError("undefined: fmt.Println"))
 	require.False(t, isCompileError("panic: runtime error"))
+}
+
+func TestComparatorEdgeCases(t *testing.T) {
+	t.Run("any of", func(t *testing.T) {
+		require.True(t, outputsEqualWithComparator(
+			`2`,
+			`[1,2,3]`,
+			domain.ComparatorSpec{Kind: "any_of"},
+			domain.TestCase{},
+		))
+		require.False(t, anyExpectedValueEqual(2.0, map[string]any{}))
+		require.False(t, anyExpectedValueEqual(4.0, []any{1.0, 2.0}))
+	})
+
+	t.Run("json subset", func(t *testing.T) {
+		require.True(t, jsonSubset(
+			map[string]any{"a": 1.0, "nested": []any{1.0, 2.0, 3.0}},
+			map[string]any{"nested": []any{1.0, 2.0}},
+		))
+		require.False(t, jsonSubset([]any{1.0}, []any{1.0, 2.0}))
+		require.False(t, jsonSubset("value", map[string]any{"a": 1.0}))
+		require.False(t, jsonSubset(map[string]any{}, map[string]any{"a": 1.0}))
+	})
+
+	t.Run("float epsilon", func(t *testing.T) {
+		require.True(t, valuesWithinEpsilon(1.0, 1.0+1e-10, 0))
+		require.True(t, valuesWithinEpsilon(
+			map[string]any{"a": 1.0},
+			map[string]any{"a": 1.001},
+			0.01,
+		))
+		require.False(t, valuesWithinEpsilon([]any{1.0}, []any{1.0, 2.0}, 0.01))
+		require.False(t, valuesWithinEpsilon(
+			map[string]any{"a": 1.0},
+			map[string]any{"a": 1.0, "b": 2.0},
+			0.01,
+		))
+		require.False(t, valuesWithinEpsilon(1.0, "1", 0.01))
+	})
+
+	t.Run("unordered arrays reject malformed values", func(t *testing.T) {
+		require.False(t, unorderedArraysEqual("not-array", []any{}))
+		require.False(t, unorderedArraysEqual([]any{1.0}, "not-array"))
+		require.False(t, unorderedNestedArraysEqual([]any{1.0}, []any{1.0}))
+		require.Len(t, canonicalValues([]any{make(chan int)}), 1)
+	})
+
+	t.Run("topological validation rejects malformed orders", func(t *testing.T) {
+		validCase := domain.TestCase{
+			InputJSON: json.RawMessage(`{"args":[2,[[1,0]]]}`),
+		}
+		require.False(t, validTopologicalOrder("not-array", validCase))
+		require.False(t, validTopologicalOrder([]any{0.0}, domain.TestCase{Input: `{`}))
+		require.False(t, validTopologicalOrder([]any{0.0}, validCase))
+		require.False(t, validTopologicalOrder([]any{0.5, 1.0}, validCase))
+		require.False(t, validTopologicalOrder([]any{0.0, 2.0}, validCase))
+		require.False(t, validTopologicalOrder([]any{0.0, 0.0}, validCase))
+		require.False(t, validTopologicalOrder([]any{1.0, 0.0}, validCase))
+	})
+
+	t.Run("invalid json is not equal", func(t *testing.T) {
+		require.False(t, outputsEqualWithComparator(
+			`{`,
+			`{}`,
+			domain.ComparatorSpec{},
+			domain.TestCase{},
+		))
+		require.False(t, outputsEqualWithComparator(
+			`{}`,
+			`{`,
+			domain.ComparatorSpec{},
+			domain.TestCase{},
+		))
+	})
 }

@@ -1,4 +1,4 @@
-.PHONY: help infra infra-down dev dev-down migrate api-server judge-worker local-agent ui ui-build ui-install build test coverage lint fmt mocks mocks-gen
+.PHONY: help infra infra-down dev dev-down migrate api-server judge-worker local-agent ui ui-build ui-install build test test-integration coverage lint fmt mocks mocks-gen
 
 GO := go
 GO_CACHE ?= /tmp/judgeloop-gocache
@@ -64,6 +64,11 @@ build: ## Build all binaries into ./bin
 test: ## Run unit tests
 	@echo "$(COLOR_GREEN)Running tests...$(COLOR_RESET)"
 	@GOCACHE=$(GO_CACHE) $(GO) test $(TEST_PKGS) -cover -v
+
+test-integration: ## Run PostgreSQL integration tests (requires Docker)
+	@echo "$(COLOR_GREEN)Running PostgreSQL integration tests...$(COLOR_RESET)"
+	@GOCACHE=$(GO_CACHE) $(GO) test -tags=integration \
+		./internal/infrastructure/postgres -count=1 -v
 
 coverage: ## Check Go coverage threshold
 	@echo "$(COLOR_GREEN)Checking test coverage...$(COLOR_RESET)"

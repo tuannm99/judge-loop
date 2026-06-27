@@ -132,6 +132,21 @@ func TestProblemServiceGetProblemByID(t *testing.T) {
 	require.Equal(t, want, got)
 }
 
+func TestProblemServiceGetProblemTestCases(t *testing.T) {
+	problems := outmocks.NewMockProblemRepository(t)
+	testCases := outmocks.NewMockTestCaseRepository(t)
+	service := NewProblemService(problems, testCases)
+	ctx := context.Background()
+	problemID := uuid.New()
+	want := []domain.TestCase{{ID: uuid.New(), ProblemID: problemID}}
+
+	testCases.EXPECT().GetAllByProblem(ctx, problemID).Return(want, nil).Once()
+
+	got, err := service.GetProblemTestCases(ctx, problemID)
+	require.NoError(t, err)
+	require.Equal(t, want, got)
+}
+
 func TestProblemServiceUpdateProblem(t *testing.T) {
 	problems := outmocks.NewMockProblemRepository(t)
 	testCases := outmocks.NewMockTestCaseRepository(t)

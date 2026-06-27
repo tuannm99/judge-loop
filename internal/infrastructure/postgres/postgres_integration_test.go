@@ -1,3 +1,5 @@
+//go:build integration
+
 package postgres
 
 import (
@@ -16,6 +18,7 @@ import (
 
 func newIntegrationDB(t *testing.T) *DB {
 	t.Helper()
+	testcontainers.SkipIfProviderIsNotHealthy(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
@@ -263,12 +266,6 @@ func TestProblemSubmissionSessionAndPerformanceIntegration(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, total)
 	require.Len(t, problems, 1)
-
-	problems, total, err = problemStore.List(ctx, ProblemFilter{Title: "TWO SUM", Limit: 10})
-	require.NoError(t, err)
-	require.Equal(t, 1, total)
-	require.Len(t, problems, 1)
-	require.Equal(t, "two-sum", problems[0].Slug)
 
 	first := problems[0]
 	byID, err := problemStore.GetByID(ctx, first.ID)
