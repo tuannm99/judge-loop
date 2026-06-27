@@ -229,27 +229,43 @@ const manifest = {
       description_markdown:
         'Given an array of integers and a target value, return the indices of two distinct elements whose values sum to the target. Return the pair in ascending index order for deterministic local judging.',
       starter_code: twoSumStarter(),
+      execution_spec: {
+        mode: 'stdin',
+        comparator: { kind: 'exact' },
+        supported_languages: ['python', 'go', 'javascript', 'typescript', 'rust'],
+        timeout_ms: 2000,
+        memory_mb: 128
+      },
+      judge_ready: true,
       test_cases: [
         {
+          name: 'example pair at front',
           input: '{"nums":[2,7,11,15],"target":9}',
-          expected: '[0,1]'
+          expected: '[0,1]',
+          metadata: { source: 'manual' }
         },
         {
+          name: 'middle pair',
           input: '{"nums":[3,2,4],"target":6}',
-          expected: '[1,2]'
+          expected: '[1,2]',
+          metadata: { source: 'manual' }
         },
         {
+          name: 'duplicate values',
           input: '{"nums":[3,3],"target":6}',
           expected: '[0,1]',
+          metadata: { source: 'manual' },
           is_hidden: true
         },
         {
+          name: 'negative values',
           input: '{"nums":[-1,-2,-3,-4,-5],"target":-8}',
           expected: '[2,4]',
+          metadata: { source: 'manual' },
           is_hidden: true
         }
       ],
-      version: 1
+      version: 2
     },
     {
       provider: 'leetcode',
@@ -263,27 +279,43 @@ const manifest = {
       description_markdown:
         'Given an integer array, return true when any value appears at least twice. Return false when every value appears exactly once.',
       starter_code: containsDuplicateStarter(),
+      execution_spec: {
+        mode: 'stdin',
+        comparator: { kind: 'exact' },
+        supported_languages: ['python', 'go', 'javascript', 'typescript', 'rust'],
+        timeout_ms: 2000,
+        memory_mb: 128
+      },
+      judge_ready: true,
       test_cases: [
         {
+          name: 'has duplicate',
           input: '{"nums":[1,2,3,1]}',
-          expected: 'true'
+          expected: 'true',
+          metadata: { source: 'manual' }
         },
         {
+          name: 'all unique',
           input: '{"nums":[1,2,3,4]}',
-          expected: 'false'
+          expected: 'false',
+          metadata: { source: 'manual' }
         },
         {
+          name: 'many duplicates',
           input: '{"nums":[1,1,1,3,3,4,3,2,4,2]}',
           expected: 'true',
+          metadata: { source: 'manual' },
           is_hidden: true
         },
         {
+          name: 'empty array',
           input: '{"nums":[]}',
           expected: 'false',
+          metadata: { source: 'manual' },
           is_hidden: true
         }
       ],
-      version: 1
+      version: 2
     }
   ]
 }

@@ -12,6 +12,7 @@ const defaultLimits = {
   timeout_ms: 2000,
   memory_mb: 128
 }
+const supportedLanguages = ['python', 'go', 'javascript', 'typescript', 'rust']
 
 const manualProblems = [
   {
@@ -445,6 +446,7 @@ function functionSpec(entrypoint, params, returns, comparator = { kind: 'exact' 
       returns
     },
     comparator,
+    supported_languages: supportedLanguages,
     ...defaultLimits
   }
 }
@@ -507,6 +509,9 @@ function inferFunctionSpec(problem) {
       returns: normalizePythonType(match[3] || 'any')
     },
     comparator: { kind: 'exact' },
+    supported_languages: supportedLanguages.filter(
+      (language) => problem.starter_code?.[language]?.trim()
+    ),
     ...defaultLimits
   }
 }
@@ -624,6 +629,16 @@ freeProvider.problems = freeProvider.problems.map((problem) => {
   if (!next.execution_spec?.mode && inferred) {
     next.execution_spec = inferred
     inferredSpecs += 1
+  } else if (
+    next.execution_spec?.mode &&
+    !Array.isArray(next.execution_spec.supported_languages)
+  ) {
+    next.execution_spec = {
+      ...next.execution_spec,
+      supported_languages: supportedLanguages.filter(
+        (language) => problem.starter_code?.[language]?.trim()
+      )
+    }
   }
   if (!next.test_cases?.length) {
     next.test_cases = []

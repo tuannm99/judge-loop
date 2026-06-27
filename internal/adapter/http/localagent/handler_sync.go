@@ -11,6 +11,8 @@ import (
 	registryinfra "github.com/tuannm99/judge-loop/internal/infrastructure/registry"
 )
 
+const registrySyncTimeout = 5 * time.Minute
+
 // Sync handles POST /local/sync.
 // It reads the local registry manifests and upserts them into the api-server.
 func (h *Handler) Sync(c *gin.Context) {
@@ -22,7 +24,7 @@ func (h *Handler) Sync(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), registrySyncTimeout)
 	defer cancel()
 
 	// 1. Load index.

@@ -154,6 +154,50 @@ func TestEvaluate(t *testing.T) {
 		require.Empty(t, errMsg)
 	})
 
+	t.Run("supports nested unordered and recursive float comparators", func(t *testing.T) {
+		status, _, passed, _, _, _ := EvaluateWithSpec(
+			[]domain.TestCase{{ExpectedJSON: []byte(`[[1,2],[3]]`)}},
+			domain.ExecutionSpec{
+				Comparator: domain.ComparatorSpec{Kind: "unordered_nested_array"},
+			},
+			func(domain.TestCase) (RunResult, error) {
+				return RunResult{Output: `[[3],[2,1]]`}, nil
+			},
+		)
+		require.Equal(t, domain.StatusAccepted, status)
+		require.Equal(t, 1, passed)
+
+		status, _, passed, _, _, _ = EvaluateWithSpec(
+			[]domain.TestCase{{ExpectedJSON: []byte(`[1.0,2.0]`)}},
+			domain.ExecutionSpec{
+				Comparator: domain.ComparatorSpec{Kind: "float_epsilon", Epsilon: 0.01},
+			},
+			func(domain.TestCase) (RunResult, error) {
+				return RunResult{Output: `[1.001,1.999]`}, nil
+			},
+		)
+		require.Equal(t, domain.StatusAccepted, status)
+		require.Equal(t, 1, passed)
+	})
+
+	t.Run("validates topological orders", func(t *testing.T) {
+		tc := domain.TestCase{
+			InputJSON:    []byte(`{"args":[4,[[1,0],[2,0],[3,1],[3,2]]]}`),
+			ExpectedJSON: []byte(`[0,1,2,3]`),
+		}
+		status, _, passed, _, _, _ := EvaluateWithSpec(
+			[]domain.TestCase{tc},
+			domain.ExecutionSpec{
+				Comparator: domain.ComparatorSpec{Kind: "valid_topological_order"},
+			},
+			func(domain.TestCase) (RunResult, error) {
+				return RunResult{Output: `[0,2,1,3]`}, nil
+			},
+		)
+		require.Equal(t, domain.StatusAccepted, status)
+		require.Equal(t, 1, passed)
+	})
+
 	t.Run("falls back to string comparison for non json", func(t *testing.T) {
 		status, verdict, passed, total, _, errMsg := Evaluate(
 			[]domain.TestCase{{Input: "plain", Expected: "hello"}},

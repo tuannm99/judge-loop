@@ -74,6 +74,12 @@ for (const file of files) {
     if (!problem.description_markdown?.trim()) {
       errors.push(`${where}: description_markdown is required for judge-ready overlays`)
     }
+    if (problem.judge_ready !== true) {
+      errors.push(`${where}: judge_ready must be true`)
+    }
+    if (!['stdin', 'function', 'class', 'in_place'].includes(problem.execution_spec?.mode)) {
+      errors.push(`${where}: unsupported execution_spec.mode`)
+    }
 
     for (const language of languages) {
       if (!problem.starter_code?.[language]?.trim()) {
@@ -89,6 +95,9 @@ for (const file of files) {
     problem.test_cases.forEach((testCase, index) => {
       testCaseCount += 1
       const caseLabel = `${where}:test_cases[${index}]`
+      if (typeof testCase.name !== 'string' || testCase.name.trim() === '') {
+        errors.push(`${caseLabel}: name is required`)
+      }
       if (typeof testCase.input !== 'string' || testCase.input.trim() === '') {
         errors.push(`${caseLabel}: input is required`)
       } else {

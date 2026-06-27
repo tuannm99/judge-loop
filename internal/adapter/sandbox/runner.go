@@ -19,6 +19,7 @@ func (r *Runner) Run(ctx context.Context, req outport.RunRequest) (judge.RunResu
 		Language: req.Language,
 		Code:     req.Code,
 		Input:    req.Input,
+		MemoryMB: req.MemoryMB,
 	})
 	return judge.RunResult{
 		Output:    result.Output,

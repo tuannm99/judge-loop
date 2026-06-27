@@ -40,6 +40,9 @@ func (s *RegistryService) SyncRegistry(
 ) (int, error) {
 	synced := 0
 	for _, m := range problems {
+		if err := domain.ValidateJudgeReadyManifest(m); err != nil {
+			return 0, fmt.Errorf("validate registry manifest: %w", err)
+		}
 		if err := s.problems.UpsertFromManifest(ctx, m); err != nil {
 			return 0, err
 		}

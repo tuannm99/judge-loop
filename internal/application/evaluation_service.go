@@ -2,13 +2,9 @@ package application
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
-	"regexp"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -82,7 +78,7 @@ func (s *EvaluationService) EvaluateSubmission(
 		cases,
 		spec,
 		func(tc domain.TestCase) (judge.RunResult, error) {
-			runCtx, cancel := context.WithTimeout(ctx, time.Duration(timeLimitSecs)*time.Second)
+			runCtx, cancel := context.WithTimeout(ctx, executionTimeout(spec, timeLimitSecs))
 			defer cancel()
 			req, err := buildRunRequest(sub, spec, tc)
 			if err != nil {
@@ -92,6 +88,7 @@ func (s *EvaluationService) EvaluateSubmission(
 				Language: req.Language,
 				Code:     req.Code,
 				Input:    req.Input,
+				MemoryMB: req.MemoryMB,
 			})
 		},
 	)
@@ -145,60 +142,17 @@ func buildRunRequest(
 			Language: string(sub.Language),
 			Code:     sub.Code,
 			Input:    tc.Input,
+			MemoryMB: spec.MemoryMB,
 		}, nil
 	}
-	if spec.Mode != domain.ExecutionModeFunction {
-		return outport.RunRequest{}, fmt.Errorf("unsupported execution mode: %s", spec.Mode)
-	}
-	if sub.Language != domain.LanguagePython {
-		return outport.RunRequest{}, fmt.Errorf("function mode is not supported for %s yet", sub.Language)
-	}
-	code, err := renderPythonFunctionHarness(sub.Code, spec, tc)
-	if err != nil {
-		return outport.RunRequest{}, err
-	}
-	return outport.RunRequest{Language: string(sub.Language), Code: code}, nil
+	return renderExecutionHarness(sub, spec, tc)
 }
 
-var pythonIdentifierPattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
-
-func renderPythonFunctionHarness(userCode string, spec domain.ExecutionSpec, tc domain.TestCase) (string, error) {
-	entrypoint := strings.TrimSpace(spec.Entrypoint)
-	if !pythonIdentifierPattern.MatchString(entrypoint) {
-		return "", fmt.Errorf("invalid python entrypoint: %q", spec.Entrypoint)
+func executionTimeout(spec domain.ExecutionSpec, fallbackSeconds int) time.Duration {
+	if spec.TimeoutMS > 0 {
+		return time.Duration(spec.TimeoutMS) * time.Millisecond
 	}
-	className := strings.TrimSpace(spec.ClassName)
-	if className == "" {
-		className = "Solution"
-	}
-	if !pythonIdentifierPattern.MatchString(className) {
-		return "", fmt.Errorf("invalid python class name: %q", spec.ClassName)
-	}
-	inputJSON := tc.InputJSON
-	if len(inputJSON) == 0 {
-		inputJSON = []byte(tc.Input)
-	}
-	if !json.Valid(inputJSON) {
-		return "", errors.New("function mode test case input must be valid json")
-	}
-	encodedInput := strconv.Quote(string(inputJSON))
-
-	return fmt.Sprintf(`from typing import *
-
-%s
-
-import json as __jl_json
-
-__jl_case = __jl_json.loads(%s)
-if isinstance(__jl_case, dict) and "args" in __jl_case:
-    __jl_args = __jl_case["args"]
-else:
-    __jl_args = __jl_case
-if not isinstance(__jl_args, list):
-    __jl_args = [__jl_args]
-__jl_result = %s().%s(*__jl_args)
-print(__jl_json.dumps(__jl_result, separators=(",", ":")))
-`, userCode, encodedInput, className, entrypoint), nil
+	return time.Duration(fallbackSeconds) * time.Second
 }
 
 func (s *EvaluationService) failSubmission(ctx context.Context, submissionID uuid.UUID, errMsg string) error {

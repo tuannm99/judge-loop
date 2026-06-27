@@ -7,7 +7,7 @@ import {
   listProblemLabels,
   updateProblem
 } from '@/api/client'
-import type { Difficulty, Language, Provider } from '@/api/types'
+import type { Difficulty, ExecutionSpec, Language, Provider } from '@/api/types'
 import { ErrorAlert, LoadingBlock, WarningAlert } from '../components/common/Feedback'
 import { PageShell } from '../components/common/PageShell'
 import {
@@ -54,6 +54,8 @@ export function ContributeProblemPage(props: { navigate: NavigateFn; slug?: stri
     estimated_time: 15,
     description_markdown: '',
     version: 1,
+    execution_spec: { mode: 'stdin' } as ExecutionSpec,
+    judge_ready: false,
     starter_code: { ...DEFAULT_STARTER_CODE },
     test_cases: [{ ...EMPTY_TEST_CASE }] as DraftTestCase[],
     labels: EMPTY_LABELS
@@ -116,12 +118,18 @@ export function ContributeProblemPage(props: { navigate: NavigateFn; slug?: stri
             source_url: problem.source_url,
             estimated_time: problem.estimated_time,
             description_markdown: problem.description_markdown,
+            execution_spec: problem.execution_spec ?? { mode: 'stdin' },
+            judge_ready: problem.judge_ready,
             starter_code: resolveStarterCode(problem.starter_code, DEFAULT_STARTER_CODE),
             test_cases:
               testCases.test_cases.length > 0
                 ? testCases.test_cases.map((testCase) => ({
+                    name: testCase.name,
                     input: testCase.input,
                     expected: testCase.expected,
+                    input_json: testCase.input_json,
+                    expected_json: testCase.expected_json,
+                    metadata: testCase.metadata,
                     is_hidden: Boolean(testCase.is_hidden)
                   }))
                 : [{ ...EMPTY_TEST_CASE }]
@@ -400,6 +408,8 @@ export function ContributeProblemPage(props: { navigate: NavigateFn; slug?: stri
                         source_url: state.source_url.trim(),
                         estimated_time: state.estimated_time || 0,
                         description_markdown: state.description_markdown,
+                        execution_spec: state.execution_spec,
+                        judge_ready: state.judge_ready,
                         starter_code: {
                           python: state.starter_code.python,
                           go: state.starter_code.go,
@@ -408,8 +418,12 @@ export function ContributeProblemPage(props: { navigate: NavigateFn; slug?: stri
                           rust: state.starter_code.rust
                         },
                         test_cases: state.test_cases.map((testCase) => ({
+                          name: testCase.name,
                           input: testCase.input,
                           expected: testCase.expected,
+                          input_json: testCase.input_json,
+                          expected_json: testCase.expected_json,
+                          metadata: testCase.metadata,
                           is_hidden: testCase.is_hidden
                         }))
                       }

@@ -126,10 +126,16 @@ export interface ContributeProblemPayload {
   estimated_time: number
   description_markdown: string
   starter_code: Partial<Record<Language, string>>
+  execution_spec?: Problem['execution_spec']
+  judge_ready?: boolean
   version: number
   test_cases: Array<{
+    name?: string
     input: string
     expected: string
+    input_json?: unknown
+    expected_json?: unknown
+    metadata?: unknown
     is_hidden?: boolean
   }>
 }
@@ -151,8 +157,12 @@ export function updateProblem(id: string, payload: Omit<ContributeProblemPayload
 export function getProblemTestCases(id: string) {
   return request<{
     test_cases: Array<{
+      name?: string
       input: string
       expected: string
+      input_json?: unknown
+      expected_json?: unknown
+      metadata?: unknown
       is_hidden?: boolean
     }> | null
   }>(`/problems/${id}/test-cases`).then((result) => ({

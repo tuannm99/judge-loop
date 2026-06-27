@@ -20,6 +20,7 @@ type RunRequest struct {
 	Language string // "python", "go", "javascript", "typescript", or "rust"
 	Code     string // source code
 	Input    string // stdin fed to the program
+	MemoryMB int    // optional container memory limit; language default when zero
 }
 
 // RunResult captures the outcome of one execution.
@@ -40,7 +41,7 @@ func Run(ctx context.Context, req RunRequest) (RunResult, error) {
 	}
 	defer os.RemoveAll(dir)
 
-	dockerArgs, err := prepare(req.Language, req.Code, dir)
+	dockerArgs, err := prepare(req.Language, req.Code, req.MemoryMB, dir)
 	if err != nil {
 		return RunResult{}, err
 	}
@@ -80,7 +81,7 @@ func Run(ctx context.Context, req RunRequest) (RunResult, error) {
 }
 
 // prepare writes the source file to dir and returns the docker run command args.
-func prepare(language, code, dir string) ([]string, error) {
+func prepare(language, code string, memoryMB int, dir string) ([]string, error) {
 	base := []string{
 		"docker", "run", "--rm", "-i",
 		"--network", "none",
@@ -90,60 +91,65 @@ func prepare(language, code, dir string) ([]string, error) {
 
 	switch strings.ToLower(language) {
 	case "python":
+		memory := memoryLimit(memoryMB, 64)
 		if err := os.WriteFile(filepath.Join(dir, "solution.py"), []byte(code), 0o644); err != nil {
 			return nil, fmt.Errorf("write solution: %w", err)
 		}
 		return append(
 			base,
-			"--memory", "64m", "--memory-swap", "64m",
+			"--memory", memory, "--memory-swap", memory,
 			"--cpus", "0.5",
 			"python:3.12-slim",
 			"python3", "/sandbox/solution.py",
 		), nil
 
 	case "go":
+		memory := memoryLimit(memoryMB, 256)
 		if err := os.WriteFile(filepath.Join(dir, "main.go"), []byte(code), 0o644); err != nil {
 			return nil, fmt.Errorf("write solution: %w", err)
 		}
 		return append(
 			base,
-			"--memory", "256m", "--memory-swap", "256m",
+			"--memory", memory, "--memory-swap", memory,
 			"--cpus", "0.5",
 			"golang:1.26.0-alpine",
 			"sh", "-c", "cd /sandbox && go run main.go",
 		), nil
 
 	case "javascript":
+		memory := memoryLimit(memoryMB, 96)
 		if err := os.WriteFile(filepath.Join(dir, "solution.js"), []byte(code), 0o644); err != nil {
 			return nil, fmt.Errorf("write solution: %w", err)
 		}
 		return append(
 			base,
-			"--memory", "96m", "--memory-swap", "96m",
+			"--memory", memory, "--memory-swap", memory,
 			"--cpus", "0.5",
 			"node:22-alpine",
 			"node", "/sandbox/solution.js",
 		), nil
 
 	case "typescript":
+		memory := memoryLimit(memoryMB, 128)
 		if err := os.WriteFile(filepath.Join(dir, "solution.ts"), []byte(code), 0o644); err != nil {
 			return nil, fmt.Errorf("write solution: %w", err)
 		}
 		return append(
 			base,
-			"--memory", "128m", "--memory-swap", "128m",
+			"--memory", memory, "--memory-swap", memory,
 			"--cpus", "0.5",
 			"denoland/deno:2.3.7",
 			"deno", "run", "--quiet", "--no-check", "/sandbox/solution.ts",
 		), nil
 
 	case "rust":
+		memory := memoryLimit(memoryMB, 256)
 		if err := os.WriteFile(filepath.Join(dir, "main.rs"), []byte(code), 0o644); err != nil {
 			return nil, fmt.Errorf("write solution: %w", err)
 		}
 		return append(
 			base,
-			"--memory", "256m", "--memory-swap", "256m",
+			"--memory", memory, "--memory-swap", memory,
 			"--cpus", "0.5",
 			"rust:1-alpine",
 			"sh", "-c", "cd /sandbox && rustc -O main.rs -o /tmp/solution && /tmp/solution",
@@ -152,6 +158,13 @@ func prepare(language, code, dir string) ([]string, error) {
 	default:
 		return nil, fmt.Errorf("unsupported language: %s", language)
 	}
+}
+
+func memoryLimit(requested, fallback int) string {
+	if requested <= 0 {
+		requested = fallback
+	}
+	return fmt.Sprintf("%dm", requested)
 }
 
 func truncate(s string, m int) string {

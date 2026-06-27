@@ -1,16 +1,11 @@
 {
-  "version": "2026-06-27-leetcode-free-judge-ready-v1",
-  "updated_at": "2026-06-26T17:26:19.812Z",
+  "version": "2026-06-27-leetcode-examples-v5",
+  "updated_at": "2026-06-27T10:11:20.200Z",
   "manifests": [
     {
       "name": "leetcode",
       "path": "providers/leetcode/free/problems.json",
-      "checksum": "sha256:319508cde637d414b1bb46c983b220ada5db1aa5673a4d9702f413dee0137fc8"
-    },
-    {
-      "name": "leetcode-premium",
-      "path": "providers/leetcode/premium/problems.json",
-      "checksum": "sha256:d2fa473b1e6b0c8c1a64ecc150983b2017bf5f8a87dc6eafd5a7885c08b36cf6"
+      "checksum": "sha256:978da32a6128df2c1da3f2dcb9930683ef8e5453bbe9f8c09d147152ceef1b7b"
     },
     {
       "name": "blind75",
@@ -30,7 +25,7 @@
     {
       "name": "judge-ready-blind75",
       "path": "providers/judge-ready/blind75.json",
-      "checksum": "sha256:1db941024ac634e95c871b0965b2794fe700200e3f4d52ffbdae24a2a805ade9"
+      "checksum": "sha256:c13c869aaf34a75d253bffb71128f8232ad68532b39d54a4713312811b7a1f0f"
     }
   ]
 }

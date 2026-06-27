@@ -279,15 +279,30 @@ func TestBuildRunRequestUsesStdinModeByDefault(t *testing.T) {
 	require.Equal(t, "1 2", req.Input)
 }
 
-func TestBuildRunRequestRejectsUnsupportedFunctionLanguage(t *testing.T) {
-	sub := &domain.Submission{Language: domain.LanguageGo, Code: "func twoSum() {}"}
-	_, err := buildRunRequest(
+func TestBuildRunRequestRendersGoFunctionHarness(t *testing.T) {
+	sub := &domain.Submission{
+		Language: domain.LanguageGo,
+		Code:     "func twoSum(nums []int, target int) []int { return []int{0, 1} }",
+	}
+	req, err := buildRunRequest(
 		sub,
-		domain.ExecutionSpec{Mode: domain.ExecutionModeFunction, Entrypoint: "twoSum"},
+		domain.ExecutionSpec{
+			Mode:       domain.ExecutionModeFunction,
+			Entrypoint: "twoSum",
+			Signature: domain.ExecutionSignature{
+				Params: []domain.ExecutionParam{
+					{Name: "nums", Type: "int[]"},
+					{Name: "target", Type: "int"},
+				},
+				Returns: "int[]",
+			},
+		},
 		domain.TestCase{InputJSON: []byte(`{"args":[[2,7],9]}`)},
 	)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "function mode is not supported")
+	require.NoError(t, err)
+	require.Equal(t, "go", req.Language)
+	require.Contains(t, req.Code, "twoSum(__jlArg0, __jlArg1)")
+	require.Contains(t, req.Code, `__jlJSON.Unmarshal`)
 }
 
 func TestRenderPythonFunctionHarness(t *testing.T) {
@@ -298,7 +313,7 @@ func TestRenderPythonFunctionHarness(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.Contains(t, code, "Solution().twoSum(*__jl_args)")
-	require.Contains(t, code, `__jl_json.loads("{\"args\":[[2,7],9]}")`)
+	require.Contains(t, code, `__jl_json.loads("[[2,7],9]")`)
 }
 
 func TestRenderPythonFunctionHarnessRejectsInvalidInputJSON(t *testing.T) {

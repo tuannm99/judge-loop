@@ -40,8 +40,13 @@ import {
 } from '../shared/utils'
 
 function preferredLanguage(problem: Problem): Language {
+  const supported = problem.execution_spec?.supported_languages
   return (
-    LANGUAGE_OPTIONS.find(({ value }) => problem.starter_code[value]?.trim())?.value ?? 'python'
+    LANGUAGE_OPTIONS.find(
+      ({ value }) =>
+        problem.starter_code[value]?.trim() &&
+        (!supported?.length || supported.includes(value))
+    )?.value ?? 'python'
   )
 }
 
@@ -68,6 +73,16 @@ export function SolvePage(props: { navigate: NavigateFn; slug: string }) {
   })
 
   const [language, setLanguage] = createSignal<Language>('python')
+  const languageOptions = createMemo(() => {
+    const problem = state.problem
+    if (!problem) return LANGUAGE_OPTIONS
+    const supported = problem.execution_spec?.supported_languages
+    return LANGUAGE_OPTIONS.filter(
+      ({ value }) =>
+        problem.starter_code[value]?.trim() &&
+        (!supported?.length || supported.includes(value))
+    )
+  })
 
   createEffect(() => {
     const slug = props.slug
@@ -526,7 +541,7 @@ export function SolvePage(props: { navigate: NavigateFn; slug: string }) {
                     <SelectField
                       label="Language"
                       value={language()}
-                      options={LANGUAGE_OPTIONS}
+                      options={languageOptions()}
                       onChange={(event) => setLanguage(event.currentTarget.value as Language)}
                     />
                     <Badge content={`timer ${formatElapsed(state.elapsed)}`} color="dark" />

@@ -205,16 +205,18 @@ async function updateIndex(checksum) {
   const index = JSON.parse(await readFile(indexPath, 'utf8'))
   index.version = version
   index.updated_at = new Date().toISOString()
-  index.manifests = index.manifests.map((manifest) => {
-    if (manifest.name !== 'leetcode') {
-      return manifest
-    }
-    return {
-      ...manifest,
-      path: 'providers/leetcode/free/problems.json',
-      checksum: `sha256:${checksum}`
-    }
-  })
+  index.manifests = index.manifests
+    .filter((manifest) => manifest.name !== 'leetcode-premium')
+    .map((manifest) => {
+      if (manifest.name !== 'leetcode') {
+        return manifest
+      }
+      return {
+        ...manifest,
+        path: 'providers/leetcode/free/problems.json',
+        checksum: `sha256:${checksum}`
+      }
+    })
   await writeFile(indexPath, `${JSON.stringify(index, null, 2)}\n`)
 }
 

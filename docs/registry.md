@@ -161,11 +161,11 @@ Use:
 scripts/update_leetcode_registry.sh
 ```
 
-The updater pages LeetCode public metadata, splits free and premium entries, fetches starter snippets for Python, Go, JavaScript, TypeScript, and Rust for free entries in slow batches, writes `registry/providers/leetcode/free/problems.json` and `registry/providers/leetcode/premium/problems.json`, and updates the LeetCode checksum in `registry/index.json` for the free bank manifest.
+The updater pages LeetCode public metadata, splits free and premium entries, fetches starter snippets for Python, Go, JavaScript, TypeScript, and Rust, then enriches free entries with execution metadata and parseable public examples. Detail requests are cached outside the repository so interrupted updates can resume. It writes `registry/providers/leetcode/free/problems.json`, retains premium metadata separately, and updates the free-bank checksum in `registry/index.json`.
 
-It does not fetch problem statements, editorials, solutions, or test cases. Paid-only entries returned by the listing endpoint are written to the premium metadata manifest only; that premium manifest is not referenced by `registry/index.json`, so local registry sync does not import those problems into the bank.
+Problem statements, editorials, and solutions are not stored. The example importer extracts only signature metadata and example input/output vectors. Paid-only entries are written to the premium metadata manifest only; that premium manifest is not referenced by `registry/index.json`, so local registry sync does not import those problems into the bank.
 
-Test cases are intentionally not bulk-imported from LeetCode. The public detail metadata exposes example inputs, not expected outputs suitable for local judging, and the current sandbox executes whole programs from stdin rather than LeetCode-style function/class snippets. Curated problems can still add local judge cases through `POST /api/problems/contribute`.
+`registry/reports/leetcode-example-coverage.json` accounts for every free problem. A problem is marked `judge_ready` only when its example outputs are parseable, its structured inputs match the signature, its comparator is deterministic or supported, and a harness can be rendered for every declared language. Interactive, custom-API, nondeterministic, and unsupported shapes remain classified but not judge-ready.
 
 ## Updating curated tracks
 

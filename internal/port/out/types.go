@@ -53,4 +53,5 @@ type RunRequest struct {
 	Language string
 	Code     string
 	Input    string
+	MemoryMB int
 }

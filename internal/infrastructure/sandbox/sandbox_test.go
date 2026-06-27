@@ -13,7 +13,7 @@ import (
 
 func TestPrepare(t *testing.T) {
 	dir := t.TempDir()
-	args, err := prepare("python", "print(1)", dir)
+	args, err := prepare("python", "print(1)", 0, dir)
 	require.NoError(t, err)
 	require.Equal(t, "docker", args[0])
 	data, err := os.ReadFile(filepath.Join(dir, "solution.py"))
@@ -21,7 +21,7 @@ func TestPrepare(t *testing.T) {
 	require.Equal(t, "print(1)", string(data))
 
 	dir = t.TempDir()
-	args, err = prepare("go", "package main", dir)
+	args, err = prepare("go", "package main", 0, dir)
 	require.NoError(t, err)
 	require.Contains(t, strings.Join(args, " "), "go run main.go")
 	data, err = os.ReadFile(filepath.Join(dir, "main.go"))
@@ -29,7 +29,7 @@ func TestPrepare(t *testing.T) {
 	require.Equal(t, "package main", string(data))
 
 	dir = t.TempDir()
-	args, err = prepare("javascript", "console.log(1)", dir)
+	args, err = prepare("javascript", "console.log(1)", 0, dir)
 	require.NoError(t, err)
 	require.Contains(t, strings.Join(args, " "), "node /sandbox/solution.js")
 	data, err = os.ReadFile(filepath.Join(dir, "solution.js"))
@@ -37,7 +37,7 @@ func TestPrepare(t *testing.T) {
 	require.Equal(t, "console.log(1)", string(data))
 
 	dir = t.TempDir()
-	args, err = prepare("typescript", "console.log(1)", dir)
+	args, err = prepare("typescript", "console.log(1)", 0, dir)
 	require.NoError(t, err)
 	require.Contains(t, strings.Join(args, " "), "deno run --quiet --no-check /sandbox/solution.ts")
 	data, err = os.ReadFile(filepath.Join(dir, "solution.ts"))
@@ -45,14 +45,14 @@ func TestPrepare(t *testing.T) {
 	require.Equal(t, "console.log(1)", string(data))
 
 	dir = t.TempDir()
-	args, err = prepare("rust", "fn main() {}", dir)
+	args, err = prepare("rust", "fn main() {}", 0, dir)
 	require.NoError(t, err)
 	require.Contains(t, strings.Join(args, " "), "rustc -O main.rs -o /tmp/solution && /tmp/solution")
 	data, err = os.ReadFile(filepath.Join(dir, "main.rs"))
 	require.NoError(t, err)
 	require.Equal(t, "fn main() {}", string(data))
 
-	_, err = prepare("ruby", "puts 1", dir)
+	_, err = prepare("ruby", "puts 1", 0, dir)
 	require.Error(t, err)
 }
 
@@ -122,23 +122,23 @@ func TestRunReturnsDockerInvocationError(t *testing.T) {
 func TestPrepareWriteErrors(t *testing.T) {
 	missingDir := filepath.Join(t.TempDir(), "missing")
 
-	_, err := prepare("python", "print(1)", missingDir)
+	_, err := prepare("python", "print(1)", 0, missingDir)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "write solution")
 
-	_, err = prepare("go", "package main", missingDir)
+	_, err = prepare("go", "package main", 0, missingDir)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "write solution")
 
-	_, err = prepare("javascript", "console.log(1)", missingDir)
+	_, err = prepare("javascript", "console.log(1)", 0, missingDir)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "write solution")
 
-	_, err = prepare("typescript", "console.log(1)", missingDir)
+	_, err = prepare("typescript", "console.log(1)", 0, missingDir)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "write solution")
 
-	_, err = prepare("rust", "fn main() {}", missingDir)
+	_, err = prepare("rust", "fn main() {}", 0, missingDir)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "write solution")
 }

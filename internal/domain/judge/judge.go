@@ -73,7 +73,7 @@ func EvaluateWithSpec(cases []domain.TestCase, spec domain.ExecutionSpec, runFn 
 
 		got := normalizeOutput(result.Output)
 		exp := expectedOutput(tc)
-		if outputsEqualWithComparator(got, exp, spec.Comparator) {
+		if outputsEqualWithComparator(got, exp, spec.Comparator, tc) {
 			passed++
 		} else {
 			msg := fmt.Sprintf("case %d: expected %q, got %q", i+1, exp, got)
@@ -96,8 +96,12 @@ func normalizeOutput(value string) string {
 	return strings.TrimSpace(value)
 }
 
-func outputsEqualWithComparator(got, expected string, comparator domain.ComparatorSpec) bool {
-	if got == expected {
+func outputsEqualWithComparator(
+	got, expected string,
+	comparator domain.ComparatorSpec,
+	tc domain.TestCase,
+) bool {
+	if got == expected && comparator.Kind != "any_of" {
 		return true
 	}
 
@@ -112,10 +116,47 @@ func outputsEqualWithComparator(got, expected string, comparator domain.Comparat
 	switch comparator.Kind {
 	case "unordered_array":
 		return unorderedArraysEqual(gotJSON, expectedJSON)
+	case "unordered_nested_array":
+		return unorderedNestedArraysEqual(gotJSON, expectedJSON)
 	case "float_epsilon":
-		return floatsEqual(gotJSON, expectedJSON, comparator.Epsilon)
+		return valuesWithinEpsilon(gotJSON, expectedJSON, comparator.Epsilon)
+	case "any_of":
+		return anyExpectedValueEqual(gotJSON, expectedJSON)
+	case "json_subset":
+		return jsonSubset(gotJSON, expectedJSON)
+	case "valid_topological_order":
+		return validTopologicalOrder(gotJSON, tc)
 	}
 	return reflect.DeepEqual(gotJSON, expectedJSON)
+}
+
+func unorderedNestedArraysEqual(got, expected any) bool {
+	gotSlice, gotOK := got.([]any)
+	expectedSlice, expectedOK := expected.([]any)
+	if !gotOK || !expectedOK || len(gotSlice) != len(expectedSlice) {
+		return false
+	}
+	normalize := func(values []any) ([]string, bool) {
+		out := make([]string, len(values))
+		for i, value := range values {
+			nested, ok := value.([]any)
+			if !ok {
+				return nil, false
+			}
+			encoded := canonicalValues(nested)
+			sort.Strings(encoded)
+			body, err := json.Marshal(encoded)
+			if err != nil {
+				return nil, false
+			}
+			out[i] = string(body)
+		}
+		sort.Strings(out)
+		return out, true
+	}
+	gotValues, gotOK := normalize(gotSlice)
+	expectedValues, expectedOK := normalize(expectedSlice)
+	return gotOK && expectedOK && reflect.DeepEqual(gotValues, expectedValues)
 }
 
 func unorderedArraysEqual(got, expected any) bool {
@@ -147,13 +188,126 @@ func canonicalValues(values []any) []string {
 	return out
 }
 
-func floatsEqual(got, expected any, epsilon float64) bool {
+func valuesWithinEpsilon(got, expected any, epsilon float64) bool {
 	if epsilon <= 0 {
 		epsilon = 1e-9
 	}
-	gotFloat, gotOK := got.(float64)
-	expectedFloat, expectedOK := expected.(float64)
-	return gotOK && expectedOK && math.Abs(gotFloat-expectedFloat) <= epsilon
+	switch gotValue := got.(type) {
+	case float64:
+		expectedValue, ok := expected.(float64)
+		return ok && math.Abs(gotValue-expectedValue) <= epsilon
+	case []any:
+		expectedValue, ok := expected.([]any)
+		if !ok || len(gotValue) != len(expectedValue) {
+			return false
+		}
+		for i := range gotValue {
+			if !valuesWithinEpsilon(gotValue[i], expectedValue[i], epsilon) {
+				return false
+			}
+		}
+		return true
+	case map[string]any:
+		expectedValue, ok := expected.(map[string]any)
+		if !ok || len(gotValue) != len(expectedValue) {
+			return false
+		}
+		for key, value := range gotValue {
+			if !valuesWithinEpsilon(value, expectedValue[key], epsilon) {
+				return false
+			}
+		}
+		return true
+	default:
+		return reflect.DeepEqual(got, expected)
+	}
+}
+
+func anyExpectedValueEqual(got, expected any) bool {
+	candidates, ok := expected.([]any)
+	if !ok {
+		return false
+	}
+	for _, candidate := range candidates {
+		if reflect.DeepEqual(got, candidate) {
+			return true
+		}
+	}
+	return false
+}
+
+func jsonSubset(got, expected any) bool {
+	switch expectedValue := expected.(type) {
+	case map[string]any:
+		gotValue, ok := got.(map[string]any)
+		if !ok {
+			return false
+		}
+		for key, value := range expectedValue {
+			if !jsonSubset(gotValue[key], value) {
+				return false
+			}
+		}
+		return true
+	case []any:
+		gotValue, ok := got.([]any)
+		if !ok || len(gotValue) < len(expectedValue) {
+			return false
+		}
+		for i := range expectedValue {
+			if !jsonSubset(gotValue[i], expectedValue[i]) {
+				return false
+			}
+		}
+		return true
+	default:
+		return reflect.DeepEqual(got, expected)
+	}
+}
+
+func validTopologicalOrder(got any, tc domain.TestCase) bool {
+	order, ok := got.([]any)
+	if !ok {
+		return false
+	}
+	raw := tc.InputJSON
+	if len(raw) == 0 {
+		raw = json.RawMessage(tc.Input)
+	}
+	var input struct {
+		Args []json.RawMessage `json:"args"`
+	}
+	if json.Unmarshal(raw, &input) != nil || len(input.Args) < 2 {
+		return false
+	}
+	var courseCount int
+	var prerequisites [][]int
+	if json.Unmarshal(input.Args[0], &courseCount) != nil ||
+		json.Unmarshal(input.Args[1], &prerequisites) != nil ||
+		len(order) != courseCount {
+		return false
+	}
+	positions := make(map[int]int, len(order))
+	for index, rawCourse := range order {
+		course, ok := rawCourse.(float64)
+		if !ok || course != math.Trunc(course) {
+			return false
+		}
+		value := int(course)
+		if value < 0 || value >= courseCount {
+			return false
+		}
+		if _, duplicate := positions[value]; duplicate {
+			return false
+		}
+		positions[value] = index
+	}
+	for _, pair := range prerequisites {
+		if len(pair) != 2 || positions[pair[1]] >= positions[pair[0]] {
+			return false
+		}
+	}
+	return true
 }
 
 // isCompileError heuristically checks if stderr looks like a compile/syntax error

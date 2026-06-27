@@ -265,6 +265,14 @@ func (h *ProblemsAPI) UpdateProblem(c *gin.Context) {
 		JudgeReady:          req.JudgeReady || len(req.TestCases) > 0,
 	}
 	testCases := domainTestCasesFromRequest(req.TestCases)
+	validationManifest := manifest
+	validationManifest.TestCases = testCaseManifestsFromRequest(req.TestCases)
+	if validationManifest.JudgeReady {
+		if err := domain.ValidateJudgeReadyManifest(validationManifest); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+	}
 
 	var problem *domain.Problem
 	if req.TestCases != nil {
@@ -309,7 +317,7 @@ func (h *ProblemsAPI) ContributeProblem(c *gin.Context) {
 
 	testCases := domainTestCasesFromRequest(req.TestCases)
 
-	problem, err := h.service.ContributeProblem(c.Request.Context(), domain.ProblemManifest{
+	manifest := domain.ProblemManifest{
 		Provider:            req.Provider,
 		ExternalID:          req.ExternalID,
 		Slug:                req.Slug,
@@ -323,7 +331,15 @@ func (h *ProblemsAPI) ContributeProblem(c *gin.Context) {
 		ExecutionSpec:       req.ExecutionSpec,
 		JudgeReady:          req.JudgeReady || len(req.TestCases) > 0,
 		Version:             req.Version,
-	}, testCases)
+	}
+	validationManifest := manifest
+	validationManifest.TestCases = testCaseManifestsFromRequest(req.TestCases)
+	if err := domain.ValidateJudgeReadyManifest(validationManifest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	problem, err := h.service.ContributeProblem(c.Request.Context(), manifest, testCases)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -348,6 +364,22 @@ func domainTestCasesFromRequest(req []contributeTestCaseRequest) []domain.TestCa
 			Metadata:     tc.Metadata,
 			IsHidden:     tc.IsHidden,
 			OrderIdx:     i,
+		})
+	}
+	return testCases
+}
+
+func testCaseManifestsFromRequest(req []contributeTestCaseRequest) []domain.TestCaseManifest {
+	testCases := make([]domain.TestCaseManifest, 0, len(req))
+	for _, tc := range req {
+		testCases = append(testCases, domain.TestCaseManifest{
+			Name:         tc.Name,
+			Input:        tc.Input,
+			Expected:     tc.Expected,
+			InputJSON:    tc.InputJSON,
+			ExpectedJSON: tc.ExpectedJSON,
+			Metadata:     tc.Metadata,
+			IsHidden:     tc.IsHidden,
 		})
 	}
 	return testCases

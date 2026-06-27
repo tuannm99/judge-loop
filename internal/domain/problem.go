@@ -48,21 +48,27 @@ type Problem struct {
 type ExecutionMode string
 
 const (
-	ExecutionModeStdin    ExecutionMode = "stdin"
-	ExecutionModeFunction ExecutionMode = "function"
-	ExecutionModeClass    ExecutionMode = "class"
+	ExecutionModeStdin       ExecutionMode = "stdin"
+	ExecutionModeFunction    ExecutionMode = "function"
+	ExecutionModeClass       ExecutionMode = "class"
+	ExecutionModeInPlace     ExecutionMode = "in_place"
+	ExecutionModeInteractive ExecutionMode = "interactive"
+	ExecutionModeCustom      ExecutionMode = "custom"
 )
 
 type ExecutionSpec struct {
-	Mode        ExecutionMode         `json:"mode"`
-	Entrypoint  string                `json:"entrypoint,omitempty"`
-	ClassName   string                `json:"class_name,omitempty"`
-	Signature   ExecutionSignature    `json:"signature,omitempty"`
-	Constructor ExecutionSignature    `json:"constructor,omitempty"`
-	Methods     map[string]MethodSpec `json:"methods,omitempty"`
-	Comparator  ComparatorSpec        `json:"comparator,omitempty"`
-	TimeoutMS   int                   `json:"timeout_ms,omitempty"`
-	MemoryMB    int                   `json:"memory_mb,omitempty"`
+	Mode               ExecutionMode                    `json:"mode"`
+	Entrypoint         string                           `json:"entrypoint,omitempty"`
+	ClassName          string                           `json:"class_name,omitempty"`
+	Signature          ExecutionSignature               `json:"signature,omitempty"`
+	Constructor        ExecutionSignature               `json:"constructor,omitempty"`
+	Methods            map[string]MethodSpec            `json:"methods,omitempty"`
+	Output             ExecutionOutput                  `json:"output,omitempty"`
+	Bindings           map[string]ExecutionLanguageBind `json:"bindings,omitempty"`
+	SupportedLanguages []Language                       `json:"supported_languages,omitempty"`
+	Comparator         ComparatorSpec                   `json:"comparator,omitempty"`
+	TimeoutMS          int                              `json:"timeout_ms,omitempty"`
+	MemoryMB           int                              `json:"memory_mb,omitempty"`
 }
 
 type ExecutionSignature struct {
@@ -76,8 +82,20 @@ type ExecutionParam struct {
 }
 
 type MethodSpec struct {
-	Params  []ExecutionParam `json:"params,omitempty"`
-	Returns string           `json:"returns,omitempty"`
+	Params   []ExecutionParam  `json:"params,omitempty"`
+	Returns  string            `json:"returns,omitempty"`
+	Bindings map[string]string `json:"bindings,omitempty"`
+}
+
+type ExecutionOutput struct {
+	Source     string `json:"source,omitempty"`
+	ParamIndex int    `json:"param_index,omitempty"`
+}
+
+type ExecutionLanguageBind struct {
+	Entrypoint  string `json:"entrypoint,omitempty"`
+	ClassName   string `json:"class_name,omitempty"`
+	Constructor string `json:"constructor,omitempty"`
 }
 
 type ComparatorSpec struct {
