@@ -45,6 +45,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 // Problems
 export interface ListProblemsParams {
+  title?: string
   difficulty?: Difficulty
   tags?: string[]
   provider?: Provider
@@ -54,6 +55,7 @@ export interface ListProblemsParams {
 
 export function listProblems(params: ListProblemsParams = {}) {
   const q = new URLSearchParams()
+  if (params.title) q.set('title', params.title)
   if (params.difficulty) q.set('difficulty', params.difficulty)
   for (const tag of params.tags ?? []) q.append('tag', tag)
   if (params.provider) q.set('provider', params.provider)

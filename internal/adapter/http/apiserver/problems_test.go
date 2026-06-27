@@ -29,12 +29,13 @@ func TestProblemsAPIListProblems(t *testing.T) {
 	}{
 		{
 			name: "success",
-			path: "/?difficulty=easy&tag=array&tags=hash-table&pattern=dp&patterns=graph&provider=leetcode&limit=5&offset=2",
+			path: "/?title=%20two%20sum%20&difficulty=easy&tag=array&tags=hash-table&pattern=dp&patterns=graph&provider=leetcode&limit=5&offset=2",
 			setup: func(service *inmocks.MockProblemService) {
 				diff := domain.DifficultyEasy
 				prov := domain.ProviderLeetCode
 				service.EXPECT().ListProblems(mock.Anything, mock.MatchedBy(func(f outport.ProblemFilter) bool {
 					return len(f.Tags) == 4 &&
+						f.Title == "two sum" &&
 						f.Tags[0] == "array" &&
 						f.Tags[1] == "hash-table" &&
 						f.Tags[2] == "dp" &&

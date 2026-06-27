@@ -31,6 +31,8 @@ export function ProblemListPage(props: { navigate: NavigateFn }) {
   const [sortMode, setSortMode] = createSignal<SortMode>('default')
   const [currentPage, setCurrentPage] = createSignal(1)
   const [showTags, setShowTags] = createSignal(false)
+  const [titleQuery, setTitleQuery] = createSignal('')
+  const [titleFilter, setTitleFilter] = createSignal('')
   const [tagQuery, setTagQuery] = createSignal('')
 
   onMount(() => {
@@ -63,7 +65,18 @@ export function ProblemListPage(props: { navigate: NavigateFn }) {
   })
 
   createEffect(() => {
+    const query = titleQuery()
+    const timer = window.setTimeout(() => {
+      setCurrentPage(1)
+      setTitleFilter(query.trim())
+    }, 300)
+
+    onCleanup(() => clearTimeout(timer))
+  })
+
+  createEffect(() => {
     const page = currentPage()
+    const title = titleFilter()
     const selectedDifficulty = difficulty()
     const tagKey = state.tags.join('|')
     void tagKey
@@ -74,6 +87,7 @@ export function ProblemListPage(props: { navigate: NavigateFn }) {
     void (async () => {
       try {
         const result = await listProblems({
+          title: title || undefined,
           difficulty: (selectedDifficulty as Difficulty | '') || undefined,
           tags: [...state.tags],
           limit: pageSize,
@@ -154,26 +168,38 @@ export function ProblemListPage(props: { navigate: NavigateFn }) {
               Keep the bar compact, search tags fast, and expand the tray only when needed.
             </p>
           </div>
-          <Button
-            pill
-            loading={state.suggesting}
-            onClick={async () => {
-              setState({ suggesting: true, error: '' })
-              try {
-                const problem = await suggestProblem()
-                props.navigate(`/problems/${problem.slug}`)
-              } catch (error) {
-                setState('error', formatError(error))
-              } finally {
-                setState('suggesting', false)
-              }
-            }}
-          >
-            Suggest one
-          </Button>
+          <div class="flex flex-wrap gap-2">
+            <Button
+              pill
+              color="alternative"
+              loading={state.suggesting}
+              onClick={async () => {
+                setState({ suggesting: true, error: '' })
+                try {
+                  const problem = await suggestProblem()
+                  props.navigate(`/problems/${problem.slug}`)
+                } catch (error) {
+                  setState('error', formatError(error))
+                } finally {
+                  setState('suggesting', false)
+                }
+              }}
+            >
+              Suggest one
+            </Button>
+            <Button pill onClick={() => props.navigate('/problems/new')}>
+              Create problem
+            </Button>
+          </div>
         </div>
 
-        <div class="grid gap-3 lg:grid-cols-[minmax(0,220px)_minmax(0,220px)_minmax(0,1fr)] lg:items-end">
+        <div class="grid gap-3 lg:grid-cols-2 xl:grid-cols-[minmax(240px,1fr)_180px_180px_minmax(260px,1fr)] xl:items-end">
+          <SearchInputField
+            label="Search by title"
+            value={titleQuery()}
+            placeholder="e.g. Two Sum"
+            onInput={(event) => setTitleQuery(event.currentTarget.value)}
+          />
           <SelectField
             label="Difficulty"
             value={difficulty()}
@@ -193,7 +219,7 @@ export function ProblemListPage(props: { navigate: NavigateFn }) {
           />
           <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
             <SearchInputField
-              label="Find tag"
+              label="Search tags"
               value={tagQuery()}
               placeholder="Search tags"
               onInput={(event) => {

@@ -8,6 +8,7 @@ import (
 )
 
 type ProblemFilter struct {
+	Title      string
 	Difficulty *domain.Difficulty
 	Tags       []string
 	Provider   *domain.Provider

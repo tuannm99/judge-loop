@@ -264,6 +264,12 @@ func TestProblemSubmissionSessionAndPerformanceIntegration(t *testing.T) {
 	require.Equal(t, 1, total)
 	require.Len(t, problems, 1)
 
+	problems, total, err = problemStore.List(ctx, ProblemFilter{Title: "TWO SUM", Limit: 10})
+	require.NoError(t, err)
+	require.Equal(t, 1, total)
+	require.Len(t, problems, 1)
+	require.Equal(t, "two-sum", problems[0].Slug)
+
 	first := problems[0]
 	byID, err := problemStore.GetByID(ctx, first.ID)
 	require.NoError(t, err)

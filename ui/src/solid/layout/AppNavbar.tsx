@@ -45,11 +45,6 @@ export function AppNavbar(props: { currentPath: string }) {
       active: () => navKey(props.currentPath) === 'problems'
     },
     {
-      href: '/problems/contribute',
-      label: 'New Problem',
-      active: () => props.currentPath === '/problems/contribute'
-    },
-    {
       href: '/problem-labels',
       label: 'Tags',
       active: () => navKey(props.currentPath) === 'labels'

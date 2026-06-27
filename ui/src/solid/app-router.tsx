@@ -17,9 +17,9 @@ const problemsRoute = createRoute({
   component: lazyRouteComponent(() => import('./routes/ProblemsRoute'))
 })
 
-const contributeProblemRoute = createRoute({
+const newProblemRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/problems/contribute',
+  path: '/problems/new',
   component: lazyRouteComponent(() => import('./routes/ContributeProblemRoute'))
 })
 
@@ -49,7 +49,7 @@ const dashboardRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   problemsRoute,
-  contributeProblemRoute,
+  newProblemRoute,
   solveProblemRoute,
   editProblemRoute,
   problemLabelsRoute,

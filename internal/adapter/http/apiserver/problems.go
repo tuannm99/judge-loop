@@ -167,7 +167,8 @@ func (h *ProblemsAPI) ListProblems(c *gin.Context) {
 	tags = append(tags, c.QueryArray("patterns")...)
 
 	f := outport.ProblemFilter{
-		Tags: tags,
+		Title: strings.TrimSpace(c.Query("title")),
+		Tags:  tags,
 	}
 
 	if d := c.Query("difficulty"); d != "" {

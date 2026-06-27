@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/tuannm99/judge-loop/internal/domain"
@@ -30,6 +31,9 @@ func (s *ProblemRepositoryImpl) List(ctx context.Context, f ProblemFilter) ([]do
 	}
 
 	baseQuery := s.db.Gorm.WithContext(ctx).Model(&problemModel{})
+	if title := strings.TrimSpace(f.Title); title != "" {
+		baseQuery = baseQuery.Where("LOWER(title) LIKE ?", "%"+strings.ToLower(title)+"%")
+	}
 	if f.Difficulty != nil {
 		baseQuery = baseQuery.Where("difficulty = ?", string(*f.Difficulty))
 	}
